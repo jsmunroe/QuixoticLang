@@ -50,6 +50,13 @@ namespace QuixoticLang.Lexer
                     continue;
                 }
 
+                if (char.IsNumber(c))
+                {
+                    var token = ReadNumber();
+                    yield return token;
+                    continue;
+                }
+
                 if (c == '"')
                 {
                     var token = ReadString();
@@ -163,6 +170,57 @@ namespace QuixoticLang.Lexer
                 Type = tokenType,
                 Value = text,
                 Position = position,
+            };
+        }
+
+        private Token ReadNumber()
+        {
+            var position = CurrentPosition();
+
+            int start = _index;
+
+            bool hasDot = false;
+            bool hasExponent = false;
+
+            while (!IsAtEnd())
+            {
+                char c = Peek();
+
+                if (char.IsDigit(c))
+                {
+                    Advance();
+                    continue;
+                }
+
+                if (c == '.' && !hasDot && !hasExponent)
+                {
+                    hasDot = true;
+                    Advance();
+                    continue;
+                }
+
+                if ((c == 'e' || c == 'E') && !hasExponent)
+                {
+                    hasExponent = true;
+                    Advance();
+
+                    // Handle optional exponent sign
+                    if (!IsAtEnd() && Peek() == '+' || Peek() == '-')
+                        Advance();
+
+                    continue;
+                }
+
+                break;
+            }
+
+            var value = _source[start.._index];
+
+            return new Token
+            {
+                Type = TokenType.NumberLiteral,
+                Value = value,
+                Position = position
             };
         }
 

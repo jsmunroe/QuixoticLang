@@ -3,6 +3,7 @@ using Quixotic.Parsing.Exceptions;
 using Quixotic.Parsing.Expressions;
 using Quixotic.Parsing.Operations;
 using Quixotic.Parsing.Statements;
+using QuixoticLang.Lexer;
 
 namespace Quixotic.Parsing
 {
@@ -10,9 +11,13 @@ namespace Quixotic.Parsing
     {
         private readonly Stepper<Token> _tokens = new(tokens);
 
+        public Parser(Lexer lexer)
+            : this(lexer.Run())
+        { }
+
         public IEnumerable<Statement> Parse()
         {
-            while (!_tokens.IsAtEnd)
+            while (!_tokens.IsAtEnd && _tokens.Peek().Type != TokenType.Eof)
             {
                 var statement = ParseStatement();
                 yield return statement;
@@ -92,7 +97,7 @@ namespace Quixotic.Parsing
             throw new ParserException($"Unexpected token {token} when trying to parse an expression.");
         }
 
-        private static Expression ParseNumber(Token token)
+        private static NumberLiteralExpression ParseNumber(Token token)
         {
             if (double.TryParse(token.Value, out var number))
                 return new NumberLiteralExpression(number);
