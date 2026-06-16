@@ -10,6 +10,8 @@
         Else,
         End,
         Equals,
+        LeftParen,
+        RightParen,
         Subtract,
         Plus,
         Multiply,

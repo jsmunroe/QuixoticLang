@@ -60,6 +60,16 @@ namespace QuixoticLang.Lexer
                 // single-character tokens
                 switch (c)
                 {
+                    case '(':
+                        yield return Simple(TokenType.LeftParen, "(");
+                        Advance();
+                        break;
+
+                    case ')':
+                        yield return Simple(TokenType.RightParen, ")");
+                        Advance();
+                        break;
+
                     case '=':
                         yield return Simple(TokenType.Equals, "=");
                         Advance();

@@ -69,6 +69,17 @@ namespace Quixotic.Parsing
         {
             var token = _tokens.Pop();
 
+            if (token.Type == TokenType.LeftParen)
+            {
+                var expression = ParseExpression();
+
+                var nextToken = _tokens.Pop();
+                if (nextToken.Type != TokenType.RightParen)
+                    throw new ExpectedTokenException(new TokenHead(TokenType.RightParen, ")"), nextToken);
+
+                return expression;
+            }
+
             if (token.Type == TokenType.StringLiteral)
                 return new StringLiteralExpression(token.Value);
 
