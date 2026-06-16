@@ -1,0 +1,804 @@
+Quixotic.Lexography\Lexer.cs
+==============================
+
+using Quixotic.Lexography.Exceptions;
+using Quixotic.Lexography.Tokens;
+
+namespace QuixoticLang.Lexer
+{
+    public class Lexer(string source)
+    {
+        private readonly string _source = source;
+        private int _index;
+        private int _line = 1;
+        private int _column = 1;
+
+        private static Dictionary<string, TokenType> Keywords { get; } = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "print", TokenType.Print },
+            { "if", TokenType.If },
+            { "else", TokenType.Else },
+            { "end", TokenType.End },
+        };
+
+        private readonly IEqualityComparer<string> _keywordComparer = StringComparer.OrdinalIgnoreCase;
+
+        public IEnumerable<Token> Run()
+        {
+            while (!IsAtEnd())
+            {
+                var c = Peek();
+
+                if (c == '\0') // At end of input.
+                    break;
+
+
+                if (c == '\n')
+                {
+                    yield return Simple(TokenType.NewLine, "\n");
+                    Advance();
+                    continue;
+                }
+
+                if (char.IsWhiteSpace(c))
+                {
+                    ConsumeWhitespace();
+                    continue;
+                }
+
+                if (char.IsLetter(c))
+                {
+                    var token = ReadIdentifierOrKeyword();
+                    yield return token;
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    var token = ReadString();
+                    yield return token;
+                    continue;
+                }
+
+                // single-character tokens
+                switch (c)
+                {
+                    case '=':
+                        yield return Simple(TokenType.Equals, "=");
+                        Advance();
+                        break;
+
+                    case '-':
+                        yield return Simple(TokenType.Subtract, "+");
+                        Advance();
+                        break;
+
+                    case '+':
+                        yield return Simple(TokenType.Plus, "+");
+                        Advance();
+                        break;
+
+                    case '/':
+                        yield return Simple(TokenType.Divide, "/");
+                        Advance();
+                        break;
+
+                    case '*':
+                        yield return Simple(TokenType.Multiply, "*");
+                        Advance();
+                        break;
+
+                    default:
+                        throw new LexerUnexpectedCharacterException(c, CurrentPosition());
+                }
+            }
+
+            yield return Eof();
+        }
+
+        private char Peek(int offset = 0)
+        {
+            if (_index + offset >= _source.Length)
+                return '\0'; // null char to indicate end of input
+
+            return _source[_index + offset];
+        }
+
+        private char Advance()
+        {
+            if (_index >= _source.Length)
+                return '\0'; // null char to indicate end of input
+
+            char c = _source[_index++];
+            _column++;
+
+            if (c == '\n')
+            {
+                _line++;
+                _column = 1;
+            }
+
+            return c;
+        }
+
+        private bool IsAtEnd() => _index >= _source.Length;
+
+        private Position CurrentPosition() => new()
+        {
+            Line = _line,
+            Column = _column,
+            Index = _index
+        };
+
+        private void ConsumeWhitespace()
+        {
+            while (!IsAtEnd() && char.IsWhiteSpace(Peek()))
+            {
+                Advance();
+            }
+        }
+
+        private Token ReadIdentifierOrKeyword()
+        {
+            var start = _index;
+            var position = CurrentPosition();
+
+            while (!IsAtEnd() && char.IsLetter(Peek()))
+                Advance();
+
+            var text = _source[start.._index];
+
+            if (!Keywords.TryGetValue(text, out var tokenType))
+                tokenType = TokenType.Identifier;
+
+            return new Token
+            {
+                Type = tokenType,
+                Value = text,
+                Position = position,
+            };
+        }
+
+        private Token ReadString()
+        {
+            var position = CurrentPosition();
+            Advance(); // skip opening quote (")
+
+            int start = _index;
+
+            while (!IsAtEnd() && Peek() != '"')
+            {
+                if (Peek() == '\\' && Peek(1) == '"') // Handle escape quotes
+                    Advance();
+
+                Advance();
+            }
+
+            var value = _source[start.._index];
+
+            value = Unescape(value);
+
+            Advance(); // skip closing quote (")
+
+            return new Token
+            {
+                Type = TokenType.StringLiteral,
+                Value = value,
+                Position = position
+            };
+        }
+
+        private Token Simple(TokenType type, string? value)
+        {
+            return new()
+            {
+                Type = type,
+                Value = value ?? string.Empty,
+                Position = CurrentPosition(),
+            };
+        }
+
+        private static string Unescape(string value)
+        {
+            return value.Replace("\\\"", "\"");
+        }
+
+        private Token Eof()
+        {
+            return new()
+            {
+                Type = TokenType.Eof,
+                Value = string.Empty,
+                Position = CurrentPosition(),
+            };
+        }
+    }
+}
+
+Quixotic.LexographyTests\LexerTests.cs
+========================================
+
+using Quixotic.Lexography.Exceptions;
+using Quixotic.Lexography.Tokens;
+using QuixoticLang.Lexer;
+
+namespace Quixotic.LexographyTests
+{
+    [TestClass]
+    public sealed class LexerTests
+    {
+        [TestMethod]
+        public void Lex_Print_statement()
+        {
+            // Setup
+            var source = "print \"Hello, windmill!\"";
+            var lexer = new Lexer(source);
+
+            // Execute
+            var result = lexer.Run().ToList();
+
+            // Assert
+            Assert.HasCount(3, result);
+
+            Assert.AreEqual(TokenType.Print, result[0].Type);
+            Assert.AreEqual("print", result[0].Value);
+
+            Assert.AreEqual(TokenType.StringLiteral, result[1].Type);
+            Assert.AreEqual("Hello, windmill!", result[1].Value);
+
+            Assert.AreEqual(TokenType.Eof, result[2].Type);
+            Assert.AreEqual(string.Empty, result[2].Value);
+        }
+
+        [TestMethod]
+        public void Lex_Print_statement_with_escape_quotes()
+        {
+            // Setup
+            var source = @"print ""Hello, \""windmill!\""";
+            var lexer = new Lexer(source);
+
+            // Execute
+            var result = lexer.Run().ToList();
+
+            // Assert
+            Assert.HasCount(3, result);
+
+            Assert.AreEqual(TokenType.Print, result[0].Type);
+            Assert.AreEqual("print", result[0].Value);
+
+            Assert.AreEqual(TokenType.StringLiteral, result[1].Type);
+            Assert.AreEqual(@"Hello, ""windmill!""", result[1].Value);
+
+            Assert.AreEqual(TokenType.Eof, result[2].Type);
+            Assert.AreEqual(string.Empty, result[2].Value);
+        }
+
+        [TestMethod]
+        public void Lex_Print_statement_with_bad_character()
+        {
+            // Setup 
+            var source = "print ¶Hello, windmill!";
+            var lexer = new Lexer(source);
+
+            // Execute & Assert
+            var ex = Assert.Throws<LexerUnexpectedCharacterException>(() => lexer.Run().ToList());
+
+            Assert.AreEqual('¶', ex.Character);
+            Assert.AreEqual(1, ex.Position.Line);
+            Assert.AreEqual(7, ex.Position.Column);
+        }
+    }
+
+}
+
+
+Quixotic.LexographyTests\MSTestSettings.cs
+============================================
+
+[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
+
+Quixotic.Parsing\Parser.cs
+============================
+
+using Quixotic.Lexography.Tokens;
+using Quixotic.Parsing.Exceptions;
+using Quixotic.Parsing.Expressions;
+using Quixotic.Parsing.Operations;
+using Quixotic.Parsing.Statements;
+
+namespace Quixotic.Parsing
+{
+    public class Parser(IEnumerable<Token> tokens)
+    {
+        private readonly Stepper<Token> _tokens = new(tokens);
+
+        public IEnumerable<Statement> Parse()
+        {
+            while (!_tokens.IsAtEnd)
+            {
+                var statement = ParseStatement();
+                yield return statement;
+            }
+        }
+
+        public Statement ParseStatement()
+        {
+            if (Match(TokenType.Print))
+                return ParsePrint();
+
+            throw new UnexpectedTokenException(_tokens.Peek());
+        }
+
+        public Statement ParsePrint()
+        {
+            var expression = ParseExpression();
+
+            return new PrintStatement(expression);
+        }
+
+        public Expression ParseExpression(int parentPrecedence = 0)
+        {
+            var left = ParsePrimary();
+
+            while (true)
+            {
+                var token = _tokens.Peek();
+
+                var operationMetadata = OperationMetadata.Get(token.Type);
+
+                var nextPrecedence = operationMetadata.Precedence;
+
+                if (operationMetadata.Operator == Operator.None)
+                    break;
+
+                if (operationMetadata.Associativity == Associativity.Left)
+                    nextPrecedence++;
+
+                if (nextPrecedence <= parentPrecedence)
+                    break;
+
+                _tokens.Advance(); // consume operator
+
+                var right = ParseExpression(operationMetadata.Precedence);
+
+                left = new BinaryExpression(operationMetadata.Operator, left, right);
+            }
+
+            return left;
+        }
+
+        public Expression ParsePrimary()
+        {
+            var token = _tokens.Pop();
+
+            if (token.Type == TokenType.StringLiteral)
+                return new StringLiteralExpression(token.Value);
+
+            if (token.Type == TokenType.NumberLiteral)
+                return ParseNumber(token);
+
+            if (token.Type == TokenType.Identifier)
+                return new IdentifierExpression(token.Value);
+
+            throw new ParserException($"Unexpected token {token} when trying to parse an expression.");
+        }
+
+        private static Expression ParseNumber(Token token)
+        {
+            if (double.TryParse(token.Value, out var number))
+                return new NumberLiteralExpression(number);
+
+            throw new TokenException("Invalid number literal", token);
+        }
+
+        private bool Match(TokenType type)
+        {
+            if (_tokens.Peek().Type == type)
+            {
+                _tokens.Advance();
+                return true;
+            }
+
+            return false;
+        }
+    }
+}
+
+Quixotic.Parsing\Scope.cs
+===========================
+
+using Quixotic.Parsing.Statements;
+using System.Collections;
+
+namespace Quixotic.Parsing
+{
+    public class Scope : IList<Statement>
+    {
+        private readonly List<Statement> _statements = [];
+
+        public Statement this[int index]
+        {
+            get => _statements[index];
+            set => _statements[index] = value;
+        }
+
+        public int Count => _statements.Count;
+
+        public bool IsReadOnly => false;
+
+        public void Add(Statement item)
+        {
+            _statements.Add(item);
+        }
+
+        public void Clear()
+        {
+            _statements.Clear();
+        }
+
+        public bool Contains(Statement item)
+        {
+            return _statements.Contains(item);
+        }
+
+        public void CopyTo(Statement[] array, int arrayIndex)
+        {
+            _statements.CopyTo(array, arrayIndex);
+        }
+
+        public int IndexOf(Statement item)
+        {
+            return _statements.IndexOf(item);
+        }
+
+        public void Insert(int index, Statement item)
+        {
+            _statements.Insert(index, item);
+        }
+
+        public bool Remove(Statement item)
+        {
+            return _statements.Remove(item);
+        }
+
+        public void RemoveAt(int index)
+        {
+            _statements.RemoveAt(index);
+        }
+
+        #region IEnumerable members
+        public IEnumerator<Statement> GetEnumerator()
+        {
+            return _statements.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+        #endregion
+    }
+}
+
+Quixotic.Lexography\Exceptions\LexerException.cs
+==================================================
+
+using Quixotic.Lexography.Tokens;
+
+namespace Quixotic.Lexography.Exceptions
+{
+    public class LexerException(string message, Position position) : Exception(message)
+    {
+        public Position Position { get; } = position;
+    }
+}
+
+Quixotic.Lexography\Exceptions\LexerUnexpectedCharacterException.cs
+=====================================================================
+
+using Quixotic.Lexography.Tokens;
+
+namespace Quixotic.Lexography.Exceptions
+{
+    public class LexerUnexpectedCharacterException(char character, Position position)
+        : LexerException($"Unexpected character '{character}' ({position.Line}:{position.Column})", position)
+    {
+        public char Character { get; } = character;
+    }
+}
+
+Quixotic.Lexography\Tokens\Position.cs
+========================================
+
+namespace Quixotic.Lexography.Tokens
+{
+    public struct Position
+    {
+        public int Line;
+        public int Column;
+        public int Index;
+    }
+}
+
+Quixotic.Lexography\Tokens\Span.cs
+====================================
+
+namespace Quixotic.Lexography.Tokens
+{
+    public struct Span
+    {
+        public Position Start;
+        public Position End;
+    }
+}
+
+Quixotic.Lexography\Tokens\Token.cs
+=====================================
+
+namespace Quixotic.Lexography.Tokens
+{
+    public class Token
+    {
+        public required TokenType Type { get; init; }
+        public required string Value { get; init; }
+        public required Position Position { get; init; }
+
+        public override string ToString() => $"{Type}('{Value}') ({Position.Line}:{Position.Column})";
+    }
+}
+
+Quixotic.Lexography\Tokens\TokenType.cs
+=========================================
+
+namespace Quixotic.Lexography.Tokens
+{
+    [Flags]
+    public enum TokenType
+    {
+        StringLiteral,
+        Identifier,
+        NumberLiteral,
+        Print,
+        If,
+        Else,
+        End,
+        Equals,
+        Subtract,
+        Plus,
+        Multiply,
+        Divide,
+        NewLine,
+        Eof,
+    }
+}
+
+Quixotic.Parsing\Exceptions\ParserException.cs
+================================================
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Quixotic.Parsing.Exceptions
+{
+    public class ParserException(string message) : Exception(message)
+    {
+    }
+}
+}
+
+Quixotic.Parsing\Exceptions\TokenException.cs
+===============================================
+
+using Quixotic.Lexography.Tokens;
+
+namespace Quixotic.Parsing.Exceptions
+{
+    public class TokenException(string message, Token token) : ParserException(message)
+    {
+        public Token Token { get; } = token;
+
+        public Position Position { get; set; } = token.Position;
+    }
+}
+
+Quixotic.Parsing\Exceptions\UnexpectedTokenException.cs
+=========================================================
+
+using Quixotic.Lexography.Tokens;
+
+namespace Quixotic.Parsing.Exceptions
+{
+    public class UnexpectedTokenException(Token token) : TokenException($"Unexpected token '{token}'", token);
+}
+
+Quixotic.Parsing\Expressions\BinaryExpression.cs
+==================================================
+
+using Quixotic.Parsing.Operations;
+
+namespace Quixotic.Parsing.Expressions
+{
+
+    public class BinaryExpression(Operator @operator, Expression left, Expression right) : Expression
+    {
+        public Operator Operator { get; } = @operator;
+
+        public Expression Left { get; } = left;
+
+        public Expression Right { get; } = right;
+    }
+}
+
+Quixotic.Parsing\Expressions\Expression.cs
+============================================
+
+namespace Quixotic.Parsing.Expressions
+{
+    public abstract class Expression
+    {
+
+    }
+}
+
+Quixotic.Parsing\Expressions\IdentifierExpression.cs
+======================================================
+
+namespace Quixotic.Parsing.Expressions
+{
+    public class IdentifierExpression(string name) : Expression
+    {
+        public string Name { get; } = name;
+    }
+}
+
+Quixotic.Parsing\Expressions\StringLiteralExpression.cs
+=========================================================
+
+namespace Quixotic.Parsing.Expressions
+{
+    public sealed class StringLiteralExpression(string value) : Expression
+    {
+        public string Value { get; } = value;
+    }
+
+    public sealed class NumberLiteralExpression(double value) : Expression
+    {
+        public double Value { get; } = value;
+    }
+}
+
+Quixotic.Parsing\Operations\Associativity.cs
+==============================================
+
+namespace Quixotic.Parsing.Operations
+{
+    public enum Associativity
+    {
+        Right,
+        Left,
+    }
+}
+
+Quixotic.Parsing\Operations\OperationMetadata.cs
+==================================================
+
+using Quixotic.Lexography.Tokens;
+
+namespace Quixotic.Parsing.Operations
+{
+    public record OperationMetadata(int Precedence = OperationMetadata.None, Operator Operator = Operator.None)
+    {
+        public const int None = 0;
+        public const int Assign = 1;
+        public const int Sum = 10;
+        public const int Difference = 15;
+        public const int Product = 20;
+        public const int Quotient = 25;
+
+        public static readonly Dictionary<TokenType, OperationMetadata> Operators = new()
+        {
+            [TokenType.Equals] = new(None, Operator.Assignment),
+            [TokenType.Subtract] = new(Difference, Operator.Subtract),
+            [TokenType.Plus] = new(Sum, Operator.Add),
+            [TokenType.Divide] = new(Quotient, Operator.Divide),
+            [TokenType.Multiply] = new(Product, Operator.Multiply),
+        };
+
+        public static OperationMetadata Get(TokenType type)
+        {
+            if (Operators.TryGetValue(type, out var metadata))
+                return metadata;
+
+            return new();
+        }
+    }
+}
+
+Quixotic.Parsing\Operations\Operator.cs
+=========================================
+
+namespace Quixotic.Parsing.Operations
+{
+    public enum Operator
+    {
+        None,
+        Assignment,
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+    }
+}
+
+Quixotic.Parsing\Statements\PrintStatement.cs
+===============================================
+
+using Quixotic.Parsing.Expressions;
+
+namespace Quixotic.Parsing.Statements
+{
+    public sealed class PrintStatement(Expression expression) : Statement
+    {
+        public Expression Expression { get; } = expression;
+    }
+}
+
+Quixotic.Parsing\Statements\Statement.cs
+==========================================
+
+namespace Quixotic.Parsing.Statements
+{
+    public abstract class Statement
+    {
+        public static Statement Start()
+    }
+}
+
+Quixotic.Parsing\Statements\Stepper.cs
+========================================
+
+namespace Quixotic.Parsing.Statements
+{
+    public class Stepper<TItem>
+    {
+        private readonly IEnumerator<TItem> _tokens;
+        private bool _isAtEnd = false;
+
+        public Stepper(IEnumerable<TItem> tokens)
+        {
+            _tokens = tokens.GetEnumerator();
+            Advance(); // Move to the first item.
+        }
+
+        public bool IsAtEnd => _isAtEnd;
+
+        public bool Advance()
+        {
+            if (_isAtEnd)
+                return false;
+
+            _isAtEnd = !_tokens.MoveNext();
+            return !_isAtEnd;
+        }
+
+        public TItem Peek()
+        {
+            if (IsAtEnd)
+                throw new InvalidOperationException($"Cannot {nameof(Peek)} when at end of list.");
+
+            return _tokens.Current;
+        }
+
+        public TItem Pop()
+        {
+            var token = Peek();
+            Advance();
+
+            return token;
+        }
+
+        public void Reset() => _tokens.Reset();
+    }
+}
+
