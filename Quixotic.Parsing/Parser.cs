@@ -88,7 +88,7 @@ namespace Quixotic.Parsing
 
         public Expression ParseExpression(int parentPrecedence = 0)
         {
-            var left = ParsePrimary();
+            var left = ParseUnary();
 
             while (true)
             {
@@ -142,6 +142,17 @@ namespace Quixotic.Parsing
                 return new IdentifierExpression(token.Value);
 
             throw new UnexpectedTokenException(token);
+        }
+
+        public Expression ParseUnary()
+        {
+            if (Match(TokenType.Plus))
+                return new UnaryExpression(Operator.Add, ParseUnary());
+
+            if (Match(TokenType.Subtract))
+                return new UnaryExpression(Operator.Subtract, ParseUnary());
+
+            return ParsePrimary();
         }
 
         private static NumberLiteralExpression ParseNumber(Token token)

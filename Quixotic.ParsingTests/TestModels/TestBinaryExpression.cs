@@ -18,8 +18,24 @@ namespace Quixotic.ParsingTests.TestModels
             return expression;
         }
 
+        public static char GetOperatorChar(Operator @operator)
+        {
+            return @operator switch
+            {
+                Parsing.Operations.Operator.Assignment => '=',
+                Parsing.Operations.Operator.Add => '+',
+                Parsing.Operations.Operator.Subtract => '-',
+                Parsing.Operations.Operator.Multiply => '*',
+                Parsing.Operations.Operator.Divide => '/',
+                _ => throw new InvalidOperationException($"Unsupported operator: {@operator}")
+            };
+        }
+
         public static implicit operator TestExpression(double value)
         {
+            if (value < 0)
+                return new TestUnaryExpression(Parsing.Operations.Operator.Subtract, new TestNumberExpression(-value));
+
             return new TestNumberExpression(value);
         }
 
@@ -119,19 +135,6 @@ namespace Quixotic.ParsingTests.TestModels
             Right.Assert(binaryExpression.Right);
         }
 
-        private char GetOperatorChar(Operator @operator)
-        {
-            return @operator switch
-            {
-                Parsing.Operations.Operator.Assignment => '=',
-                Parsing.Operations.Operator.Add => '+',
-                Parsing.Operations.Operator.Subtract => '-',
-                Parsing.Operations.Operator.Multiply => '*',
-                Parsing.Operations.Operator.Divide => '/',
-                _ => throw new InvalidOperationException($"Unsupported operator: {@operator}")
-            };
-        }
-
         public override string GetPositionDescription(TestExpression expression)
         {
             if (Parent is null)
@@ -204,5 +207,31 @@ namespace Quixotic.ParsingTests.TestModels
 
     }
 
+    public record TestUnaryExpression(Operator Operator, TestExpression Operand) : TestExpression
+    {
+        public Operator Operator { get; } = Operator;
+        public TestExpression Operand { get; } = Operand;
+        public override string GetPositionDescription(TestExpression expression)
+        {
+            if (Parent is null)
+                return "X";
+            return Parent.GetPositionDescription(expression);
+        }
 
+        public override string ToString(TestExpression expression)
+        {
+            return ReferenceEquals(expression, this) ? "X" : "-#"; ;
+        }
+
+        public override void Assert(Expression expression)
+        {
+            var positionDescription = GetPositionDescription(this);
+
+            var unaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<UnaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a unary expression.");
+
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(Operator, unaryExpression.Operator, $"\r\n{positionDescription}\r\nExpected operator was '{Operator}' but actual operator was '{unaryExpression.Operator}'.");
+            Operand.Assert(unaryExpression.Operand);
+        }
+
+    }
 }

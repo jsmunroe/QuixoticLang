@@ -2,6 +2,7 @@
 using Quixotic.Parsing;
 using Quixotic.Parsing.Exceptions;
 using Quixotic.Parsing.Expressions;
+using Quixotic.Parsing.Operations;
 using Quixotic.Parsing.Statements;
 using Quixotic.ParsingTests.TestModels;
 using QuixoticLang.Lexer;
@@ -375,12 +376,68 @@ namespace Quixotic.ParsingTests
 
             Assert.AreEqual(5, numberLiteralExpression.Value);
 
-
             var printStatement = Assert.IsInstanceOfType<PrintStatement>(statements[1]);
 
             var identifierExpressionInPrint = Assert.IsInstanceOfType<IdentifierExpression>(printStatement.Expression);
 
             Assert.AreEqual("windmills", identifierExpressionInPrint.Name);
+        }
+
+        [TestMethod]
+        public void Parse_unary_subtract_expression()
+        {
+            // Setup
+            var source = @"
+                cost := -5
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert 
+            Assert.HasCount(1, statements);
+
+            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+
+            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+
+            Assert.AreEqual("cost", identifierExpression.Name);
+
+            var unaryExpression = Assert.IsInstanceOfType<UnaryExpression>(assignmentStatement.Value);
+
+            Assert.AreEqual(Operator.Subtract, unaryExpression.Operator);
+
+            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(unaryExpression.Operand);
+
+            Assert.AreEqual(5, numberLiteralExpression.Value);
+        }
+
+        [TestMethod]
+        public void Parse_unary_subtract_expression_in_exrpression_series()
+        {
+            // Setup
+            var source = @"
+                cost := -5 + 2 * (3 - 1)
+                print cost
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert 
+            Assert.HasCount(2, statements);
+
+            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+
+            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+
+            Assert.AreEqual("cost", identifierExpression.Name);
+
+            TestExpression.Create((-5, '+', (2, '*', (3, '-', 1)))).Assert(assignmentStatement.Value);
         }
 
     }
