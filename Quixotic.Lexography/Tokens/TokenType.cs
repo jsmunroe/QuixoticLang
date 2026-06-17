@@ -10,6 +10,7 @@
         Else,
         End,
         Equals,
+        Assignment,
         LeftParen,
         RightParen,
         Subtract,

@@ -102,6 +102,18 @@ namespace Quixotic.LexographyTests
 
             Assert.AreEqual(TokenType.Eof, tokens[10].Type);
         }
+
+        [TestMethod]
+        public void Lex_assignment_operator()
+        {
+            var lexer = new Lexer("x := 42");
+
+            var tokens = lexer.Run().ToList();
+
+            Assert.AreEqual(TokenType.Identifier, tokens[0].Type);
+            Assert.AreEqual(TokenType.Assignment, tokens[1].Type);
+            Assert.AreEqual(TokenType.NumberLiteral, tokens[2].Type);
+        }
     }
 
 }

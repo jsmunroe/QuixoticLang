@@ -13,7 +13,7 @@ namespace Quixotic.Parsing.Operations
 
         public static readonly Dictionary<TokenType, OperationMetadata> Operators = new()
         {
-            [TokenType.Equals] = new(None, Operator.Assignment, Associativity.Right),
+            [TokenType.Assignment] = new(None, Operator.Assignment, Associativity.Right),
             [TokenType.Subtract] = new(Difference, Operator.Subtract, Associativity.Left),
             [TokenType.Plus] = new(Sum, Operator.Add, Associativity.Left),
             [TokenType.Divide] = new(Quotient, Operator.Divide, Associativity.Left),

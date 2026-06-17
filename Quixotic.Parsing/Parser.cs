@@ -76,7 +76,7 @@ namespace Quixotic.Parsing
 
             var next = _tokens.Pop();
 
-            if (next.Type == TokenType.Equals)
+            if (next.Type == TokenType.Assignment)
             {
                 var expression = ParseExpression();
 

@@ -82,6 +82,10 @@ namespace QuixoticLang.Lexer
                         Advance();
                         break;
 
+                    case ':':
+                        yield return ReadAssignmentOperator();
+                        break;
+
                     case '-':
                         yield return Simple(TokenType.Subtract, "-");
                         Advance();
@@ -208,7 +212,7 @@ namespace QuixoticLang.Lexer
                     Advance();
 
                     // Handle optional exponent sign
-                    if (!IsAtEnd() && Peek() == '+' || Peek() == '-')
+                    if (!IsAtEnd() && (Peek() == '+' || Peek() == '-'))
                         Advance();
 
                     continue;
@@ -256,13 +260,30 @@ namespace QuixoticLang.Lexer
             };
         }
 
-        private Token Simple(TokenType type, string? value)
+        private Token ReadAssignmentOperator()
+        {
+            var position = CurrentPosition();
+
+            Advance();
+
+            var c = Peek();
+
+            if (c == '=')
+            {
+                Advance();
+                return Simple(TokenType.Assignment, ":=", position);
+            }
+
+            throw new LexerUnexpectedCharacterException(c, position);
+        }
+
+        private Token Simple(TokenType type, string? value, Position? position = null)
         {
             return new()
             {
                 Type = type,
                 Value = value ?? string.Empty,
-                Position = CurrentPosition(),
+                Position = position ?? CurrentPosition(),
             };
         }
 

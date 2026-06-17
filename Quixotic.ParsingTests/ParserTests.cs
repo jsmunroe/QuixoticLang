@@ -300,7 +300,7 @@ namespace Quixotic.ParsingTests
         {
             // Setup
             var source = @"
-                windmills = 5
+                windmills := 5
             ";
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
@@ -327,7 +327,7 @@ namespace Quixotic.ParsingTests
         {
             // Setup
             var source = @"
-                windmills = (5 + 3) * 2
+                windmills := (5 + 3) * 2
             ";
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
@@ -353,7 +353,7 @@ namespace Quixotic.ParsingTests
         {
             // Setup
             var source = @"
-                windmills = 5
+                windmills := 5
                 print windmills
             ";
             var lexer = new Lexer(source);
