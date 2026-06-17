@@ -1,0 +1,208 @@
+﻿using Quixotic.Parsing.Expressions;
+using Quixotic.Parsing.Operations;
+
+namespace Quixotic.ParsingTests.TestModels
+{
+    public abstract record TestExpression
+    {
+        public TestBinaryExpression? Parent { get; set; }
+
+        public abstract string GetPositionDescription(TestExpression expression);
+
+        public abstract string ToString(TestExpression expression);
+
+        public abstract void Assert(Parsing.Expressions.Expression expression);
+
+        public static TestExpression Create(TestExpression expression)
+        {
+            return expression;
+        }
+
+        public static implicit operator TestExpression(double value)
+        {
+            return new TestNumberExpression(value);
+        }
+
+
+        public static implicit operator TestExpression(string value)
+        {
+            return new TestStringExpression(value);
+        }
+
+        public static implicit operator TestExpression((double left, char op, double right) tuple)
+        {
+            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
+        }
+
+        public static implicit operator TestExpression((TestBinaryExpression left, char op, double right) tuple)
+        {
+            return new TestBinaryExpression(tuple.left, tuple.op, (TestExpression)tuple.right);
+        }
+
+        public static implicit operator TestExpression((double left, char op, TestBinaryExpression right) tuple)
+        {
+            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, tuple.right);
+        }
+
+        public static implicit operator TestExpression((string left, char op, double right) tuple)
+        {
+            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
+        }
+
+        public static implicit operator TestExpression((double left, char op, string right) tuple)
+        {
+            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
+        }
+
+        public static implicit operator TestExpression((string left, char op, string right) tuple)
+        {
+            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
+        }
+
+        public static implicit operator TestExpression((TestBinaryExpression left, char op, string right) tuple)
+        {
+            return new TestBinaryExpression(tuple.left, tuple.op, (TestExpression)tuple.right);
+        }
+
+        public static implicit operator TestExpression((string left, char op, TestBinaryExpression right) tuple)
+        {
+            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, tuple.right);
+        }
+
+        public static implicit operator TestExpression((TestExpression left, char op, TestExpression right) tuple)
+        {
+            return new TestBinaryExpression(tuple.left, tuple.op, tuple.right);
+        }
+    }
+
+    public record TestBinaryExpression : TestExpression
+    {
+        public TestBinaryExpression(TestExpression left, char op, TestExpression right)
+        {
+            Left = left;
+            Operator = op;
+            Right = right;
+
+            AssignParent();
+        }
+
+        public TestExpression Left { get; }
+
+        public char Operator { get; }
+
+        public TestExpression Right { get; }
+
+        public void AssignParent()
+        {
+            Left.Parent = this;
+            Right.Parent = this;
+
+            if (Left is TestBinaryExpression left)
+                left.AssignParent();
+
+            if (Right is TestBinaryExpression right)
+                right.AssignParent();
+        }
+
+        public override void Assert(Parsing.Expressions.Expression expression)
+        {
+            var positionDescription = GetPositionDescription(this);
+
+            var binaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<BinaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a binary expression.");
+
+            Left.Assert(binaryExpression.Left);
+
+            var c = GetOperatorChar(binaryExpression.Operator);
+
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(Operator, c, $"\r\n{positionDescription}\r\nExpected operator was '{Operator}' but actual operator was '{binaryExpression.Operator}'.");
+
+            Right.Assert(binaryExpression.Right);
+        }
+
+        private char GetOperatorChar(Operator @operator)
+        {
+            return @operator switch
+            {
+                Parsing.Operations.Operator.Assignment => '=',
+                Parsing.Operations.Operator.Add => '+',
+                Parsing.Operations.Operator.Subtract => '-',
+                Parsing.Operations.Operator.Multiply => '*',
+                Parsing.Operations.Operator.Divide => '/',
+                _ => throw new InvalidOperationException($"Unsupported operator: {@operator}")
+            };
+        }
+
+        public override string GetPositionDescription(TestExpression expression)
+        {
+            if (Parent is null)
+                return ToString(expression);
+
+            return Parent.GetPositionDescription(expression);
+        }
+
+        public override string ToString(TestExpression expression)
+        {
+            var left = ReferenceEquals(Left, expression) ? "X" : Left.ToString(expression);
+            var right = ReferenceEquals(Right, expression) ? "X" : Right.ToString(expression);
+
+            return $"({left} {Operator} {right})";
+        }
+    }
+
+    public record TestNumberExpression(double Value) : TestExpression
+    {
+        public double Value { get; } = Value;
+
+        public override string GetPositionDescription(TestExpression expression)
+        {
+            if (Parent is null)
+                return "X";
+
+            return Parent.GetPositionDescription(expression);
+        }
+
+        public override string ToString(TestExpression expression)
+        {
+            return ReferenceEquals(expression, this) ? "X" : "#";
+        }
+
+        public override void Assert(Expression expression)
+        {
+            var positionDescription = GetPositionDescription(this);
+
+            var numberLiteralExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<NumberLiteralExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a number literal expression.");
+
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(numberLiteralExpression.Value, Value, $"\r\n{positionDescription}\r\nExpected number value was {Value}, but actual number value was {numberLiteralExpression.Value}.");
+        }
+    }
+
+    public record TestStringExpression(string Value) : TestExpression
+    {
+        public string Value { get; } = Value;
+
+        public override string GetPositionDescription(TestExpression expression)
+        {
+            if (Parent is null)
+                return "X";
+
+            return Parent.GetPositionDescription(expression);
+        }
+
+        public override string ToString(TestExpression expression)
+        {
+            return ReferenceEquals(expression, this) ? "'X'" : "''";
+        }
+
+        public override void Assert(Expression expression)
+        {
+            var positionDescription = GetPositionDescription(this);
+
+            var stringLiteralExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<StringLiteralExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a string literal expression.");
+
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(stringLiteralExpression.Value, Value, $"\r\n{positionDescription}\r\nExpected number value was {Value}, but actual number value was {stringLiteralExpression.Value}.");
+        }
+
+    }
+
+
+}

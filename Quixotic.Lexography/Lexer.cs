@@ -146,9 +146,12 @@ namespace QuixoticLang.Lexer
 
         private void ConsumeWhitespace()
         {
-            while (!IsAtEnd() && char.IsWhiteSpace(Peek()))
+            var c = Peek();
+            while (!IsAtEnd() && char.IsWhiteSpace(c) && c != '\n')
             {
                 Advance();
+
+                c = Peek();
             }
         }
 

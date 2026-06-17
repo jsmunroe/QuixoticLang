@@ -19,9 +19,36 @@ namespace Quixotic.Parsing
         {
             while (!_tokens.IsAtEnd && _tokens.Peek().Type != TokenType.Eof)
             {
+                ConsumeNewLines();
+
+                if (_tokens.IsAtEnd || _tokens.Peek().Type == TokenType.Eof)
+                    yield break;
+
                 var statement = ParseStatement();
                 yield return statement;
+
+                ConsumeStatementTerminator();
             }
+        }
+
+        private void ConsumeNewLines()
+        {
+            while (Match(TokenType.NewLine))
+                ; // Consume new lines
+        }
+
+        private void ConsumeStatementTerminator()
+        {
+            if (_tokens.IsAtEnd)
+                return;
+
+            if (Match(TokenType.NewLine))
+                return;
+
+            if (Match(TokenType.Eof))
+                return;
+
+            throw new UnexpectedTokenException(_tokens.Peek());
         }
 
         public Statement ParseStatement()
@@ -94,7 +121,7 @@ namespace Quixotic.Parsing
             if (token.Type == TokenType.Identifier)
                 return new IdentifierExpression(token.Value);
 
-            throw new ParserException($"Unexpected token {token} when trying to parse an expression.");
+            throw new UnexpectedTokenException(token);
         }
 
         private static NumberLiteralExpression ParseNumber(Token token)
@@ -107,7 +134,7 @@ namespace Quixotic.Parsing
 
         private bool Match(TokenType type)
         {
-            if (_tokens.Peek().Type == type)
+            if (!_tokens.IsAtEnd && _tokens.Peek().Type == type)
             {
                 _tokens.Advance();
                 return true;

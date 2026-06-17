@@ -1,8 +1,9 @@
 ﻿using Quixotic.Lexography.Tokens;
 using Quixotic.Parsing;
+using Quixotic.Parsing.Exceptions;
 using Quixotic.Parsing.Expressions;
-using Quixotic.Parsing.Operations;
 using Quixotic.Parsing.Statements;
+using Quixotic.ParsingTests.TestModels;
 using QuixoticLang.Lexer;
 
 namespace Quixotic.ParsingTests
@@ -102,15 +103,9 @@ namespace Quixotic.ParsingTests
 
             var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
 
-            Assert.AreEqual(Operator.Add, binaryExpression.Operator);
+            TestBinaryExpression testBinaryExpression = new(262144, '+', 131072);
 
-            var leftExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(binaryExpression.Left);
-
-            Assert.AreEqual(262144, leftExpression.Value);
-
-            var rightExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(binaryExpression.Right);
-
-            Assert.AreEqual(131072, rightExpression.Value);
+            testBinaryExpression.Assert(binaryExpression);
         }
 
         [TestMethod]
@@ -135,23 +130,169 @@ namespace Quixotic.ParsingTests
 
             var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
 
-            Assert.AreEqual(Operator.Add, binaryExpression.Operator);
+            TestBinaryExpression testBinaryExpression = new(262144, '+', (131072, '/', 2));
 
-            var leftExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(binaryExpression.Left);
+            testBinaryExpression.Assert(binaryExpression);
+        }
 
-            Assert.AreEqual(262144, leftExpression.Value);
+        [TestMethod]
+        public void Parse_print_statement_where_parentheses_override_precedence()
+        {
+            // Setup
+            var source = @"
+                print (1 + 2) * 3
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
 
-            var rightExpression = Assert.IsInstanceOfType<BinaryExpression>(binaryExpression.Right);
+            // Execute 
+            var statements = parser.Parse().ToList();
 
-            Assert.AreEqual(Operator.Divide, rightExpression.Operator);
+            // Assert
+            Assert.HasCount(1, statements);
 
-            var rightLeftExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(rightExpression.Left);
+            Assert.IsInstanceOfType<PrintStatement>(statements[0]);
 
-            Assert.AreEqual(131072, rightLeftExpression.Value);
+            var printStatement = (PrintStatement)statements[0];
 
-            var rightRightExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(rightExpression.Right);
+            var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
 
-            Assert.AreEqual(2, rightRightExpression.Value);
+            TestBinaryExpression testBinaryExpression = new((1, '+', 2), '*', 3);
+
+            testBinaryExpression.Assert(binaryExpression);
+        }
+
+        [TestMethod]
+        public void Parse_print_statement_with_arithmetic_series()
+        {
+            // Setup
+            var source = @"
+                print 262144 * 131072 + 2
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute 
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+
+            var printStatement = (PrintStatement)statements[0];
+
+            var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
+
+            TestBinaryExpression testBinaryExpression = new((262144, '*', 131072), '+', 2);
+
+            testBinaryExpression.Assert(binaryExpression);
+
+        }
+
+        [TestMethod]
+        public void Parse_print_statement_with_multi_tier_parenthetical_series()
+        {
+            // Setup
+            var source = @"
+                print ((1 + 2) * 4) + (17 + (7 + (4 + 2)))
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute 
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+
+            var printStatement = (PrintStatement)statements[0];
+
+            var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
+
+            TestBinaryExpression testBinaryExpression = new(((1, '+', 2), '*', 4), '+', (17, '+', (7, '+', (4, '+', 2))));
+
+            testBinaryExpression.Assert(binaryExpression);
+        }
+
+        [TestMethod]
+        public void Parse_print_statement_with_missing_closing_parenthesis()
+        {
+            // Setup
+            var source = @"
+                print (1 + 2
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute & Assert
+            var exception = Assert.Throws<ExpectedTokenException>(() => parser.Parse().ToList());
+
+            Assert.AreEqual(TokenType.NewLine, exception.Token.Type);
+        }
+
+        [TestMethod]
+        public void Parse_print_statement_with_unexpected_closing_parenthesis()
+        {
+            // Setup
+            var source = @"
+                print 1 + 2)
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute & Assert
+            var exception = Assert.Throws<UnexpectedTokenException>(() => parser.Parse().ToList());
+
+            Assert.AreEqual(TokenType.RightParen, exception.Token.Type);
+            Assert.AreEqual(")", exception.Token.Value);
+        }
+
+        [TestMethod]
+        public void Parse_print_statement_with_empty_parentheses()
+        {
+            // Setup
+            var source = @"
+                print ()
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute & Assert
+            var exception = Assert.Throws<UnexpectedTokenException>(() => parser.Parse().ToList());
+
+            Assert.AreEqual(TokenType.RightParen, exception.Token.Type);
+            Assert.AreEqual(")", exception.Token.Value);
+        }
+
+        [TestMethod]
+        public void Parse_multiple_print_statements()
+        {
+            // Setup
+            var source = @"
+                print ""Hello, first windmill!""
+                print ""Hello, second windmill!""
+                print ""Hello, third windmill!""
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert 
+            Assert.HasCount(3, statements);
+
+            var printStatement1 = Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            TestExpression.Create("Hello, first windmill!").Assert(printStatement1.Expression);
+
+            var printStatement2 = Assert.IsInstanceOfType<PrintStatement>(statements[1]);
+            TestExpression.Create("Hello, second windmill!").Assert(printStatement2.Expression);
+
+            var printStatement3 = Assert.IsInstanceOfType<PrintStatement>(statements[2]);
+            TestExpression.Create("Hello, third windmill!").Assert(printStatement3.Expression);
         }
     }
 }

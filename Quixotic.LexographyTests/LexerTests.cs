@@ -67,6 +67,41 @@ namespace Quixotic.LexographyTests
             Assert.AreEqual(1, ex.Position.Line);
             Assert.AreEqual(7, ex.Position.Column);
         }
+
+        [TestMethod]
+        public void Lex_multiple_print_statements()
+        {
+
+            // Setup
+            var source = @"
+                print ""Hello, first windmill!""
+                print ""Hello, second windmill!""
+                print ""Hello, third windmill!""
+            ";
+
+            var lexer = new Lexer(source);
+
+            // Execute
+            var tokens = lexer.Run().ToList();
+
+            Assert.HasCount(11, tokens);
+
+            Assert.AreEqual(TokenType.NewLine, tokens[0].Type);
+
+            Assert.AreEqual(TokenType.Print, tokens[1].Type);
+            Assert.AreEqual(TokenType.StringLiteral, tokens[2].Type);
+            Assert.AreEqual(TokenType.NewLine, tokens[3].Type);
+
+            Assert.AreEqual(TokenType.Print, tokens[4].Type);
+            Assert.AreEqual(TokenType.StringLiteral, tokens[5].Type);
+            Assert.AreEqual(TokenType.NewLine, tokens[6].Type);
+
+            Assert.AreEqual(TokenType.Print, tokens[7].Type);
+            Assert.AreEqual(TokenType.StringLiteral, tokens[8].Type);
+            Assert.AreEqual(TokenType.NewLine, tokens[9].Type);
+
+            Assert.AreEqual(TokenType.Eof, tokens[10].Type);
+        }
     }
 
 }
