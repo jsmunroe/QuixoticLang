@@ -104,7 +104,7 @@ namespace Quixotic.ParsingTests
 
             var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
 
-            TestBinaryExpression testBinaryExpression = new(262144, '+', 131072);
+            TestBinaryExpression testBinaryExpression = new(262144, "+", 131072);
 
             testBinaryExpression.Assert(binaryExpression);
         }
@@ -131,7 +131,7 @@ namespace Quixotic.ParsingTests
 
             var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
 
-            TestBinaryExpression testBinaryExpression = new(262144, '+', (131072, '/', 2));
+            TestBinaryExpression testBinaryExpression = new(262144, "+", (131072, "/", 2));
 
             testBinaryExpression.Assert(binaryExpression);
         }
@@ -158,7 +158,7 @@ namespace Quixotic.ParsingTests
 
             var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
 
-            TestBinaryExpression testBinaryExpression = new((1, '+', 2), '*', 3);
+            TestBinaryExpression testBinaryExpression = new((1, "+", 2), "*", 3);
 
             testBinaryExpression.Assert(binaryExpression);
         }
@@ -185,7 +185,7 @@ namespace Quixotic.ParsingTests
 
             var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
 
-            TestBinaryExpression testBinaryExpression = new((262144, '*', 131072), '+', 2);
+            TestBinaryExpression testBinaryExpression = new((262144, "*", 131072), "+", 2);
 
             testBinaryExpression.Assert(binaryExpression);
 
@@ -213,7 +213,7 @@ namespace Quixotic.ParsingTests
 
             var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
 
-            TestBinaryExpression testBinaryExpression = new(((1, '+', 2), '*', 4), '+', (17, '+', (7, '+', (4, '+', 2))));
+            TestBinaryExpression testBinaryExpression = new(((1, "+", 2), "*", 4), "+", (17, "+", (7, "+", (4, "+", 2))));
 
             testBinaryExpression.Assert(binaryExpression);
         }
@@ -345,7 +345,7 @@ namespace Quixotic.ParsingTests
 
             Assert.AreEqual("windmills", identifierExpression.Name);
 
-            TestExpression.Create(((5, '+', 3), '*', 2)).Assert(assignmentStatement.Value);
+            TestExpression.Create(((5, "+", 3), "*", 2)).Assert(assignmentStatement.Value);
         }
 
 
@@ -437,7 +437,208 @@ namespace Quixotic.ParsingTests
 
             Assert.AreEqual("cost", identifierExpression.Name);
 
-            TestExpression.Create((-5, '+', (2, '*', (3, '-', 1)))).Assert(assignmentStatement.Value);
+            TestExpression.Create((-5, "+", (2, "*", (3, "-", 1)))).Assert(assignmentStatement.Value);
+        }
+
+        [TestMethod]
+        public void Parse_if_statement()
+        {
+            // Setup
+            var source = @"
+                c := 5
+                if c > 3
+                    print ""c is greater than 3""
+                end if
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+
+            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+
+            Assert.AreEqual("c", identifierExpression.Name);
+
+            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+
+            Assert.AreEqual(5, numberLiteralExpression.Value);
+
+            var ifStatement = Assert.IsInstanceOfType<IfStatement>(statements[1]);
+
+            TestExpression.Create(("[c]", ">", 3)).Assert(ifStatement.Condition);
+
+            var thenStatements = ifStatement.ThenBlock.ToList();
+
+            Assert.HasCount(1, thenStatements);
+
+            var printStatement = Assert.IsInstanceOfType<PrintStatement>(thenStatements[0]);
+
+            var stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("c is greater than 3", stringLiteralExpression.Value);
+        }
+
+        [TestMethod]
+        public void Parse_if_statement_with_else()
+        {
+            // Setup
+            var source = @"
+                c := 5
+                if c > 3
+                    print ""c is greater than 3""
+                else
+                    print ""c is less than or equal to 3""
+                end if
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+
+            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+
+            Assert.AreEqual("c", identifierExpression.Name);
+
+            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+
+            Assert.AreEqual(5, numberLiteralExpression.Value);
+
+            var ifStatement = Assert.IsInstanceOfType<IfStatement>(statements[1]);
+
+            TestExpression.Create(("[c]", ">", 3)).Assert(ifStatement.Condition);
+
+
+            var thenStatements = ifStatement.ThenBlock.ToList();
+
+            Assert.HasCount(1, thenStatements);
+
+            var printStatement = Assert.IsInstanceOfType<PrintStatement>(thenStatements[0]);
+
+            var stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("c is greater than 3", stringLiteralExpression.Value);
+
+
+            var elseStatements = ifStatement.ElseBlock.ToList();
+
+            Assert.HasCount(1, elseStatements);
+
+            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[0]);
+
+            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("c is less than or equal to 3", stringLiteralExpression.Value);
+        }
+
+
+        [TestMethod]
+        public void Parse_if_statement_with_else_if()
+        {
+            // Setup
+            var source = @"
+                c := 5
+                if c > 3 and c < 10 then
+                    print ""c is greater than 3""
+                else if c > 1
+                    print ""c is greater than 1""
+                else
+                    print ""I can see clearly now the rain is gone.""
+                    print ""I can see all obsticles in my way.""
+                    print ""Gone are the dark clouds that had my blind.""
+                    print ""It's gonna be a bright, bright, bright sunshiney day!""
+                end if
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+
+            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+
+            Assert.AreEqual("c", identifierExpression.Name);
+
+            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+
+            Assert.AreEqual(5, numberLiteralExpression.Value);
+
+            var ifStatement = Assert.IsInstanceOfType<IfStatement>(statements[1]);
+
+            TestExpression.Create((("[c]", ">", 3), "and", ("[c]", "<", 10))).Assert(ifStatement.Condition);
+
+
+            var thenStatements = ifStatement.ThenBlock.ToList();
+
+            Assert.HasCount(1, thenStatements);
+
+            var printStatement = Assert.IsInstanceOfType<PrintStatement>(thenStatements[0]);
+
+            var stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("c is greater than 3", stringLiteralExpression.Value);
+
+
+            var elseIfClauses = ifStatement.ElseIfClauses.ToList();
+
+            Assert.HasCount(1, elseIfClauses);
+
+            TestExpression.Create(("[c]", ">", 1)).Assert(elseIfClauses[0].Condition);
+
+            var elseIfBlockStatements = elseIfClauses[0].Block.ToList();
+
+            Assert.HasCount(1, elseIfBlockStatements);
+
+            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseIfBlockStatements[0]);
+
+            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("c is greater than 1", stringLiteralExpression.Value);
+
+
+            var elseStatements = ifStatement.ElseBlock.ToList();
+
+            Assert.HasCount(4, elseStatements);
+
+            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[0]);
+
+            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("I can see clearly now the rain is gone.", stringLiteralExpression.Value);
+
+            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[1]);
+
+            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("I can see all obsticles in my way.", stringLiteralExpression.Value);
+
+            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[2]);
+
+            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("Gone are the dark clouds that had my blind.", stringLiteralExpression.Value);
+
+            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[3]);
+
+            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("It's gonna be a bright, bright, bright sunshiney day!", stringLiteralExpression.Value);
         }
 
     }

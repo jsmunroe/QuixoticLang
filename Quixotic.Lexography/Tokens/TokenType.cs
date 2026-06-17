@@ -7,9 +7,12 @@
         NumberLiteral,
         Print,
         If,
+        Then,
         Else,
         End,
-        Equals,
+        EqualTo,
+        GreaterThan,
+        LessThan,
         Assignment,
         LeftParen,
         RightParen,
@@ -19,5 +22,8 @@
         Divide,
         NewLine,
         Eof,
+        Or,
+        And,
+        Not,
     }
 }

@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace Quixotic.Parsing
 {
-    public class Scope : IList<Statement>
+    public class Block : IList<Statement>
     {
         private readonly List<Statement> _statements = [];
 

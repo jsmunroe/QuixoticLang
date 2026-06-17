@@ -17,8 +17,12 @@ namespace QuixoticLang.Lexer
         {
             { "print", TokenType.Print },
             { "if", TokenType.If },
+            { "then", TokenType.Then },
             { "else", TokenType.Else },
             { "end", TokenType.End },
+            { "and", TokenType.And },
+            { "or", TokenType.Or },
+            { "not", TokenType.Not },
         };
 
         private readonly IEqualityComparer<string> _keywordComparer = StringComparer.OrdinalIgnoreCase;
@@ -53,6 +57,13 @@ namespace QuixoticLang.Lexer
                     continue;
                 }
 
+                if (char.IsNumber(c))
+                {
+                    var token = ReadNumber();
+                    yield return token;
+                    continue;
+                }
+
                 if (c == '"')
                 {
                     var token = ReadString();
@@ -63,13 +74,37 @@ namespace QuixoticLang.Lexer
                 // single-character tokens
                 switch (c)
                 {
-                    case '=':
-                        yield return Simple(TokenType.Equals, "=");
+                    case '(':
+                        yield return Simple(TokenType.LeftParen, "(");
                         Advance();
                         break;
 
+                    case ')':
+                        yield return Simple(TokenType.RightParen, ")");
+                        Advance();
+                        break;
+
+                    case '=':
+                        yield return Simple(TokenType.EqualTo, "=");
+                        Advance();
+                        break;
+
+                    case '>':
+                        yield return Simple(TokenType.GreaterThan, ">");
+                        Advance();
+                        break;
+
+                    case '<':
+                        yield return Simple(TokenType.LessThan, "<");
+                        Advance();
+                        break;
+
+                    case ':':
+                        yield return ReadAssignmentOperator();
+                        break;
+
                     case '-':
-                        yield return Simple(TokenType.Subtract, "+");
+                        yield return Simple(TokenType.Subtract, "-");
                         Advance();
                         break;
 
@@ -132,9 +167,12 @@ namespace QuixoticLang.Lexer
 
         private void ConsumeWhitespace()
         {
-            while (!IsAtEnd() && char.IsWhiteSpace(Peek()))
+            var c = Peek();
+            while (!IsAtEnd() && char.IsWhiteSpace(c) && c != '\n')
             {
                 Advance();
+
+                c = Peek();
             }
         }
 
@@ -156,6 +194,57 @@ namespace QuixoticLang.Lexer
                 Type = tokenType,
                 Value = text,
                 Position = position,
+            };
+        }
+
+        private Token ReadNumber()
+        {
+            var position = CurrentPosition();
+
+            int start = _index;
+
+            bool hasDot = false;
+            bool hasExponent = false;
+
+            while (!IsAtEnd())
+            {
+                char c = Peek();
+
+                if (char.IsDigit(c))
+                {
+                    Advance();
+                    continue;
+                }
+
+                if (c == '.' && !hasDot && !hasExponent)
+                {
+                    hasDot = true;
+                    Advance();
+                    continue;
+                }
+
+                if ((c == 'e' || c == 'E') && !hasExponent)
+                {
+                    hasExponent = true;
+                    Advance();
+
+                    // Handle optional exponent sign
+                    if (!IsAtEnd() && (Peek() == '+' || Peek() == '-'))
+                        Advance();
+
+                    continue;
+                }
+
+                break;
+            }
+
+            var value = _source[start.._index];
+
+            return new Token
+            {
+                Type = TokenType.NumberLiteral,
+                Value = value,
+                Position = position
             };
         }
 
@@ -188,13 +277,30 @@ namespace QuixoticLang.Lexer
             };
         }
 
-        private Token Simple(TokenType type, string? value)
+        private Token ReadAssignmentOperator()
+        {
+            var position = CurrentPosition();
+
+            Advance();
+
+            var c = Peek();
+
+            if (c == '=')
+            {
+                Advance();
+                return Simple(TokenType.Assignment, ":=", position);
+            }
+
+            throw new LexerUnexpectedCharacterException(c, position);
+        }
+
+        private Token Simple(TokenType type, string? value, Position? position = null)
         {
             return new()
             {
                 Type = type,
                 Value = value ?? string.Empty,
-                Position = CurrentPosition(),
+                Position = position ?? CurrentPosition(),
             };
         }
 
@@ -215,196 +321,7 @@ namespace QuixoticLang.Lexer
     }
 }
 
-Quixotic.LexographyTests\LexerTests.cs
-========================================
-
-using Quixotic.Lexography.Exceptions;
-using Quixotic.Lexography.Tokens;
-using QuixoticLang.Lexer;
-
-namespace Quixotic.LexographyTests
-{
-    [TestClass]
-    public sealed class LexerTests
-    {
-        [TestMethod]
-        public void Lex_Print_statement()
-        {
-            // Setup
-            var source = "print \"Hello, windmill!\"";
-            var lexer = new Lexer(source);
-
-            // Execute
-            var result = lexer.Run().ToList();
-
-            // Assert
-            Assert.HasCount(3, result);
-
-            Assert.AreEqual(TokenType.Print, result[0].Type);
-            Assert.AreEqual("print", result[0].Value);
-
-            Assert.AreEqual(TokenType.StringLiteral, result[1].Type);
-            Assert.AreEqual("Hello, windmill!", result[1].Value);
-
-            Assert.AreEqual(TokenType.Eof, result[2].Type);
-            Assert.AreEqual(string.Empty, result[2].Value);
-        }
-
-        [TestMethod]
-        public void Lex_Print_statement_with_escape_quotes()
-        {
-            // Setup
-            var source = @"print ""Hello, \""windmill!\""";
-            var lexer = new Lexer(source);
-
-            // Execute
-            var result = lexer.Run().ToList();
-
-            // Assert
-            Assert.HasCount(3, result);
-
-            Assert.AreEqual(TokenType.Print, result[0].Type);
-            Assert.AreEqual("print", result[0].Value);
-
-            Assert.AreEqual(TokenType.StringLiteral, result[1].Type);
-            Assert.AreEqual(@"Hello, ""windmill!""", result[1].Value);
-
-            Assert.AreEqual(TokenType.Eof, result[2].Type);
-            Assert.AreEqual(string.Empty, result[2].Value);
-        }
-
-        [TestMethod]
-        public void Lex_Print_statement_with_bad_character()
-        {
-            // Setup 
-            var source = "print ¶Hello, windmill!";
-            var lexer = new Lexer(source);
-
-            // Execute & Assert
-            var ex = Assert.Throws<LexerUnexpectedCharacterException>(() => lexer.Run().ToList());
-
-            Assert.AreEqual('¶', ex.Character);
-            Assert.AreEqual(1, ex.Position.Line);
-            Assert.AreEqual(7, ex.Position.Column);
-        }
-    }
-
-}
-
-
-Quixotic.LexographyTests\MSTestSettings.cs
-============================================
-
-[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
-
-Quixotic.Parsing\Parser.cs
-============================
-
-using Quixotic.Lexography.Tokens;
-using Quixotic.Parsing.Exceptions;
-using Quixotic.Parsing.Expressions;
-using Quixotic.Parsing.Operations;
-using Quixotic.Parsing.Statements;
-
-namespace Quixotic.Parsing
-{
-    public class Parser(IEnumerable<Token> tokens)
-    {
-        private readonly Stepper<Token> _tokens = new(tokens);
-
-        public IEnumerable<Statement> Parse()
-        {
-            while (!_tokens.IsAtEnd)
-            {
-                var statement = ParseStatement();
-                yield return statement;
-            }
-        }
-
-        public Statement ParseStatement()
-        {
-            if (Match(TokenType.Print))
-                return ParsePrint();
-
-            throw new UnexpectedTokenException(_tokens.Peek());
-        }
-
-        public Statement ParsePrint()
-        {
-            var expression = ParseExpression();
-
-            return new PrintStatement(expression);
-        }
-
-        public Expression ParseExpression(int parentPrecedence = 0)
-        {
-            var left = ParsePrimary();
-
-            while (true)
-            {
-                var token = _tokens.Peek();
-
-                var operationMetadata = OperationMetadata.Get(token.Type);
-
-                var nextPrecedence = operationMetadata.Precedence;
-
-                if (operationMetadata.Operator == Operator.None)
-                    break;
-
-                if (operationMetadata.Associativity == Associativity.Left)
-                    nextPrecedence++;
-
-                if (nextPrecedence <= parentPrecedence)
-                    break;
-
-                _tokens.Advance(); // consume operator
-
-                var right = ParseExpression(operationMetadata.Precedence);
-
-                left = new BinaryExpression(operationMetadata.Operator, left, right);
-            }
-
-            return left;
-        }
-
-        public Expression ParsePrimary()
-        {
-            var token = _tokens.Pop();
-
-            if (token.Type == TokenType.StringLiteral)
-                return new StringLiteralExpression(token.Value);
-
-            if (token.Type == TokenType.NumberLiteral)
-                return ParseNumber(token);
-
-            if (token.Type == TokenType.Identifier)
-                return new IdentifierExpression(token.Value);
-
-            throw new ParserException($"Unexpected token {token} when trying to parse an expression.");
-        }
-
-        private static Expression ParseNumber(Token token)
-        {
-            if (double.TryParse(token.Value, out var number))
-                return new NumberLiteralExpression(number);
-
-            throw new TokenException("Invalid number literal", token);
-        }
-
-        private bool Match(TokenType type)
-        {
-            if (_tokens.Peek().Type == type)
-            {
-                _tokens.Advance();
-                return true;
-            }
-
-            return false;
-        }
-    }
-}
-
-Quixotic.Parsing\Scope.cs
+Quixotic.Parsing\Block.cs
 ===========================
 
 using Quixotic.Parsing.Statements;
@@ -412,7 +329,7 @@ using System.Collections;
 
 namespace Quixotic.Parsing
 {
-    public class Scope : IList<Statement>
+    public class Block : IList<Statement>
     {
         private readonly List<Statement> _statements = [];
 
@@ -480,6 +397,305 @@ namespace Quixotic.Parsing
     }
 }
 
+Quixotic.Parsing\Parser.cs
+============================
+
+using Quixotic.Lexography.Tokens;
+using Quixotic.Parsing.Exceptions;
+using Quixotic.Parsing.Expressions;
+using Quixotic.Parsing.Operations;
+using Quixotic.Parsing.Statements;
+using QuixoticLang.Lexer;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Quixotic.Parsing
+{
+    public class Parser(IEnumerable<Token> tokens)
+    {
+        private readonly Stepper<Token> _tokens = new(tokens);
+
+        public Parser(Lexer lexer)
+            : this(lexer.Run())
+        { }
+
+        public IEnumerable<Statement> Parse()
+        {
+            while (!IsAtEnd && Peek().Type != TokenType.Eof)
+            {
+                ConsumeNewLines();
+
+                if (IsAtEnd || Peek().Type == TokenType.Eof)
+                    yield break;
+
+                var statement = ParseStatement();
+                yield return statement;
+
+                ConsumeStatementTerminator();
+            }
+        }
+
+        private void ConsumeNewLines()
+        {
+            while (Match(TokenType.NewLine))
+                ; // Consume new lines
+        }
+
+        private void ConsumeStatementTerminator()
+        {
+            if (IsAtEnd)
+                return;
+
+            if (Match(TokenType.NewLine))
+                return;
+
+            if (Match(TokenType.Eof))
+                return;
+
+            throw new UnexpectedTokenException(_tokens.Peek());
+        }
+
+        private Statement ParseStatement()
+        {
+            if (Match(TokenType.Print))
+                return ParsePrint();
+
+            if (Match(TokenType.Identifier, out var identifier))
+                return ParseIdentifier(identifier);
+
+            if (Match(TokenType.If))
+                return ParseIf();
+
+            throw new UnexpectedTokenException(_tokens.Peek());
+        }
+
+        private Statement ParsePrint()
+        {
+            var expression = ParseExpression();
+
+            return new PrintStatement(expression);
+        }
+
+        private AssignmentStatement ParseIdentifier(Token token)
+        {
+            var identifier = new IdentifierExpression(token.Value);
+
+            var next = Pop();
+
+            if (next.Type == TokenType.Assignment)
+            {
+                var expression = ParseExpression();
+
+                return new AssignmentStatement(identifier, expression);
+            }
+
+            throw new UnexpectedTokenException(next);
+        }
+
+        private IfStatement ParseIf()
+        {
+            var condition = ParseExpression();
+
+            Allow(TokenType.Then); // Allowed as syntactic sugar, but not necessary
+
+            if (!Match(TokenType.NewLine))
+            {
+                var statement = ParseStatement();
+
+                return new IfStatement(condition) { ThenBlock = [statement] };
+            }
+
+            var thenBlock = ParseBlock(t => t.Type == TokenType.Else);
+
+            List<ElseIfClause> elseIfClauses = [];
+
+            Block elseBlock = [];
+
+            while (Match(TokenType.Else))
+            {
+                if (Match(TokenType.If))
+                {
+                    var elseIfClasue = ParseElseIfClause();
+                    elseIfClauses.Add(elseIfClasue);
+                }
+                else
+                {
+                    elseBlock = ParseBlock(t => t.Type == TokenType.Else);
+                }
+            }
+
+            Expect(TokenType.End);
+
+            Expect(TokenType.If);
+
+            return new IfStatement(condition)
+            {
+                ThenBlock = thenBlock,
+                ElseIfClauses = elseIfClauses,
+                ElseBlock = elseBlock,
+            };
+        }
+
+        private ElseIfClause ParseElseIfClause()
+        {
+            var condition = ParseExpression();
+
+            var block = ParseBlock(t => t.Type == TokenType.Else);
+
+            return new ElseIfClause(condition)
+            {
+                Block = block,
+            };
+        }
+
+        private Expression ParseExpression(int parentPrecedence = 0)
+        {
+            var left = ParseUnary();
+
+            while (true)
+            {
+                var token = Peek();
+
+                var operationMetadata = OperationMetadata.Get(token.Type);
+
+                var nextPrecedence = operationMetadata.Precedence;
+
+                if (operationMetadata.Operator == Operator.None)
+                    break;
+
+                if (operationMetadata.Associativity == Associativity.Left)
+                    nextPrecedence++;
+
+                if (nextPrecedence <= parentPrecedence)
+                    break;
+
+                Advance(); // consume operator
+
+                var right = ParseExpression(operationMetadata.Precedence);
+
+                left = new BinaryExpression(operationMetadata.Operator, left, right);
+            }
+
+            return left;
+        }
+
+        private Expression ParsePrimary()
+        {
+            var token = Pop();
+
+            if (token.Type == TokenType.LeftParen)
+            {
+                var expression = ParseExpression();
+
+                var nextToken = Pop();
+                if (nextToken.Type != TokenType.RightParen)
+                    throw new ExpectedTokenException(new TokenHead(TokenType.RightParen, ")"), nextToken);
+
+                return expression;
+            }
+
+            if (token.Type == TokenType.StringLiteral)
+                return new StringLiteralExpression(token.Value);
+
+            if (token.Type == TokenType.NumberLiteral)
+                return ParseNumber(token);
+
+            if (token.Type == TokenType.Identifier)
+                return new IdentifierExpression(token.Value);
+
+            throw new UnexpectedTokenException(token);
+        }
+
+        private Expression ParseUnary()
+        {
+            if (Match(TokenType.Plus))
+                return new UnaryExpression(Operator.Add, ParseUnary());
+
+            if (Match(TokenType.Subtract))
+                return new UnaryExpression(Operator.Subtract, ParseUnary());
+
+            if (Match(TokenType.Not))
+                return new UnaryExpression(Operator.Not, ParseUnary());
+
+            return ParsePrimary();
+        }
+
+        private Block ParseBlock(Func<Token, bool> terminationCondition)
+        {
+            var block = new Block();
+
+            bool isTerminated() =>
+                IsAtEnd ||
+                Peek().Type == TokenType.End ||
+                terminationCondition(Peek());
+
+            while (!isTerminated())
+            {
+                ConsumeNewLines();
+
+                if (isTerminated())
+                    break;
+
+                var statement = ParseStatement();
+                block.Add(statement);
+
+                ConsumeStatementTerminator();
+            }
+
+            return block;
+        }
+
+        private static NumberLiteralExpression ParseNumber(Token token)
+        {
+            if (double.TryParse(token.Value, out var number))
+                return new NumberLiteralExpression(number);
+
+            throw new TokenException("Invalid number literal", token);
+        }
+
+        private bool IsAtEnd => _tokens.IsAtEnd;
+
+        private Token Peek() => _tokens.Peek();
+
+        private Token Pop() => _tokens.Pop();
+
+        private bool Advance() => _tokens.Advance();
+
+        private Token? Allow(TokenType type)
+        {
+            if (Match(type, out var token))
+                return token;
+
+            return null;
+        }
+
+        private Token Expect(TokenType type)
+        {
+            if (Match(type, out var token))
+                return token;
+
+            throw new ExpectedTokenException(new TokenHead(type, type.ToString()), Peek());
+        }
+
+        private bool Match(TokenType type)
+        {
+            return Match(type, out _);
+        }
+
+        private bool Match(TokenType type, [NotNullWhen(true)] out Token? token)
+        {
+            token = Peek();
+            if (!_tokens.IsAtEnd && token.Type == type)
+            {
+                Advance();
+                return true;
+            }
+
+            token = null;
+            return false;
+        }
+    }
+}
+
 Quixotic.Lexography\Exceptions\LexerException.cs
 ==================================================
 
@@ -537,13 +753,36 @@ Quixotic.Lexography\Tokens\Token.cs
 
 namespace Quixotic.Lexography.Tokens
 {
-    public class Token
+
+    public class Token : TokenHead
     {
-        public required TokenType Type { get; init; }
-        public required string Value { get; init; }
         public required Position Position { get; init; }
 
         public override string ToString() => $"{Type}('{Value}') ({Position.Line}:{Position.Column})";
+    }
+}
+
+Quixotic.Lexography\Tokens\TokenHead.cs
+=========================================
+
+using System.Diagnostics.CodeAnalysis;
+
+namespace Quixotic.Lexography.Tokens
+{
+    public class TokenHead()
+    {
+        [SetsRequiredMembers]
+        public TokenHead(TokenType type, string value)
+            : this()
+        {
+            Type = type;
+            Value = value;
+        }
+
+        public required TokenType Type { get; init; }
+        public required string Value { get; init; }
+
+        public override string ToString() => $"{Type}('{Value}')";
     }
 }
 
@@ -552,7 +791,6 @@ Quixotic.Lexography\Tokens\TokenType.cs
 
 namespace Quixotic.Lexography.Tokens
 {
-    [Flags]
     public enum TokenType
     {
         StringLiteral,
@@ -560,31 +798,45 @@ namespace Quixotic.Lexography.Tokens
         NumberLiteral,
         Print,
         If,
+        Then,
         Else,
         End,
-        Equals,
+        EqualTo,
+        GreaterThan,
+        LessThan,
+        Assignment,
+        LeftParen,
+        RightParen,
         Subtract,
         Plus,
         Multiply,
         Divide,
         NewLine,
         Eof,
+        Or,
+        And,
+        Not,
     }
+}
+
+Quixotic.Parsing\Exceptions\ExpectedTokenException.cs
+=======================================================
+
+using Quixotic.Lexography.Tokens;
+
+namespace Quixotic.Parsing.Exceptions
+{
+    public class ExpectedTokenException(TokenHead expected, Token token) : TokenException($"Expected token '{expected}' but received '{token}'", token);
 }
 
 Quixotic.Parsing\Exceptions\ParserException.cs
 ================================================
-
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Quixotic.Parsing.Exceptions
 {
     public class ParserException(string message) : Exception(message)
     {
     }
-}
 }
 
 Quixotic.Parsing\Exceptions\TokenException.cs
@@ -668,6 +920,20 @@ namespace Quixotic.Parsing.Expressions
     }
 }
 
+Quixotic.Parsing\Expressions\UnaryExpression.cs
+=================================================
+
+using Quixotic.Parsing.Operations;
+
+namespace Quixotic.Parsing.Expressions
+{
+    public class UnaryExpression(Operator @operator, Expression operand) : Expression
+    {
+        public Operator Operator { get; } = @operator;
+        public Expression Operand { get; } = operand;
+    }
+}
+
 Quixotic.Parsing\Operations\Associativity.cs
 ==============================================
 
@@ -687,22 +953,29 @@ using Quixotic.Lexography.Tokens;
 
 namespace Quixotic.Parsing.Operations
 {
-    public record OperationMetadata(int Precedence = OperationMetadata.None, Operator Operator = Operator.None)
+    public record OperationMetadata(int Precedence = OperationMetadata.None, string Value = "", Operator Operator = Operator.None, Associativity Associativity = Associativity.Left)
     {
         public const int None = 0;
         public const int Assign = 1;
+        public const int Comparison = 5;
+        public const int Logical = 3;
         public const int Sum = 10;
-        public const int Difference = 15;
+        public const int Difference = 10;
         public const int Product = 20;
-        public const int Quotient = 25;
+        public const int Quotient = 20;
 
         public static readonly Dictionary<TokenType, OperationMetadata> Operators = new()
         {
-            [TokenType.Equals] = new(None, Operator.Assignment),
-            [TokenType.Subtract] = new(Difference, Operator.Subtract),
-            [TokenType.Plus] = new(Sum, Operator.Add),
-            [TokenType.Divide] = new(Quotient, Operator.Divide),
-            [TokenType.Multiply] = new(Product, Operator.Multiply),
+            [TokenType.Assignment] = new(Assign, ":=", Operator.Assignment, Associativity.Right),
+            [TokenType.Subtract] = new(Difference, "-", Operator.Subtract, Associativity.Left),
+            [TokenType.Plus] = new(Sum, "+", Operator.Add, Associativity.Left),
+            [TokenType.Divide] = new(Quotient, "/", Operator.Divide, Associativity.Left),
+            [TokenType.Multiply] = new(Product, "*", Operator.Multiply, Associativity.Left),
+            [TokenType.EqualTo] = new(Comparison, "=", Operator.EqualTo, Associativity.Left),
+            [TokenType.LessThan] = new(Comparison, "<", Operator.LessThan, Associativity.Left),
+            [TokenType.GreaterThan] = new(Comparison, ">", Operator.GreaterThan, Associativity.Left),
+            [TokenType.And] = new(Logical, "and", Operator.And, Associativity.Left),
+            [TokenType.Or] = new(Logical, "or", Operator.Or, Associativity.Left),
         };
 
         public static OperationMetadata Get(TokenType type)
@@ -711,6 +984,13 @@ namespace Quixotic.Parsing.Operations
                 return metadata;
 
             return new();
+        }
+
+        public static string? GetOperatorValue(Operator @operator)
+        {
+            var metadata = Operators.Values.FirstOrDefault(m => m.Operator == @operator);
+
+            return metadata?.Value;
         }
     }
 }
@@ -728,6 +1008,57 @@ namespace Quixotic.Parsing.Operations
         Subtract,
         Multiply,
         Divide,
+        EqualTo,
+        LessThan,
+        GreaterThan,
+        Not,
+        And,
+        Or,
+    }
+}
+
+Quixotic.Parsing\Statements\AssignmentStatement.cs
+====================================================
+
+using Quixotic.Parsing.Expressions;
+
+namespace Quixotic.Parsing.Statements
+{
+    public class AssignmentStatement(IdentifierExpression target, Expression value) : Statement
+    {
+        public IdentifierExpression Target { get; } = target;
+        public Expression Value { get; } = value;
+    }
+}
+
+Quixotic.Parsing\Statements\ElseIfClause.cs
+=============================================
+
+namespace Quixotic.Parsing.Statements
+{
+    public class ElseIfClause(Expressions.Expression condition)
+    {
+        public Expressions.Expression Condition { get; } = condition;
+
+        public Block Block { get; set; } = [];
+    }
+}
+
+Quixotic.Parsing\Statements\IfStatement.cs
+============================================
+
+namespace Quixotic.Parsing.Statements
+{
+    public class IfStatement(Expressions.Expression condition) : Statement
+    {
+        public Expressions.Expression Condition { get; } = condition;
+
+        public Block ThenBlock { get; init; } = [];
+
+        public List<ElseIfClause> ElseIfClauses { get; init; } = [];
+
+        public Block ElseBlock { get; init; } = [];
+
     }
 }
 
@@ -751,7 +1082,6 @@ namespace Quixotic.Parsing.Statements
 {
     public abstract class Statement
     {
-        public static Statement Start()
     }
 }
 
@@ -797,8 +1127,6 @@ namespace Quixotic.Parsing.Statements
 
             return token;
         }
-
-        public void Reset() => _tokens.Reset();
     }
 }
 

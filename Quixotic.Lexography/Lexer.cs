@@ -14,8 +14,12 @@ namespace QuixoticLang.Lexer
         {
             { "print", TokenType.Print },
             { "if", TokenType.If },
+            { "then", TokenType.Then },
             { "else", TokenType.Else },
             { "end", TokenType.End },
+            { "and", TokenType.And },
+            { "or", TokenType.Or },
+            { "not", TokenType.Not },
         };
 
         private readonly IEqualityComparer<string> _keywordComparer = StringComparer.OrdinalIgnoreCase;
@@ -78,7 +82,17 @@ namespace QuixoticLang.Lexer
                         break;
 
                     case '=':
-                        yield return Simple(TokenType.Equals, "=");
+                        yield return Simple(TokenType.EqualTo, "=");
+                        Advance();
+                        break;
+
+                    case '>':
+                        yield return Simple(TokenType.GreaterThan, ">");
+                        Advance();
+                        break;
+
+                    case '<':
+                        yield return Simple(TokenType.LessThan, "<");
                         Advance();
                         break;
 

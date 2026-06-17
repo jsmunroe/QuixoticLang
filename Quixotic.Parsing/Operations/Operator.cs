@@ -8,5 +8,11 @@
         Subtract,
         Multiply,
         Divide,
+        EqualTo,
+        LessThan,
+        GreaterThan,
+        Not,
+        And,
+        Or,
     }
 }

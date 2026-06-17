@@ -18,11 +18,11 @@ namespace Quixotic.Parsing
 
         public IEnumerable<Statement> Parse()
         {
-            while (!_tokens.IsAtEnd && _tokens.Peek().Type != TokenType.Eof)
+            while (!IsAtEnd && Peek().Type != TokenType.Eof)
             {
                 ConsumeNewLines();
 
-                if (_tokens.IsAtEnd || _tokens.Peek().Type == TokenType.Eof)
+                if (IsAtEnd || Peek().Type == TokenType.Eof)
                     yield break;
 
                 var statement = ParseStatement();
@@ -40,7 +40,7 @@ namespace Quixotic.Parsing
 
         private void ConsumeStatementTerminator()
         {
-            if (_tokens.IsAtEnd)
+            if (IsAtEnd)
                 return;
 
             if (Match(TokenType.NewLine))
@@ -52,7 +52,7 @@ namespace Quixotic.Parsing
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
-        public Statement ParseStatement()
+        private Statement ParseStatement()
         {
             if (Match(TokenType.Print))
                 return ParsePrint();
@@ -60,21 +60,24 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Identifier, out var identifier))
                 return ParseIdentifier(identifier);
 
+            if (Match(TokenType.If))
+                return ParseIf();
+
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
-        public Statement ParsePrint()
+        private Statement ParsePrint()
         {
             var expression = ParseExpression();
 
             return new PrintStatement(expression);
         }
 
-        public Statement ParseIdentifier(Token token)
+        private AssignmentStatement ParseIdentifier(Token token)
         {
             var identifier = new IdentifierExpression(token.Value);
 
-            var next = _tokens.Pop();
+            var next = Pop();
 
             if (next.Type == TokenType.Assignment)
             {
@@ -86,13 +89,69 @@ namespace Quixotic.Parsing
             throw new UnexpectedTokenException(next);
         }
 
-        public Expression ParseExpression(int parentPrecedence = 0)
+        private IfStatement ParseIf()
+        {
+            var condition = ParseExpression();
+
+            Allow(TokenType.Then); // Allowed as syntactic sugar, but not necessary
+
+            if (!Match(TokenType.NewLine))
+            {
+                var statement = ParseStatement();
+
+                return new IfStatement(condition) { ThenBlock = [statement] };
+            }
+
+            var thenBlock = ParseBlock(t => t.Type == TokenType.Else);
+
+            List<ElseIfClause> elseIfClauses = [];
+
+            Block elseBlock = [];
+
+            while (Match(TokenType.Else))
+            {
+                if (Match(TokenType.If))
+                {
+                    var elseIfClasue = ParseElseIfClause();
+                    elseIfClauses.Add(elseIfClasue);
+                }
+                else
+                {
+                    elseBlock = ParseBlock(t => t.Type == TokenType.Else);
+                }
+            }
+
+            Expect(TokenType.End);
+
+            Expect(TokenType.If);
+
+            return new IfStatement(condition)
+            {
+                ThenBlock = thenBlock,
+                ElseIfClauses = elseIfClauses,
+                ElseBlock = elseBlock,
+            };
+        }
+
+        private ElseIfClause ParseElseIfClause()
+        {
+            var condition = ParseExpression();
+
+            var block = ParseBlock(t => t.Type == TokenType.Else);
+
+            return new ElseIfClause(condition)
+            {
+                Block = block,
+            };
+        }
+
+        private Expression ParseExpression(int parentPrecedence = 0)
         {
             var left = ParseUnary();
 
             while (true)
             {
-                var token = _tokens.Peek();
+                var token = Peek();
 
                 var operationMetadata = OperationMetadata.Get(token.Type);
 
@@ -107,7 +166,7 @@ namespace Quixotic.Parsing
                 if (nextPrecedence <= parentPrecedence)
                     break;
 
-                _tokens.Advance(); // consume operator
+                Advance(); // consume operator
 
                 var right = ParseExpression(operationMetadata.Precedence);
 
@@ -117,15 +176,15 @@ namespace Quixotic.Parsing
             return left;
         }
 
-        public Expression ParsePrimary()
+        private Expression ParsePrimary()
         {
-            var token = _tokens.Pop();
+            var token = Pop();
 
             if (token.Type == TokenType.LeftParen)
             {
                 var expression = ParseExpression();
 
-                var nextToken = _tokens.Pop();
+                var nextToken = Pop();
                 if (nextToken.Type != TokenType.RightParen)
                     throw new ExpectedTokenException(new TokenHead(TokenType.RightParen, ")"), nextToken);
 
@@ -144,7 +203,7 @@ namespace Quixotic.Parsing
             throw new UnexpectedTokenException(token);
         }
 
-        public Expression ParseUnary()
+        private Expression ParseUnary()
         {
             if (Match(TokenType.Plus))
                 return new UnaryExpression(Operator.Add, ParseUnary());
@@ -152,7 +211,35 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Subtract))
                 return new UnaryExpression(Operator.Subtract, ParseUnary());
 
+            if (Match(TokenType.Not))
+                return new UnaryExpression(Operator.Not, ParseUnary());
+
             return ParsePrimary();
+        }
+
+        private Block ParseBlock(Func<Token, bool> terminationCondition)
+        {
+            var block = new Block();
+
+            bool isTerminated() =>
+                IsAtEnd ||
+                Peek().Type == TokenType.End ||
+                terminationCondition(Peek());
+
+            while (!isTerminated())
+            {
+                ConsumeNewLines();
+
+                if (isTerminated())
+                    break;
+
+                var statement = ParseStatement();
+                block.Add(statement);
+
+                ConsumeStatementTerminator();
+            }
+
+            return block;
         }
 
         private static NumberLiteralExpression ParseNumber(Token token)
@@ -163,6 +250,30 @@ namespace Quixotic.Parsing
             throw new TokenException("Invalid number literal", token);
         }
 
+        private bool IsAtEnd => _tokens.IsAtEnd;
+
+        private Token Peek() => _tokens.Peek();
+
+        private Token Pop() => _tokens.Pop();
+
+        private bool Advance() => _tokens.Advance();
+
+        private Token? Allow(TokenType type)
+        {
+            if (Match(type, out var token))
+                return token;
+
+            return null;
+        }
+
+        private Token Expect(TokenType type)
+        {
+            if (Match(type, out var token))
+                return token;
+
+            throw new ExpectedTokenException(new TokenHead(type, type.ToString()), Peek());
+        }
+
         private bool Match(TokenType type)
         {
             return Match(type, out _);
@@ -170,10 +281,10 @@ namespace Quixotic.Parsing
 
         private bool Match(TokenType type, [NotNullWhen(true)] out Token? token)
         {
-            token = _tokens.Peek();
+            token = Peek();
             if (!_tokens.IsAtEnd && token.Type == type)
             {
-                _tokens.Advance();
+                Advance();
                 return true;
             }
 

@@ -1,5 +1,6 @@
 ﻿using Quixotic.Parsing.Expressions;
 using Quixotic.Parsing.Operations;
+using System.Text.RegularExpressions;
 
 namespace Quixotic.ParsingTests.TestModels
 {
@@ -18,17 +19,9 @@ namespace Quixotic.ParsingTests.TestModels
             return expression;
         }
 
-        public static char GetOperatorChar(Operator @operator)
+        public static string GetOperatorChar(Operator @operator)
         {
-            return @operator switch
-            {
-                Parsing.Operations.Operator.Assignment => '=',
-                Parsing.Operations.Operator.Add => '+',
-                Parsing.Operations.Operator.Subtract => '-',
-                Parsing.Operations.Operator.Multiply => '*',
-                Parsing.Operations.Operator.Divide => '/',
-                _ => throw new InvalidOperationException($"Unsupported operator: {@operator}")
-            };
+            return OperationMetadata.GetOperatorValue(@operator) ?? throw new InvalidOperationException($"Unsupported operator: {@operator}");
         }
 
         public static implicit operator TestExpression(double value)
@@ -42,50 +35,56 @@ namespace Quixotic.ParsingTests.TestModels
 
         public static implicit operator TestExpression(string value)
         {
+            var identifier = new Regex(@"^\[(.+)\]$");
+
+            var match = identifier.Match(value);
+            if (match.Success)
+                return new TestIdentifierExpression(match.Groups[1].Value);
+
             return new TestStringExpression(value);
         }
 
-        public static implicit operator TestExpression((double left, char op, double right) tuple)
+        public static implicit operator TestExpression((double left, string op, double right) tuple)
         {
             return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
-        public static implicit operator TestExpression((TestBinaryExpression left, char op, double right) tuple)
+        public static implicit operator TestExpression((TestBinaryExpression left, string op, double right) tuple)
         {
             return new TestBinaryExpression(tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
-        public static implicit operator TestExpression((double left, char op, TestBinaryExpression right) tuple)
+        public static implicit operator TestExpression((double left, string op, TestBinaryExpression right) tuple)
         {
             return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, tuple.right);
         }
 
-        public static implicit operator TestExpression((string left, char op, double right) tuple)
+        public static implicit operator TestExpression((string left, string op, double right) tuple)
         {
             return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
-        public static implicit operator TestExpression((double left, char op, string right) tuple)
+        public static implicit operator TestExpression((double left, string op, string right) tuple)
         {
             return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
-        public static implicit operator TestExpression((string left, char op, string right) tuple)
+        public static implicit operator TestExpression((string left, string op, string right) tuple)
         {
             return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
-        public static implicit operator TestExpression((TestBinaryExpression left, char op, string right) tuple)
+        public static implicit operator TestExpression((TestBinaryExpression left, string op, string right) tuple)
         {
             return new TestBinaryExpression(tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
-        public static implicit operator TestExpression((string left, char op, TestBinaryExpression right) tuple)
+        public static implicit operator TestExpression((string left, string op, TestBinaryExpression right) tuple)
         {
             return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, tuple.right);
         }
 
-        public static implicit operator TestExpression((TestExpression left, char op, TestExpression right) tuple)
+        public static implicit operator TestExpression((TestExpression left, string op, TestExpression right) tuple)
         {
             return new TestBinaryExpression(tuple.left, tuple.op, tuple.right);
         }
@@ -93,7 +92,7 @@ namespace Quixotic.ParsingTests.TestModels
 
     public record TestBinaryExpression : TestExpression
     {
-        public TestBinaryExpression(TestExpression left, char op, TestExpression right)
+        public TestBinaryExpression(TestExpression left, string op, TestExpression right)
         {
             Left = left;
             Operator = op;
@@ -104,7 +103,7 @@ namespace Quixotic.ParsingTests.TestModels
 
         public TestExpression Left { get; }
 
-        public char Operator { get; }
+        public string Operator { get; }
 
         public TestExpression Right { get; }
 
@@ -124,7 +123,7 @@ namespace Quixotic.ParsingTests.TestModels
         {
             var positionDescription = GetPositionDescription(this);
 
-            var binaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<BinaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a binary expression.");
+            var binaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<Parsing.Expressions.BinaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a binary expression.");
 
             Left.Assert(binaryExpression.Left);
 
@@ -169,7 +168,7 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "X" : "#";
         }
 
-        public override void Assert(Expression expression)
+        public override void Assert(Parsing.Expressions.Expression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
@@ -196,7 +195,7 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "'X'" : "''";
         }
 
-        public override void Assert(Expression expression)
+        public override void Assert(Parsing.Expressions.Expression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
@@ -215,6 +214,7 @@ namespace Quixotic.ParsingTests.TestModels
         {
             if (Parent is null)
                 return "X";
+
             return Parent.GetPositionDescription(expression);
         }
 
@@ -223,15 +223,41 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "X" : "-#"; ;
         }
 
-        public override void Assert(Expression expression)
+        public override void Assert(Parsing.Expressions.Expression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
-            var unaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<UnaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a unary expression.");
+            var unaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<Parsing.Expressions.UnaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a unary expression.");
 
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(Operator, unaryExpression.Operator, $"\r\n{positionDescription}\r\nExpected operator was '{Operator}' but actual operator was '{unaryExpression.Operator}'.");
             Operand.Assert(unaryExpression.Operand);
         }
+    }
 
+    public record TestIdentifierExpression(string name) : TestExpression
+    {
+        public string Name { get; } = name;
+
+        public override string GetPositionDescription(TestExpression expression)
+        {
+            if (Parent is null)
+                return "X";
+
+            return Parent.GetPositionDescription(expression);
+        }
+
+        public override string ToString(TestExpression expression)
+        {
+            return ReferenceEquals(expression, this) ? "X" : "[#]";
+        }
+
+        public override void Assert(Parsing.Expressions.Expression expression)
+        {
+            var positionDescription = GetPositionDescription(this);
+
+            var identifierExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<IdentifierExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not an identifier expression.");
+
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(Name, identifierExpression.Name, $"\r\n{positionDescription}\r\nExpected identifier name was '{Name}' but actual operator was '{identifierExpression.Name}'.");
+        }
     }
 }
