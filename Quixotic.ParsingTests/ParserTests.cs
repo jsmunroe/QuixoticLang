@@ -294,5 +294,94 @@ namespace Quixotic.ParsingTests
             var printStatement3 = Assert.IsInstanceOfType<PrintStatement>(statements[2]);
             TestExpression.Create("Hello, third windmill!").Assert(printStatement3.Expression);
         }
+
+        [TestMethod]
+        public void Parse_identifier_statement()
+        {
+            // Setup
+            var source = @"
+                windmills = 5
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert 
+            Assert.HasCount(1, statements);
+
+            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+
+            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+
+            Assert.AreEqual("windmills", identifierExpression.Name);
+
+            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+
+            Assert.AreEqual(5, numberLiteralExpression.Value);
+        }
+
+        [TestMethod]
+        public void Parse_identifier_statement_with_parenthetical_expression()
+        {
+            // Setup
+            var source = @"
+                windmills = (5 + 3) * 2
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert 
+            Assert.HasCount(1, statements);
+
+            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+
+            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+
+            Assert.AreEqual("windmills", identifierExpression.Name);
+
+            TestExpression.Create(((5, '+', 3), '*', 2)).Assert(assignmentStatement.Value);
+        }
+
+
+        [TestMethod]
+        public void Parse_identifier_statement_with_print_statement()
+        {
+            // Setup
+            var source = @"
+                windmills = 5
+                print windmills
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert 
+            Assert.HasCount(2, statements);
+
+            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+
+            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+
+            Assert.AreEqual("windmills", identifierExpression.Name);
+
+            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+
+            Assert.AreEqual(5, numberLiteralExpression.Value);
+
+
+            var printStatement = Assert.IsInstanceOfType<PrintStatement>(statements[1]);
+
+            var identifierExpressionInPrint = Assert.IsInstanceOfType<IdentifierExpression>(printStatement.Expression);
+
+            Assert.AreEqual("windmills", identifierExpressionInPrint.Name);
+        }
+
     }
 }

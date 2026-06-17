@@ -4,6 +4,7 @@ using Quixotic.Parsing.Expressions;
 using Quixotic.Parsing.Operations;
 using Quixotic.Parsing.Statements;
 using QuixoticLang.Lexer;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Parsing
 {
@@ -56,6 +57,9 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Print))
                 return ParsePrint();
 
+            if (Match(TokenType.Identifier, out var identifier))
+                return ParseIdentifier(identifier);
+
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
@@ -64,6 +68,22 @@ namespace Quixotic.Parsing
             var expression = ParseExpression();
 
             return new PrintStatement(expression);
+        }
+
+        public Statement ParseIdentifier(Token token)
+        {
+            var identifier = new IdentifierExpression(token.Value);
+
+            var next = _tokens.Pop();
+
+            if (next.Type == TokenType.Equals)
+            {
+                var expression = ParseExpression();
+
+                return new AssignmentStatement(identifier, expression);
+            }
+
+            throw new UnexpectedTokenException(next);
         }
 
         public Expression ParseExpression(int parentPrecedence = 0)
@@ -134,12 +154,19 @@ namespace Quixotic.Parsing
 
         private bool Match(TokenType type)
         {
-            if (!_tokens.IsAtEnd && _tokens.Peek().Type == type)
+            return Match(type, out _);
+        }
+
+        private bool Match(TokenType type, [NotNullWhen(true)] out Token? token)
+        {
+            token = _tokens.Peek();
+            if (!_tokens.IsAtEnd && token.Type == type)
             {
                 _tokens.Advance();
                 return true;
             }
 
+            token = null;
             return false;
         }
     }
