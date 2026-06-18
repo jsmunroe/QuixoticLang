@@ -2,9 +2,9 @@
 
 namespace Quixotic.Parsing.Expressions
 {
-    public class UnaryExpression(Operator @operator, Expression operand) : Expression
+    public class QxUnaryExpression(Operator @operator, QxExpression operand) : QxExpression
     {
         public Operator Operator { get; } = @operator;
-        public Expression Operand { get; } = operand;
+        public QxExpression Operand { get; } = operand;
     }
 }

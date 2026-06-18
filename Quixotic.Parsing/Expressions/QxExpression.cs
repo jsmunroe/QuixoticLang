@@ -1,6 +1,6 @@
 ﻿namespace Quixotic.Parsing.Expressions
 {
-    public abstract class Expression
+    public abstract class QxExpression
     {
 
     }

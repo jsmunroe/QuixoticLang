@@ -12,7 +12,7 @@ namespace Quixotic.ParsingTests.TestModels
 
         public abstract string ToString(TestExpression expression);
 
-        public abstract void Assert(Parsing.Expressions.Expression expression);
+        public abstract void Assert(Parsing.Expressions.QxExpression expression);
 
         public static TestExpression Create(TestExpression expression)
         {
@@ -119,11 +119,11 @@ namespace Quixotic.ParsingTests.TestModels
                 right.AssignParent();
         }
 
-        public override void Assert(Parsing.Expressions.Expression expression)
+        public override void Assert(Parsing.Expressions.QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
-            var binaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<Parsing.Expressions.BinaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a binary expression.");
+            var binaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<Parsing.Expressions.QxBinaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a binary expression.");
 
             Left.Assert(binaryExpression.Left);
 
@@ -168,11 +168,11 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "X" : "#";
         }
 
-        public override void Assert(Parsing.Expressions.Expression expression)
+        public override void Assert(Parsing.Expressions.QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
-            var numberLiteralExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<NumberLiteralExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a number literal expression.");
+            var numberLiteralExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxNumberLiteralExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a number literal expression.");
 
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(numberLiteralExpression.Value, Value, $"\r\n{positionDescription}\r\nExpected number value was {Value}, but actual number value was {numberLiteralExpression.Value}.");
         }
@@ -195,11 +195,11 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "'X'" : "''";
         }
 
-        public override void Assert(Parsing.Expressions.Expression expression)
+        public override void Assert(Parsing.Expressions.QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
-            var stringLiteralExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<StringLiteralExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a string literal expression.");
+            var stringLiteralExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxStringLiteralExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a string literal expression.");
 
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(stringLiteralExpression.Value, Value, $"\r\n{positionDescription}\r\nExpected number value was {Value}, but actual number value was {stringLiteralExpression.Value}.");
         }
@@ -223,11 +223,11 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "X" : "-#"; ;
         }
 
-        public override void Assert(Parsing.Expressions.Expression expression)
+        public override void Assert(Parsing.Expressions.QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
-            var unaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<Parsing.Expressions.UnaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a unary expression.");
+            var unaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<Parsing.Expressions.QxUnaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a unary expression.");
 
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(Operator, unaryExpression.Operator, $"\r\n{positionDescription}\r\nExpected operator was '{Operator}' but actual operator was '{unaryExpression.Operator}'.");
             Operand.Assert(unaryExpression.Operand);
@@ -251,11 +251,11 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "X" : "[#]";
         }
 
-        public override void Assert(Parsing.Expressions.Expression expression)
+        public override void Assert(Parsing.Expressions.QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
-            var identifierExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<IdentifierExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not an identifier expression.");
+            var identifierExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxIdentifierExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not an identifier expression.");
 
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(Name, identifierExpression.Name, $"\r\n{positionDescription}\r\nExpected identifier name was '{Name}' but actual operator was '{identifierExpression.Name}'.");
         }

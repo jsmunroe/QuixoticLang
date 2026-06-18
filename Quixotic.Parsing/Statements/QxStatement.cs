@@ -1,6 +1,6 @@
 ﻿namespace Quixotic.Parsing.Statements
 {
-    public abstract class Statement
+    public abstract class QxStatement
     {
     }
 }

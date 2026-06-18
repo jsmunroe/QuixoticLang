@@ -16,7 +16,7 @@ namespace Quixotic.Parsing
             : this(lexer.Run())
         { }
 
-        public IEnumerable<Statement> Parse()
+        public IEnumerable<QxStatement> Parse()
         {
             while (!IsAtEnd && Peek().Type != TokenType.Eof)
             {
@@ -52,7 +52,7 @@ namespace Quixotic.Parsing
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
-        private Statement ParseStatement()
+        private QxStatement ParseStatement()
         {
             if (Match(TokenType.Print))
                 return ParsePrint();
@@ -66,16 +66,16 @@ namespace Quixotic.Parsing
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
-        private Statement ParsePrint()
+        private QxStatement ParsePrint()
         {
             var expression = ParseExpression();
 
-            return new PrintStatement(expression);
+            return new QxPrintStatement(expression);
         }
 
-        private AssignmentStatement ParseIdentifier(Token token)
+        private QxAssignmentStatement ParseIdentifier(Token token)
         {
-            var identifier = new IdentifierExpression(token.Value);
+            var identifier = new QxIdentifierExpression(token.Value);
 
             var next = Pop();
 
@@ -83,13 +83,13 @@ namespace Quixotic.Parsing
             {
                 var expression = ParseExpression();
 
-                return new AssignmentStatement(identifier, expression);
+                return new QxAssignmentStatement(identifier, expression);
             }
 
             throw new UnexpectedTokenException(next);
         }
 
-        private IfStatement ParseIf()
+        private QxIfStatement ParseIf()
         {
             var condition = ParseExpression();
 
@@ -99,12 +99,12 @@ namespace Quixotic.Parsing
             {
                 var statement = ParseStatement();
 
-                return new IfStatement(condition) { ThenBlock = [statement] };
+                return new QxIfStatement(condition) { ThenBlock = [statement] };
             }
 
             var thenBlock = ParseBlock(t => t.Type == TokenType.Else);
 
-            List<ElseIfClause> elseIfClauses = [];
+            List<QxElseIfClause> elseIfClauses = [];
 
             Block elseBlock = [];
 
@@ -125,7 +125,7 @@ namespace Quixotic.Parsing
 
             Expect(TokenType.If);
 
-            return new IfStatement(condition)
+            return new QxIfStatement(condition)
             {
                 ThenBlock = thenBlock,
                 ElseIfClauses = elseIfClauses,
@@ -133,19 +133,19 @@ namespace Quixotic.Parsing
             };
         }
 
-        private ElseIfClause ParseElseIfClause()
+        private QxElseIfClause ParseElseIfClause()
         {
             var condition = ParseExpression();
 
             var block = ParseBlock(t => t.Type == TokenType.Else);
 
-            return new ElseIfClause(condition)
+            return new QxElseIfClause(condition)
             {
                 Block = block,
             };
         }
 
-        private Expression ParseExpression(int parentPrecedence = 0)
+        private QxExpression ParseExpression(int parentPrecedence = 0)
         {
             var left = ParseUnary();
 
@@ -170,13 +170,13 @@ namespace Quixotic.Parsing
 
                 var right = ParseExpression(operationMetadata.Precedence);
 
-                left = new BinaryExpression(operationMetadata.Operator, left, right);
+                left = new QxBinaryExpression(operationMetadata.Operator, left, right);
             }
 
             return left;
         }
 
-        private Expression ParsePrimary()
+        private QxExpression ParsePrimary()
         {
             var token = Pop();
 
@@ -192,27 +192,27 @@ namespace Quixotic.Parsing
             }
 
             if (token.Type == TokenType.StringLiteral)
-                return new StringLiteralExpression(token.Value);
+                return new QxStringLiteralExpression(token.Value);
 
             if (token.Type == TokenType.NumberLiteral)
                 return ParseNumber(token);
 
             if (token.Type == TokenType.Identifier)
-                return new IdentifierExpression(token.Value);
+                return new QxIdentifierExpression(token.Value);
 
             throw new UnexpectedTokenException(token);
         }
 
-        private Expression ParseUnary()
+        private QxExpression ParseUnary()
         {
             if (Match(TokenType.Plus))
-                return new UnaryExpression(Operator.Add, ParseUnary());
+                return new QxUnaryExpression(Operator.Add, ParseUnary());
 
             if (Match(TokenType.Subtract))
-                return new UnaryExpression(Operator.Subtract, ParseUnary());
+                return new QxUnaryExpression(Operator.Subtract, ParseUnary());
 
             if (Match(TokenType.Not))
-                return new UnaryExpression(Operator.Not, ParseUnary());
+                return new QxUnaryExpression(Operator.Not, ParseUnary());
 
             return ParsePrimary();
         }
@@ -242,10 +242,10 @@ namespace Quixotic.Parsing
             return block;
         }
 
-        private static NumberLiteralExpression ParseNumber(Token token)
+        private static QxNumberLiteralExpression ParseNumber(Token token)
         {
             if (double.TryParse(token.Value, out var number))
-                return new NumberLiteralExpression(number);
+                return new QxNumberLiteralExpression(number);
 
             throw new TokenException("Invalid number literal", token);
         }

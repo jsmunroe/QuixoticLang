@@ -3,11 +3,11 @@ using System.Collections;
 
 namespace Quixotic.Parsing
 {
-    public class Block : IList<Statement>
+    public class Block : IList<QxStatement>
     {
-        private readonly List<Statement> _statements = [];
+        private readonly List<QxStatement> _statements = [];
 
-        public Statement this[int index]
+        public QxStatement this[int index]
         {
             get => _statements[index];
             set => _statements[index] = value;
@@ -17,7 +17,7 @@ namespace Quixotic.Parsing
 
         public bool IsReadOnly => false;
 
-        public void Add(Statement item)
+        public void Add(QxStatement item)
         {
             _statements.Add(item);
         }
@@ -27,27 +27,27 @@ namespace Quixotic.Parsing
             _statements.Clear();
         }
 
-        public bool Contains(Statement item)
+        public bool Contains(QxStatement item)
         {
             return _statements.Contains(item);
         }
 
-        public void CopyTo(Statement[] array, int arrayIndex)
+        public void CopyTo(QxStatement[] array, int arrayIndex)
         {
             _statements.CopyTo(array, arrayIndex);
         }
 
-        public int IndexOf(Statement item)
+        public int IndexOf(QxStatement item)
         {
             return _statements.IndexOf(item);
         }
 
-        public void Insert(int index, Statement item)
+        public void Insert(int index, QxStatement item)
         {
             _statements.Insert(index, item);
         }
 
-        public bool Remove(Statement item)
+        public bool Remove(QxStatement item)
         {
             return _statements.Remove(item);
         }
@@ -58,7 +58,7 @@ namespace Quixotic.Parsing
         }
 
         #region IEnumerable members
-        public IEnumerator<Statement> GetEnumerator()
+        public IEnumerator<QxStatement> GetEnumerator()
         {
             return _statements.GetEnumerator();
         }

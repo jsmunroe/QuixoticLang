@@ -12,31 +12,13 @@ namespace Quixotic.Interpret
 {
     public class Interpreter(IRuntime runtime)
     {
-        private readonly static Dictionary<Type, Action<Interpreter, Statement>> _executeMap = [];
+        private readonly static Dictionary<Type, Action<Interpreter, QxStatement>> _executeMap = [];
 
-        private readonly static Dictionary<Type, Func<Interpreter, Expression, Value>> _evaluateMap = [];
+        private readonly static Dictionary<Type, Func<Interpreter, QxExpression, Value>> _evaluateMap = [];
 
-        static Interpreter()
-        {
-            foreach (var method in typeof(Interpreter).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
-            {
-                var methodParameters = method.GetParameters();
+        static Interpreter() => LoadMapEntries();
 
-                if (methodParameters.Length < 1)
-                    continue;
-
-                var methodParameter = method.GetParameters()[0];
-                var parameterType = methodParameter.ParameterType;
-
-                if (TryCreateExecuteMapEntry(method, out var execute))
-                    _executeMap[parameterType] = execute;
-
-                if (TryCreateEvaluateMapEntry(method, out var evaluate))
-                    _evaluateMap[parameterType] = evaluate;
-            }
-        }
-
-        public void Execute(IEnumerable<Statement> statements)
+        public void Execute(IEnumerable<QxStatement> statements)
         {
             runtime.Push(RuntimeFrameType.Global);
 
@@ -46,7 +28,7 @@ namespace Quixotic.Interpret
             runtime.Pop();
         }
 
-        public void Execute(IEnumerable<Statement> statements, RuntimeFrameType frameType)
+        public void Execute(IEnumerable<QxStatement> statements, RuntimeFrameType frameType)
         {
             runtime.Push(frameType);
 
@@ -56,7 +38,7 @@ namespace Quixotic.Interpret
             runtime.Pop();
         }
 
-        public void Execute(Statement statement)
+        public void Execute(QxStatement statement)
         {
             var statementType = statement.GetType();
             if (!_executeMap.TryGetValue(statementType, out var action))
@@ -65,7 +47,7 @@ namespace Quixotic.Interpret
             action(this, statement);
         }
 
-        private Value Evaluate(Expression expression)
+        private Value Evaluate(QxExpression expression)
         {
             var expressionType = expression.GetType();
             if (!_evaluateMap.TryGetValue(expressionType, out var function))
@@ -75,20 +57,20 @@ namespace Quixotic.Interpret
         }
 
 
-        public void Execute(PrintStatement statement)
+        public void Execute(QxPrintStatement statement)
         {
             var value = Evaluate(statement.Expression);
             runtime.ExecutePrint(value);
         }
 
-        public void Execute(AssignmentStatement statement)
+        public void Execute(QxAssignmentStatement statement)
         {
             var value = Evaluate(statement.Value);
             var name = statement.Target.Name;
             runtime.Frame[name] = value;
         }
 
-        public void Execute(IfStatement statement)
+        public void Execute(QxIfStatement statement)
         {
             if (IsTruthy(Evaluate(statement.Condition)))
             {
@@ -108,17 +90,17 @@ namespace Quixotic.Interpret
             Execute(statement.ElseBlock, RuntimeFrameType.IfBlock);
         }
 
-        protected static Value Evaluate(NumberLiteralExpression expression)
+        protected static Value Evaluate(QxNumberLiteralExpression expression)
         {
             return new NumberValue(expression.Value);
         }
 
-        protected static Value Evaluate(StringLiteralExpression expression)
+        protected static Value Evaluate(QxStringLiteralExpression expression)
         {
             return new StringValue(expression.Value);
         }
 
-        protected Value Evaluate(IdentifierExpression expression)
+        protected Value Evaluate(QxIdentifierExpression expression)
         {
             var name = expression.Name;
             var value = runtime.Frame[name];
@@ -126,7 +108,7 @@ namespace Quixotic.Interpret
             return value;
         }
 
-        protected Value Evaluate(UnaryExpression expression)
+        protected Value Evaluate(QxUnaryExpression expression)
         {
             var operand = Evaluate(expression.Operand);
 
@@ -141,7 +123,7 @@ namespace Quixotic.Interpret
             };
         }
 
-        protected Value Evaluate(BinaryExpression expression)
+        protected Value Evaluate(QxBinaryExpression expression)
         {
             var left = Evaluate(expression.Left);
             var right = Evaluate(expression.Right);
@@ -234,8 +216,27 @@ namespace Quixotic.Interpret
             return left.Or(right);
         }
 
+        private static void LoadMapEntries()
+        {
+            foreach (var method in typeof(Interpreter).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            {
+                var methodParameters = method.GetParameters();
 
-        private static bool TryCreateExecuteMapEntry(MethodInfo method, [NotNullWhen(true)] out Action<Interpreter, Statement>? action)
+                if (methodParameters.Length < 1)
+                    continue;
+
+                var methodParameter = method.GetParameters()[0];
+                var parameterType = methodParameter.ParameterType;
+
+                if (TryCreateExecuteMapEntry(method, out var execute))
+                    _executeMap[parameterType] = execute;
+
+                if (TryCreateEvaluateMapEntry(method, out var evaluate))
+                    _evaluateMap[parameterType] = evaluate;
+            }
+        }
+
+        private static bool TryCreateExecuteMapEntry(MethodInfo method, [NotNullWhen(true)] out Action<Interpreter, QxStatement>? action)
         {
             action = null;
 
@@ -249,23 +250,23 @@ namespace Quixotic.Interpret
 
             var parameterType = parameters[0].ParameterType;
 
-            if (!typeof(Statement).IsAssignableFrom(parameterType))
+            if (!typeof(QxStatement).IsAssignableFrom(parameterType))
                 return false;
 
             var isStatic = method.IsStatic;
 
             var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
-            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(Statement), "statement");
+            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(QxStatement), "statement");
             var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
             var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Action<Interpreter, Statement>>(call, instance, parameter);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Action<Interpreter, QxStatement>>(call, instance, parameter);
 
             action = lambda.Compile();
 
             return true;
         }
 
-        private static bool TryCreateEvaluateMapEntry(MethodInfo method, [NotNullWhen(true)] out Func<Interpreter, Expression, Value>? action)
+        private static bool TryCreateEvaluateMapEntry(MethodInfo method, [NotNullWhen(true)] out Func<Interpreter, QxExpression, Value>? action)
         {
             action = null;
 
@@ -279,7 +280,7 @@ namespace Quixotic.Interpret
 
             var parameterType = parameters[0].ParameterType;
 
-            if (!typeof(Expression).IsAssignableFrom(parameterType))
+            if (!typeof(QxExpression).IsAssignableFrom(parameterType))
                 return false;
 
             if (!method.ReturnType.IsAssignableFrom(typeof(Value)))
@@ -288,10 +289,10 @@ namespace Quixotic.Interpret
             var isStatic = method.IsStatic;
 
             var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
-            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(Expression), "expression");
+            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(QxExpression), "expression");
             var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
             var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Func<Interpreter, Expression, Value>>(call, instance, parameter);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Func<Interpreter, QxExpression, Value>>(call, instance, parameter);
 
             action = lambda.Compile();
 

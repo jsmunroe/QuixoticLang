@@ -1,6 +1,6 @@
 ﻿namespace Quixotic.Parsing.Expressions
 {
-    public class IdentifierExpression(string name) : Expression
+    public class QxIdentifierExpression(string name) : QxExpression
     {
         public string Name { get; } = name;
     }

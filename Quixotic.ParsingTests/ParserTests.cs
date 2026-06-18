@@ -29,9 +29,9 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            var printStatement = Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(statements[0]);
 
-            var stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            var stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("Hello, windmill!", stringLiteralExpression.Value);
         }
@@ -52,9 +52,9 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            var printStatement = Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(statements[0]);
 
-            var stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            var stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("Hello, windmill!", stringLiteralExpression.Value);
         }
@@ -75,9 +75,9 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            var printStatement = Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(statements[0]);
 
-            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(printStatement.Expression);
+            var numberLiteralExpression = Assert.IsInstanceOfType<QxNumberLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual(262144, numberLiteralExpression.Value);
         }
@@ -98,11 +98,11 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            Assert.IsInstanceOfType<QxPrintStatement>(statements[0]);
 
-            var printStatement = (PrintStatement)statements[0];
+            var printStatement = (QxPrintStatement)statements[0];
 
-            var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
+            var binaryExpression = Assert.IsInstanceOfType<QxBinaryExpression>(printStatement.Expression);
 
             TestBinaryExpression testBinaryExpression = new(262144, "+", 131072);
 
@@ -125,11 +125,11 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            Assert.IsInstanceOfType<QxPrintStatement>(statements[0]);
 
-            var printStatement = (PrintStatement)statements[0];
+            var printStatement = (QxPrintStatement)statements[0];
 
-            var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
+            var binaryExpression = Assert.IsInstanceOfType<QxBinaryExpression>(printStatement.Expression);
 
             TestBinaryExpression testBinaryExpression = new(262144, "+", (131072, "/", 2));
 
@@ -152,11 +152,11 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            Assert.IsInstanceOfType<QxPrintStatement>(statements[0]);
 
-            var printStatement = (PrintStatement)statements[0];
+            var printStatement = (QxPrintStatement)statements[0];
 
-            var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
+            var binaryExpression = Assert.IsInstanceOfType<QxBinaryExpression>(printStatement.Expression);
 
             TestBinaryExpression testBinaryExpression = new((1, "+", 2), "*", 3);
 
@@ -179,11 +179,11 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            Assert.IsInstanceOfType<QxPrintStatement>(statements[0]);
 
-            var printStatement = (PrintStatement)statements[0];
+            var printStatement = (QxPrintStatement)statements[0];
 
-            var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
+            var binaryExpression = Assert.IsInstanceOfType<QxBinaryExpression>(printStatement.Expression);
 
             TestBinaryExpression testBinaryExpression = new((262144, "*", 131072), "+", 2);
 
@@ -207,11 +207,11 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            Assert.IsInstanceOfType<QxPrintStatement>(statements[0]);
 
-            var printStatement = (PrintStatement)statements[0];
+            var printStatement = (QxPrintStatement)statements[0];
 
-            var binaryExpression = Assert.IsInstanceOfType<BinaryExpression>(printStatement.Expression);
+            var binaryExpression = Assert.IsInstanceOfType<QxBinaryExpression>(printStatement.Expression);
 
             TestBinaryExpression testBinaryExpression = new(((1, "+", 2), "*", 4), "+", (17, "+", (7, "+", (4, "+", 2))));
 
@@ -286,13 +286,13 @@ namespace Quixotic.ParsingTests
             // Assert 
             Assert.HasCount(3, statements);
 
-            var printStatement1 = Assert.IsInstanceOfType<PrintStatement>(statements[0]);
+            var printStatement1 = Assert.IsInstanceOfType<QxPrintStatement>(statements[0]);
             TestExpression.Create("Hello, first windmill!").Assert(printStatement1.Expression);
 
-            var printStatement2 = Assert.IsInstanceOfType<PrintStatement>(statements[1]);
+            var printStatement2 = Assert.IsInstanceOfType<QxPrintStatement>(statements[1]);
             TestExpression.Create("Hello, second windmill!").Assert(printStatement2.Expression);
 
-            var printStatement3 = Assert.IsInstanceOfType<PrintStatement>(statements[2]);
+            var printStatement3 = Assert.IsInstanceOfType<QxPrintStatement>(statements[2]);
             TestExpression.Create("Hello, third windmill!").Assert(printStatement3.Expression);
         }
 
@@ -312,13 +312,13 @@ namespace Quixotic.ParsingTests
             // Assert 
             Assert.HasCount(1, statements);
 
-            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+            var assignmentStatement = Assert.IsInstanceOfType<QxAssignmentStatement>(statements[0]);
 
-            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+            var identifierExpression = Assert.IsInstanceOfType<QxIdentifierExpression>(assignmentStatement.Target);
 
             Assert.AreEqual("windmills", identifierExpression.Name);
 
-            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+            var numberLiteralExpression = Assert.IsInstanceOfType<QxNumberLiteralExpression>(assignmentStatement.Value);
 
             Assert.AreEqual(5, numberLiteralExpression.Value);
         }
@@ -339,9 +339,9 @@ namespace Quixotic.ParsingTests
             // Assert 
             Assert.HasCount(1, statements);
 
-            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+            var assignmentStatement = Assert.IsInstanceOfType<QxAssignmentStatement>(statements[0]);
 
-            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+            var identifierExpression = Assert.IsInstanceOfType<QxIdentifierExpression>(assignmentStatement.Target);
 
             Assert.AreEqual("windmills", identifierExpression.Name);
 
@@ -366,19 +366,19 @@ namespace Quixotic.ParsingTests
             // Assert 
             Assert.HasCount(2, statements);
 
-            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+            var assignmentStatement = Assert.IsInstanceOfType<QxAssignmentStatement>(statements[0]);
 
-            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+            var identifierExpression = Assert.IsInstanceOfType<QxIdentifierExpression>(assignmentStatement.Target);
 
             Assert.AreEqual("windmills", identifierExpression.Name);
 
-            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+            var numberLiteralExpression = Assert.IsInstanceOfType<QxNumberLiteralExpression>(assignmentStatement.Value);
 
             Assert.AreEqual(5, numberLiteralExpression.Value);
 
-            var printStatement = Assert.IsInstanceOfType<PrintStatement>(statements[1]);
+            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(statements[1]);
 
-            var identifierExpressionInPrint = Assert.IsInstanceOfType<IdentifierExpression>(printStatement.Expression);
+            var identifierExpressionInPrint = Assert.IsInstanceOfType<QxIdentifierExpression>(printStatement.Expression);
 
             Assert.AreEqual("windmills", identifierExpressionInPrint.Name);
         }
@@ -399,17 +399,17 @@ namespace Quixotic.ParsingTests
             // Assert 
             Assert.HasCount(1, statements);
 
-            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+            var assignmentStatement = Assert.IsInstanceOfType<QxAssignmentStatement>(statements[0]);
 
-            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+            var identifierExpression = Assert.IsInstanceOfType<QxIdentifierExpression>(assignmentStatement.Target);
 
             Assert.AreEqual("cost", identifierExpression.Name);
 
-            var unaryExpression = Assert.IsInstanceOfType<UnaryExpression>(assignmentStatement.Value);
+            var unaryExpression = Assert.IsInstanceOfType<QxUnaryExpression>(assignmentStatement.Value);
 
             Assert.AreEqual(Operator.Subtract, unaryExpression.Operator);
 
-            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(unaryExpression.Operand);
+            var numberLiteralExpression = Assert.IsInstanceOfType<QxNumberLiteralExpression>(unaryExpression.Operand);
 
             Assert.AreEqual(5, numberLiteralExpression.Value);
         }
@@ -431,9 +431,9 @@ namespace Quixotic.ParsingTests
             // Assert 
             Assert.HasCount(2, statements);
 
-            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+            var assignmentStatement = Assert.IsInstanceOfType<QxAssignmentStatement>(statements[0]);
 
-            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+            var identifierExpression = Assert.IsInstanceOfType<QxIdentifierExpression>(assignmentStatement.Target);
 
             Assert.AreEqual("cost", identifierExpression.Name);
 
@@ -459,17 +459,17 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(2, statements);
 
-            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+            var assignmentStatement = Assert.IsInstanceOfType<QxAssignmentStatement>(statements[0]);
 
-            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+            var identifierExpression = Assert.IsInstanceOfType<QxIdentifierExpression>(assignmentStatement.Target);
 
             Assert.AreEqual("c", identifierExpression.Name);
 
-            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+            var numberLiteralExpression = Assert.IsInstanceOfType<QxNumberLiteralExpression>(assignmentStatement.Value);
 
             Assert.AreEqual(5, numberLiteralExpression.Value);
 
-            var ifStatement = Assert.IsInstanceOfType<IfStatement>(statements[1]);
+            var ifStatement = Assert.IsInstanceOfType<QxIfStatement>(statements[1]);
 
             TestExpression.Create(("[c]", ">", 3)).Assert(ifStatement.Condition);
 
@@ -477,9 +477,9 @@ namespace Quixotic.ParsingTests
 
             Assert.HasCount(1, thenStatements);
 
-            var printStatement = Assert.IsInstanceOfType<PrintStatement>(thenStatements[0]);
+            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(thenStatements[0]);
 
-            var stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            var stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("c is greater than 3", stringLiteralExpression.Value);
         }
@@ -505,17 +505,17 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(2, statements);
 
-            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+            var assignmentStatement = Assert.IsInstanceOfType<QxAssignmentStatement>(statements[0]);
 
-            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+            var identifierExpression = Assert.IsInstanceOfType<QxIdentifierExpression>(assignmentStatement.Target);
 
             Assert.AreEqual("c", identifierExpression.Name);
 
-            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+            var numberLiteralExpression = Assert.IsInstanceOfType<QxNumberLiteralExpression>(assignmentStatement.Value);
 
             Assert.AreEqual(5, numberLiteralExpression.Value);
 
-            var ifStatement = Assert.IsInstanceOfType<IfStatement>(statements[1]);
+            var ifStatement = Assert.IsInstanceOfType<QxIfStatement>(statements[1]);
 
             TestExpression.Create(("[c]", ">", 3)).Assert(ifStatement.Condition);
 
@@ -524,9 +524,9 @@ namespace Quixotic.ParsingTests
 
             Assert.HasCount(1, thenStatements);
 
-            var printStatement = Assert.IsInstanceOfType<PrintStatement>(thenStatements[0]);
+            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(thenStatements[0]);
 
-            var stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            var stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("c is greater than 3", stringLiteralExpression.Value);
 
@@ -535,9 +535,9 @@ namespace Quixotic.ParsingTests
 
             Assert.HasCount(1, elseStatements);
 
-            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[0]);
+            printStatement = Assert.IsInstanceOfType<QxPrintStatement>(elseStatements[0]);
 
-            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("c is less than or equal to 3", stringLiteralExpression.Value);
         }
@@ -569,17 +569,17 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(2, statements);
 
-            var assignmentStatement = Assert.IsInstanceOfType<AssignmentStatement>(statements[0]);
+            var assignmentStatement = Assert.IsInstanceOfType<QxAssignmentStatement>(statements[0]);
 
-            var identifierExpression = Assert.IsInstanceOfType<IdentifierExpression>(assignmentStatement.Target);
+            var identifierExpression = Assert.IsInstanceOfType<QxIdentifierExpression>(assignmentStatement.Target);
 
             Assert.AreEqual("c", identifierExpression.Name);
 
-            var numberLiteralExpression = Assert.IsInstanceOfType<NumberLiteralExpression>(assignmentStatement.Value);
+            var numberLiteralExpression = Assert.IsInstanceOfType<QxNumberLiteralExpression>(assignmentStatement.Value);
 
             Assert.AreEqual(5, numberLiteralExpression.Value);
 
-            var ifStatement = Assert.IsInstanceOfType<IfStatement>(statements[1]);
+            var ifStatement = Assert.IsInstanceOfType<QxIfStatement>(statements[1]);
 
             TestExpression.Create((("[c]", ">", 3), "and", ("[c]", "<", 10))).Assert(ifStatement.Condition);
 
@@ -588,9 +588,9 @@ namespace Quixotic.ParsingTests
 
             Assert.HasCount(1, thenStatements);
 
-            var printStatement = Assert.IsInstanceOfType<PrintStatement>(thenStatements[0]);
+            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(thenStatements[0]);
 
-            var stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            var stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("c is greater than 3", stringLiteralExpression.Value);
 
@@ -605,9 +605,9 @@ namespace Quixotic.ParsingTests
 
             Assert.HasCount(1, elseIfBlockStatements);
 
-            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseIfBlockStatements[0]);
+            printStatement = Assert.IsInstanceOfType<QxPrintStatement>(elseIfBlockStatements[0]);
 
-            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("c is greater than 1", stringLiteralExpression.Value);
 
@@ -616,27 +616,27 @@ namespace Quixotic.ParsingTests
 
             Assert.HasCount(4, elseStatements);
 
-            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[0]);
+            printStatement = Assert.IsInstanceOfType<QxPrintStatement>(elseStatements[0]);
 
-            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("I can see clearly now the rain is gone.", stringLiteralExpression.Value);
 
-            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[1]);
+            printStatement = Assert.IsInstanceOfType<QxPrintStatement>(elseStatements[1]);
 
-            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("I can see all obsticles in my way.", stringLiteralExpression.Value);
 
-            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[2]);
+            printStatement = Assert.IsInstanceOfType<QxPrintStatement>(elseStatements[2]);
 
-            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("Gone are the dark clouds that had my blind.", stringLiteralExpression.Value);
 
-            printStatement = Assert.IsInstanceOfType<PrintStatement>(elseStatements[3]);
+            printStatement = Assert.IsInstanceOfType<QxPrintStatement>(elseStatements[3]);
 
-            stringLiteralExpression = Assert.IsInstanceOfType<StringLiteralExpression>(printStatement.Expression);
+            stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("It's gonna be a bright, bright, bright sunshiney day!", stringLiteralExpression.Value);
         }
