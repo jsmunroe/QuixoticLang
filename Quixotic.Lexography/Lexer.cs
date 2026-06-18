@@ -22,8 +22,6 @@ namespace QuixoticLang.Lexer
             { "not", TokenType.Not },
         };
 
-        private readonly IEqualityComparer<string> _keywordComparer = StringComparer.OrdinalIgnoreCase;
-
         public IEnumerable<Token> Run()
         {
             while (!IsAtEnd())
@@ -87,13 +85,15 @@ namespace QuixoticLang.Lexer
                         break;
 
                     case '>':
-                        yield return Simple(TokenType.GreaterThan, ">");
-                        Advance();
+                        yield return ReadGreaterThanOperator();
                         break;
 
                     case '<':
-                        yield return Simple(TokenType.LessThan, "<");
-                        Advance();
+                        yield return ReadLessThanOperator();
+                        break;
+
+                    case '!':
+                        yield return ReadExclamationPoint();
                         break;
 
                     case ':':
@@ -286,6 +286,57 @@ namespace QuixoticLang.Lexer
             {
                 Advance();
                 return Simple(TokenType.Assignment, ":=", position);
+            }
+
+            throw new LexerUnexpectedCharacterException(c, position);
+        }
+
+        private Token ReadGreaterThanOperator()
+        {
+            var position = CurrentPosition();
+
+            Advance();
+
+            var c = Peek();
+
+            if (c == '=')
+            {
+                Advance();
+                return Simple(TokenType.GreaterThanOrEqualTo, ">=", position);
+            }
+
+            return Simple(TokenType.GreaterThan, ">", position);
+        }
+
+        private Token ReadLessThanOperator()
+        {
+            var position = CurrentPosition();
+
+            Advance();
+
+            var c = Peek();
+
+            if (c == '=')
+            {
+                Advance();
+                return Simple(TokenType.LessThanOrEqualTo, "<=", position);
+            }
+
+            return Simple(TokenType.LessThan, "<", position);
+        }
+
+        private Token ReadExclamationPoint()
+        {
+            var position = CurrentPosition();
+
+            Advance();
+
+            var c = Peek();
+
+            if (c == '=')
+            {
+                Advance();
+                return Simple(TokenType.NotEqualTo, "!=", position);
             }
 
             throw new LexerUnexpectedCharacterException(c, position);

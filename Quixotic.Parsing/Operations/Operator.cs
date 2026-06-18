@@ -14,5 +14,8 @@
         Not,
         And,
         Or,
+        NotEqualTo,
+        LessThanOrEqualTo,
+        GreaterThanOrEqualTo,
     }
 }

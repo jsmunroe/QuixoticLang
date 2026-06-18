@@ -21,8 +21,11 @@ namespace Quixotic.Parsing.Operations
             [TokenType.Divide] = new(Quotient, "/", Operator.Divide, Associativity.Left),
             [TokenType.Multiply] = new(Product, "*", Operator.Multiply, Associativity.Left),
             [TokenType.EqualTo] = new(Comparison, "=", Operator.EqualTo, Associativity.Left),
+            [TokenType.NotEqualTo] = new(Comparison, "!=", Operator.NotEqualTo, Associativity.Left),
             [TokenType.LessThan] = new(Comparison, "<", Operator.LessThan, Associativity.Left),
+            [TokenType.LessThanOrEqualTo] = new(Comparison, "<=", Operator.LessThanOrEqualTo, Associativity.Left),
             [TokenType.GreaterThan] = new(Comparison, ">", Operator.GreaterThan, Associativity.Left),
+            [TokenType.GreaterThanOrEqualTo] = new(Comparison, ">=", Operator.GreaterThanOrEqualTo, Associativity.Left),
             [TokenType.And] = new(Logical, "and", Operator.And, Associativity.Left),
             [TokenType.Or] = new(Logical, "or", Operator.Or, Associativity.Left),
         };

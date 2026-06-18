@@ -1,0 +1,880 @@
+Interpreter.cs
+================
+
+using Quixotic.Interpret.Contracts;
+using Quixotic.Interpret.Environment;
+using Quixotic.Interpret.Exceptions;
+using Quixotic.Interpret.Values;
+using Quixotic.Parsing.Expressions;
+using Quixotic.Parsing.Operations;
+using Quixotic.Parsing.Statements;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+
+namespace Quixotic.Interpret
+{
+    public class Interpreter(IRuntime runtime)
+    {
+        private readonly static Dictionary<Type, Action<Interpreter, Statement>> _executeMap = [];
+
+        private readonly static Dictionary<Type, Func<Interpreter, Expression, Value>> _evaluateMap = [];
+
+        static Interpreter()
+        {
+            foreach (var method in typeof(Interpreter).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            {
+                var methodParameters = method.GetParameters();
+
+                if (methodParameters.Length < 1)
+                    continue;
+
+                var methodParameter = method.GetParameters()[0];
+                var parameterType = methodParameter.ParameterType;
+
+                if (TryCreateExecuteMapEntry(method, out var execute))
+                    _executeMap[parameterType] = execute;
+
+                if (TryCreateEvaluateMapEntry(method, out var evaluate))
+                    _evaluateMap[parameterType] = evaluate;
+            }
+        }
+
+        public void Execute(IEnumerable<Statement> statements)
+        {
+            runtime.Push(RuntimeFrameType.Global);
+
+            foreach (var statement in statements)
+                Execute(statement);
+
+            runtime.Pop();
+        }
+
+        public void Execute(IEnumerable<Statement> statements, RuntimeFrameType frameType)
+        {
+            runtime.Push(frameType);
+
+            foreach (var statement in statements)
+                Execute(statement);
+
+            runtime.Pop();
+        }
+
+        public void Execute(Statement statement)
+        {
+            var statementType = statement.GetType();
+            if (!_executeMap.TryGetValue(statementType, out var action))
+                throw new NotSupportedException($"Unsupported statement type: {statementType.Name}");
+
+            action(this, statement);
+        }
+
+        private Value Evaluate(Expression expression)
+        {
+            var expressionType = expression.GetType();
+            if (!_evaluateMap.TryGetValue(expressionType, out var function))
+                throw new NotSupportedException($"Unsupported expression type: {expressionType.Name}");
+
+            return function(this, expression);
+        }
+
+
+        public void Execute(PrintStatement statement)
+        {
+            var value = Evaluate(statement.Expression);
+            runtime.ExecutePrint(value);
+        }
+
+        public void Execute(AssignmentStatement statement)
+        {
+            var value = Evaluate(statement.Value);
+            var name = statement.Target.Name;
+            runtime.Frame[name] = value;
+        }
+
+        public void Execute(IfStatement statement)
+        {
+            if (IsTruthy(Evaluate(statement.Condition)))
+            {
+                Execute(statement.ThenBlock, RuntimeFrameType.IfBlock);
+                return;
+            }
+
+            foreach (var elseIfClasue in statement.ElseIfClauses)
+            {
+                if (IsTruthy(Evaluate(elseIfClasue.Condition)))
+                {
+                    Execute(elseIfClasue.Block, RuntimeFrameType.IfBlock);
+                    return;
+                }
+            }
+
+            Execute(statement.ElseBlock, RuntimeFrameType.IfBlock);
+        }
+
+        protected static Value Evaluate(NumberLiteralExpression expression)
+        {
+            return new NumberValue(expression.Value);
+        }
+
+        protected static Value Evaluate(StringLiteralExpression expression)
+        {
+            return new StringValue(expression.Value);
+        }
+
+        protected Value Evaluate(IdentifierExpression expression)
+        {
+            var name = expression.Name;
+            var value = runtime.Frame[name];
+
+            return value;
+        }
+
+        protected Value Evaluate(UnaryExpression expression)
+        {
+            var operand = Evaluate(expression.Operand);
+
+            var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator);
+
+            return expression.Operator switch
+            {
+                Operator.Not => new BooleanValue(!IsTruthy(operand)),
+                Operator.Subtract when operand is NumberValue number => new NumberValue(-number.Value),
+                Operator.Subtract when operand is not NumberValue => throw new UnaryOperatorException($"Cannot apply negative operator to operand that is type {operand.Type}."),
+                _ => throw new UnaryOperatorException($"{operatorValue} is not supported as a unary operator."),
+            };
+        }
+
+        protected Value Evaluate(BinaryExpression expression)
+        {
+            var left = Evaluate(expression.Left);
+            var right = Evaluate(expression.Right);
+
+            var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator) ?? string.Empty;
+
+            return expression.Operator switch
+            {
+                Operator.Add => Add(left, right),
+                Operator.Subtract => Subtract(left, right),
+                Operator.Multiply => Multiply(left, right),
+                Operator.Divide => Divide(left, right),
+
+                Operator.EqualTo => IsEqualTo(left, right),
+                Operator.NotEqualTo => IsNotEqualTo(left, right),
+                Operator.LessThan => IsLessThan(left, right),
+                Operator.LessThanOrEqualTo => IsLessThanOrEqualTo(left, right),
+                Operator.GreaterThan => IsGreaterThan(left, right),
+                Operator.GreaterThanOrEqualTo => IsGreaterThanOrEqualTo(left, right),
+
+                Operator.And => And(left, right),
+                Operator.Or => Or(left, right),
+
+                _ => throw new BinaryOperatorException(left.Type, operatorValue, right.Type),
+            };
+        }
+
+        private static bool IsTruthy(Value value)
+        {
+            return value.IsTruthy();
+        }
+
+        private static Value Add(Value left, Value right)
+        {
+            return left.Add(right);
+        }
+
+        private static Value Subtract(Value left, Value right)
+        {
+            return left.Subtract(right);
+        }
+
+        private static Value Multiply(Value left, Value right)
+        {
+            return left.Multiply(right);
+        }
+
+        private static Value Divide(Value left, Value right)
+        {
+            return left.Divide(right);
+        }
+
+        private static BooleanValue IsEqualTo(Value left, Value right)
+        {
+            return left.IsEqualTo(right);
+        }
+
+        private static BooleanValue IsNotEqualTo(Value left, Value right)
+        {
+            return left.IsEqualTo(right).Not();
+        }
+
+        private static BooleanValue IsLessThan(Value left, Value right)
+        {
+            return left.IsLessThan(right);
+        }
+
+        private static BooleanValue IsLessThanOrEqualTo(Value left, Value right)
+        {
+            return left.IsLessThanOrEqualTo(right);
+        }
+
+        private static BooleanValue IsGreaterThan(Value left, Value right)
+        {
+            return left.IsGreaterThan(right).Or(left.IsEqualTo(right));
+        }
+
+        private static BooleanValue IsGreaterThanOrEqualTo(Value left, Value right)
+        {
+            return left.IsGreaterThanOrEqualTo(right);
+        }
+
+        private static BooleanValue And(Value left, Value right)
+        {
+            return left.And(right);
+        }
+
+        private static BooleanValue Or(Value left, Value right)
+        {
+            return left.Or(right);
+        }
+
+
+        private static bool TryCreateExecuteMapEntry(MethodInfo method, [NotNullWhen(true)] out Action<Interpreter, Statement>? action)
+        {
+            action = null;
+
+            if (method.Name != "Execute")
+                return false;
+
+            var parameters = method.GetParameters();
+
+            if (parameters.Length != 1)
+                return false;
+
+            var parameterType = parameters[0].ParameterType;
+
+            if (!typeof(Statement).IsAssignableFrom(parameterType))
+                return false;
+
+            var isStatic = method.IsStatic;
+
+            var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
+            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(Statement), "statement");
+            var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
+            var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Action<Interpreter, Statement>>(call, instance, parameter);
+
+            action = lambda.Compile();
+
+            return true;
+        }
+
+        private static bool TryCreateEvaluateMapEntry(MethodInfo method, [NotNullWhen(true)] out Func<Interpreter, Expression, Value>? action)
+        {
+            action = null;
+
+            if (method.Name != "Evaluate")
+                return false;
+
+            var parameters = method.GetParameters();
+
+            if (parameters.Length != 1)
+                return false;
+
+            var parameterType = parameters[0].ParameterType;
+
+            if (!typeof(Expression).IsAssignableFrom(parameterType))
+                return false;
+
+            if (!method.ReturnType.IsAssignableFrom(typeof(Value)))
+                return false;
+
+            var isStatic = method.IsStatic;
+
+            var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
+            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(Expression), "expression");
+            var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
+            var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Func<Interpreter, Expression, Value>>(call, instance, parameter);
+
+            action = lambda.Compile();
+
+            return true;
+        }
+    }
+}
+
+Contracts\IRuntime.cs
+=======================
+
+using Quixotic.Interpret.Environment;
+using Quixotic.Interpret.Values;
+
+namespace Quixotic.Interpret.Contracts
+{
+    public interface IRuntime
+    {
+        RuntimeFrame Frame { get; }
+
+        void ExecutePrint(Value value);
+        RuntimeFrame Pop();
+        RuntimeFrame Push(RuntimeFrameType type);
+    }
+}
+Environment\Identifier.cs
+===========================
+
+using Quixotic.Interpret.Exceptions;
+using Quixotic.Interpret.Values;
+
+namespace Quixotic.Interpret.Environment
+{
+    public class Identifier(Value value)
+    {
+        public Value Value { get; private set; } = value;
+
+        public Values.ValueType Type { get; } = value.Type;
+
+        public void Assign(Value value)
+        {
+            if (Type != Values.ValueType.Nada && !value.Type.Equals(Type))
+                throw new TypeMismatchException(Type, value.Type);
+
+            Value = value;
+        }
+    }
+}
+
+Environment\Runtime.cs
+========================
+
+using Quixotic.Interpret.Contracts;
+using Quixotic.Interpret.Exceptions;
+using Quixotic.Interpret.Values;
+
+namespace Quixotic.Interpret.Environment
+{
+    public class Runtime : IRuntime
+    {
+        protected readonly Stack<RuntimeFrame> _frames = [];
+
+        public Runtime()
+        {
+            Frame = new RuntimeFrame(RuntimeFrameType.Global);
+            _frames.Push(Frame);
+        }
+
+        public RuntimeFrame Frame { get; private set; }
+
+        public virtual RuntimeFrame Push(RuntimeFrameType type)
+        {
+            var frame = new RuntimeFrame(type, Frame);
+
+            return Frame = frame;
+        }
+
+        public virtual RuntimeFrame Pop()
+        {
+            if (_frames.Count == 0)
+                throw new RuntimeException("Execution is attempting to end frames when no frame is active.");
+
+            return _frames.Pop();
+        }
+
+        public virtual void ExecutePrint(Value value)
+        {
+            Console.WriteLine(value.Unwrap());
+        }
+    }
+}
+
+Environment\RuntimeFrame.cs
+=============================
+
+using Quixotic.Interpret.Values;
+
+namespace Quixotic.Interpret.Environment
+{
+    public class RuntimeFrame(RuntimeFrameType type, RuntimeFrame? parent = null)
+    {
+        public RuntimeFrame? Parent { get; init; } = parent;
+
+        public RuntimeFrameType Type { get; } = type;
+
+        public Scope LocalScope { get; } = new();
+
+        public bool ContainsName(string name)
+        {
+            return LocalScope.ContainsName(name) || (Parent?.ContainsName(name) ?? false);
+        }
+
+        public Value this[string name]
+        {
+            get { return LocalScope[name] ?? Parent?[name] ?? new NadaValue(); }
+            set
+            {
+                if (Parent?.ContainsName(name) == true)
+                    Parent[name] = value;
+
+                LocalScope[name] = value;
+            }
+        }
+    }
+}
+
+Environment\RuntimeFrameType.cs
+=================================
+
+namespace Quixotic.Interpret.Environment
+{
+    public enum RuntimeFrameType
+    {
+        Global,
+        Function,
+        IfBlock,
+        WhileBlock,
+        ForBlock,
+    }
+}
+
+Environment\Scope.cs
+======================
+
+using Quixotic.Interpret.Values;
+
+namespace Quixotic.Interpret.Environment
+{
+    // I changed this to scope because C# already has a static Environment object
+    // under the System namespace, and it was colliding with this class.
+    public class Scope
+    {
+        private readonly Dictionary<string, Identifier> _values = [];
+
+        public bool ContainsName(string name) => _values.ContainsKey(name);
+
+        public Value this[string name]
+        {
+            get
+            {
+                var identifier = _values.GetValueOrDefault(name);
+                return (identifier is null) ? new NadaValue() : identifier.Value;
+            }
+            set
+            {
+                if (_values.TryGetValue(name, out Identifier? identifier))
+                    identifier.Assign(value); // Throws TypeConversionException if type of value is not type of set identifer.
+                else
+                    _values[name] = new Identifier(value);
+            }
+        }
+    }
+}
+
+Exceptions\BinaryOperatorException.cs
+=======================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class BinaryOperatorException(Values.ValueType left, string @operator, Values.ValueType right) : InterpreterException($"{@operator} is not supported between values of type {left.Name} and {right.Name}.");
+}
+
+Exceptions\EnvironmentException.cs
+====================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class EnvironmentException(string message) : Exception(message);
+}
+
+Exceptions\InterpreterException.cs
+====================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class InterpreterException(string message) : Exception(message);
+}
+
+Exceptions\RuntimeException.cs
+================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class RuntimeException(string message) : Exception(message);
+}
+
+Exceptions\TypeMismatchException.cs
+=====================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class TypeMismatchException(Values.ValueType from, Values.ValueType to) : EnvironmentException($"Cannot convert from {from.Name} to {to.Name}.");
+}
+
+Exceptions\UnaryOperatorException.cs
+======================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UnaryOperatorException(string @operator) : InterpreterException($"{@operator} is not supported as a unary operator.");
+}
+
+Exceptions\UndefinedVariableException.cs
+==========================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UndefinedVariableException(string name) : EnvironmentException($"Variable '{name}' cannot be accessed because it is not defined.");
+}
+
+Exceptions\UnrecognizedStatementTypeException.cs
+==================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UnrecognizedStatementTypeException(Type statementType) : InterpreterException($"{statementType.Name} is not a recognized type of statement.");
+}
+
+Values\ObjectType.cs
+======================
+
+namespace Quixotic.Interpret.Values
+{
+    public class ValueType
+    {
+        private readonly Type _typeOfValue;
+
+        protected ValueType(string name, Type typeOfValue)
+        {
+            _typeOfValue = typeOfValue;
+
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        public bool Is(object value) => _typeOfValue.IsInstanceOfType(value);
+
+
+        public override bool Equals(object? obj)
+        {
+            if (!base.Equals(obj) || obj is not ValueType other)
+                return false;
+
+            return other._typeOfValue.Equals(_typeOfValue);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Name, _typeOfValue);
+        }
+
+        public virtual bool IsTruthy(Value value)
+        {
+            return false;
+        }
+
+        public static ValueType Number { get; } = NumberType.Instance;
+        public static ValueType String { get; } = StringType.Instance;
+        public static ValueType Boolean { get; } = BooleanType.Instance;
+        public static ValueType Nada { get; } = NadaType.Instance;
+    }
+
+    public class NumberType : ValueType
+    {
+        public static NumberType Instance { get; } = new();
+
+        protected NumberType()
+            : base("number", typeof(NumberValue))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            if (value is not NumberValue numberValue)
+                return false;
+
+            return numberValue.Value != 0;
+        }
+    }
+
+    public class StringType : ValueType
+    {
+        public static StringType Instance { get; } = new();
+
+        protected StringType()
+            : base("string", typeof(StringValue))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            if (value is not StringValue numberValue)
+                return false;
+
+            return numberValue.Value != string.Empty;
+        }
+    }
+
+    public class BooleanType : ValueType
+    {
+        public static BooleanType Instance { get; } = new();
+
+        protected BooleanType()
+            : base("boolean", typeof(BooleanType))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            if (value is not BooleanValue booleanValue)
+                return false;
+
+            return booleanValue.Value;
+        }
+    }
+
+    public class NadaType : ValueType
+    {
+        public static NadaType Instance { get; } = new();
+
+        protected NadaType()
+            : base("nada", typeof(NadaValue))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            return false;
+        }
+    }
+}
+
+Values\Value.cs
+=================
+
+using Quixotic.Interpret.Exceptions;
+
+namespace Quixotic.Interpret.Values
+{
+
+    public abstract record Value
+    {
+        private readonly object? _value;
+
+        protected Value(ValueType type, object? value)
+        {
+            Type = type;
+            _value = value;
+        }
+
+        public ValueType Type { get; }
+
+        public virtual bool IsTruthy()
+        {
+            return Type.IsTruthy(this);
+        }
+
+        public object? Unwrap() => _value;
+
+        public virtual Value Add(Value right)
+        {
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+
+        public virtual Value Subtract(Value right)
+        {
+            throw new BinaryOperatorException(Type, "-", right.Type);
+        }
+
+        public virtual Value Multiply(Value right)
+        {
+            throw new BinaryOperatorException(Type, "*", right.Type);
+        }
+
+        public virtual Value Divide(Value right)
+        {
+            throw new BinaryOperatorException(Type, "/", right.Type);
+        }
+
+        public virtual BooleanValue IsEqualTo(Value right)
+        {
+            if (Type != right.Type)
+                return BooleanValue.False;
+
+            return new BooleanValue(Equals(Unwrap(), right.Unwrap()));
+        }
+
+        public virtual BooleanValue IsNotEqualTo(Value right)
+        {
+            if (Type != right.Type)
+                return BooleanValue.True;
+
+            return new BooleanValue(!Equals(Unwrap(), right.Unwrap()));
+        }
+
+        public virtual BooleanValue IsLessThan(Value right)
+        {
+            throw new BinaryOperatorException(Type, "<", right.Type);
+        }
+
+        public virtual BooleanValue IsLessThanOrEqualTo(Value right)
+        {
+            throw new BinaryOperatorException(Type, "<", right.Type);
+        }
+
+        public virtual BooleanValue IsGreaterThan(Value right)
+        {
+            throw new BinaryOperatorException(Type, ">", right.Type);
+        }
+
+        public virtual BooleanValue IsGreaterThanOrEqualTo(Value right)
+        {
+            throw new BinaryOperatorException(Type, ">", right.Type);
+        }
+
+        public virtual BooleanValue And(Value right)
+        {
+            return new BooleanValue(IsTruthy() && right.IsTruthy());
+        }
+
+        public virtual BooleanValue Or(Value right)
+        {
+            return new BooleanValue(IsTruthy() || right.IsTruthy());
+        }
+
+    }
+
+    public record NumberValue(double value) : Value(ValueType.Number, value)
+    {
+        public double Value { get; } = value;
+
+        public override string ToString() => Value.ToString();
+
+        public override Value Add(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new NumberValue(Value + numberValue.Value);
+
+            if (right is StringValue stringValue)
+                return new StringValue(Value.ToString() + stringValue.Value);
+
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+
+        public override Value Subtract(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new NumberValue(Value - numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "-", right.Type);
+        }
+
+        public override Value Multiply(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new NumberValue(Value * numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "*", right.Type);
+        }
+
+        public override Value Divide(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new NumberValue(Value * numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "/", right.Type);
+        }
+
+        public override BooleanValue IsLessThan(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new BooleanValue(Value < numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "<", right.Type);
+        }
+        public override BooleanValue IsLessThanOrEqualTo(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new BooleanValue(Value <= numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "<=", right.Type);
+        }
+
+
+        public override BooleanValue IsGreaterThan(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new BooleanValue(Value > numberValue.Value);
+
+            throw new BinaryOperatorException(Type, ">", right.Type);
+        }
+
+        public override BooleanValue IsGreaterThanOrEqualTo(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new BooleanValue(Value >= numberValue.Value);
+
+            throw new BinaryOperatorException(Type, ">=", right.Type);
+        }
+
+    }
+
+    public record StringValue(string value) : Value(ValueType.String, value)
+    {
+        public string Value { get; } = value;
+
+        public override string ToString() => Value;
+
+        public override Value Add(Value right)
+        {
+            if (right is StringValue stringValue)
+                return new StringValue(Value + stringValue.Value);
+
+            if (right is NumberValue numberValue)
+                return new StringValue(Value + numberValue.ToString());
+
+            if (right is BooleanValue booleanValue)
+                return new StringValue(Value + booleanValue.ToString());
+
+            if (right is NadaValue nadaValue)
+                return new StringValue(Value + "nada");
+
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+    }
+
+    public record BooleanValue(bool value) : Value(ValueType.Boolean, value)
+    {
+        public bool Value { get; } = value;
+
+        public override string ToString() => Value == true ? "true" : "false";
+
+        public override Value Add(Value right)
+        {
+            if (right is StringValue stringValue)
+                return new StringValue(Value + stringValue.Value);
+
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+
+        public BooleanValue Not()
+        {
+            return new BooleanValue(!Value);
+        }
+
+        public static BooleanValue True { get; } = new(true);
+
+        public static BooleanValue False { get; } = new(false);
+    }
+
+    public record NadaValue() : Value(ValueType.Nada, null)
+    {
+        public override string ToString() => "nada";
+
+        public override Value Add(Value right)
+        {
+            if (right is StringValue stringValue)
+                return new StringValue("nada" + stringValue.Value);
+
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+    }
+
+
+}
+
