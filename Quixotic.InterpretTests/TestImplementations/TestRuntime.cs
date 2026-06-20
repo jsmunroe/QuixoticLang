@@ -1,17 +1,25 @@
-﻿using Quixotic.Interpret.Environment;
-using Quixotic.Interpret.Values;
+﻿using Quixotic.Interpret.Contracts;
+using Quixotic.Interpret.Environment;
+using Quixotic.Interpret.Symbols;
 
 namespace Quixotic.InterpretTests.TestImplementations
 {
     internal class TestRuntime : Runtime
     {
-        public List<RuntimeFrame> AllFrames { get; } = [];
+        public List<IRuntimeFrame> AllFrames { get; } = [];
 
-        public List<Value> PrintExecutions { get; } = [];
+        public List<string> PrintExecutions { get; } = [];
 
-        public override RuntimeFrame Push(RuntimeFrameType type)
+        public override IRuntimeFrame PushBlock(RuntimeFrameType type)
         {
-            var frame = base.Push(type);
+            var frame = base.PushBlock(type);
+            AllFrames.Add(frame);
+            return frame;
+        }
+
+        public override IRuntimeFrame PushFunction()
+        {
+            var frame = base.PushFunction();
             AllFrames.Add(frame);
             return frame;
         }
@@ -20,8 +28,198 @@ namespace Quixotic.InterpretTests.TestImplementations
         {
             base.ExecutePrint(value);
 
-            PrintExecutions.Add(value);
+            PrintExecutions.Add(value.Unwrap()?.ToString() ?? "nada");
         }
 
+        public void AssertHasPrinted(string value)
+        {
+            var printExecutions = PrintExecutions.Count == 0 ? "\r\nThere were no print executions." : $"\r\nPrint executions were:\r\n\t{string.Join("\r\n\t", PrintExecutions)}\r\n";
+
+            if (!PrintExecutions.Contains(value))
+                throw new AssertFailedException($"No print executions were made with the string '{value}'.{printExecutions}");
+        }
+
+        public void AssertHasPrinted(int index, string value)
+        {
+            if (index < 0)
+                throw new AssertFailedException($"The {nameof(index)} cannot be negative.");
+
+            if (index >= PrintExecutions.Count)
+                throw new AssertFailedException($"There are no print executions at index {index}.");
+
+            var expected = value;
+            var actual = PrintExecutions[index];
+
+            Assert.AreEqual(expected, actual, $"The actual print execution at index {index} is '{actual}'. It was not '{expected}'.");
+        }
+
+        public void AssertFunctionDeclared(string name)
+        {
+            Assert.IsTrue(AllFrames.Any(f => f.Scope.IsFunctionDeclared(name)), $"No function named '{name}' was decleared.");
+        }
+
+        public void AssertFunctionDeclared(int frameIndex, string name)
+        {
+            if (frameIndex < 0)
+                throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
+
+            if (frameIndex >= AllFrames.Count)
+                throw new AssertFailedException($"There frames executions at index {frameIndex}.");
+
+            Assert.IsTrue(AllFrames[frameIndex].Scope.IsFunctionDeclared(name), $"No function named '{name}' was decleared.");
+        }
+
+        public void AssertVariableHasValue(string name, string value)
+        {
+            List<string> otherFrameValues = [];
+
+            for (var i = 0; i < AllFrames.Count; i++)
+            {
+                var frame = AllFrames[i];
+
+                if (!frame.Scope.IsVariableDeclared(name))
+                    continue;
+
+                if (frame.Scope.GetValue(name) is StringValue stringValue)
+                {
+                    if (Equals(stringValue.Value, value))
+                        return;
+
+                    otherFrameValues.Add($"In frame #{i}, {name} = '{stringValue.Value}'.");
+                }
+            }
+
+            if (otherFrameValues.Count == 0)
+                throw new AssertFailedException($"A variable named '{name}' was never defined.");
+            else
+                throw new AssertFailedException($"In no frame was a variable named '{name}' left with a value '{value}'. \r\n\t{string.Join("\r\n\t", otherFrameValues)}");
+        }
+
+        public void AssertVariableHasValue(int frameIndex, string name, string value)
+        {
+            if (frameIndex < 0)
+                throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
+
+            if (frameIndex >= AllFrames.Count)
+                throw new AssertFailedException($"There frames executions at index {frameIndex}.");
+
+            var frame = AllFrames[frameIndex];
+
+            if (!frame.Scope.IsVariableDeclared(name))
+                throw new AssertFailedException($"A variable named '{name}' has not been defined.");
+
+            var variableValue = frame.Scope.GetValue(name);
+
+            if (variableValue is not StringValue stringValue)
+                throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
+
+            var expected = value;
+            var actual = stringValue.Value;
+
+            if (!Equals(stringValue.Value, value))
+                Assert.AreEqual(expected, actual, $"The variable named '{name}' has a value of '{actual}'. It was not '{expected}'.");
+        }
+
+        public void AssertVariableHasValue(string name, double value)
+        {
+            List<string> otherFrameValues = [];
+
+            for (var i = 0; i < AllFrames.Count; i++)
+            {
+                var frame = AllFrames[i];
+
+                if (!frame.Scope.IsVariableDeclared(name))
+                    continue;
+
+                if (frame.Scope.GetValue(name) is NumberValue numberValue)
+                {
+                    if (Equals(numberValue.Value, value))
+                        return;
+
+                    otherFrameValues.Add($"In frame #{i}, {name} = {numberValue.Value}.");
+                }
+            }
+
+            if (otherFrameValues.Count == 0)
+                throw new AssertFailedException($"A variable named '{name}' was never defined.");
+            else
+                throw new AssertFailedException($"In no frame was a variable named '{name}' left with a value {value}. \r\n\t{string.Join("\r\n\t", otherFrameValues)}");
+        }
+
+        public void AssertVariableHasValue(int frameIndex, string name, double value)
+        {
+            if (frameIndex < 0)
+                throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
+
+            if (frameIndex >= AllFrames.Count)
+                throw new AssertFailedException($"There frames executions at index {frameIndex}.");
+
+            var frame = AllFrames[frameIndex];
+
+            if (!frame.Scope.IsVariableDeclared(name))
+                throw new AssertFailedException($"A variable named '{name}' has not been defined.");
+
+            var variableValue = frame.Scope.GetValue(name);
+
+            if (variableValue is not NumberValue numberValue)
+                throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
+
+            var expected = value;
+            var actual = numberValue.Value;
+
+            if (!Equals(numberValue.Value, value))
+                Assert.AreEqual(expected, actual, $"The variable named '{name}' has a value of {actual}. It was not '{expected}'.");
+        }
+
+        public void AssertVariableHasValue(string name, bool value)
+        {
+            List<string> otherFrameValues = [];
+
+            for (var i = 0; i < AllFrames.Count; i++)
+            {
+                var frame = AllFrames[i];
+
+                if (!frame.Scope.IsVariableDeclared(name))
+                    continue;
+
+                if (frame.Scope.GetValue(name) is BooleanValue booleanValue)
+                {
+                    if (Equals(booleanValue.Value, value))
+                        return;
+
+                    otherFrameValues.Add($"In frame #{i}, {name} = {booleanValue.Value}.");
+                }
+            }
+
+            if (otherFrameValues.Count == 0)
+                throw new AssertFailedException($"A variable named '{name}' was never defined.");
+            else
+                throw new AssertFailedException($"In no frame was a variable named '{name}' left with a value {value}. \r\n\t{string.Join("\r\n\t", otherFrameValues)}");
+        }
+
+        public void AssertVariableHasValue(int frameIndex, string name, bool value)
+        {
+            if (frameIndex < 0)
+                throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
+
+            if (frameIndex >= AllFrames.Count)
+                throw new AssertFailedException($"There frames executions at index {frameIndex}.");
+
+            var frame = AllFrames[frameIndex];
+
+            if (!frame.Scope.IsVariableDeclared(name))
+                throw new AssertFailedException($"A variable named '{name}' has not been defined.");
+
+            var variableValue = frame.Scope.GetValue(name);
+
+            if (variableValue is not BooleanValue booleanValue)
+                throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
+
+            var expected = value;
+            var actual = booleanValue.Value;
+
+            if (!Equals(booleanValue.Value, value))
+                Assert.AreEqual(expected, actual, $"The variable named '{name}' has a value of {actual}. It was not '{expected}'.");
+        }
     }
 }

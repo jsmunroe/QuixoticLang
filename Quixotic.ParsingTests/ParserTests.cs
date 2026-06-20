@@ -247,7 +247,7 @@ namespace Quixotic.ParsingTests
             // Execute & Assert
             var exception = Assert.Throws<UnexpectedTokenException>(() => parser.Parse().ToList());
 
-            Assert.AreEqual(TokenType.RightParen, exception.Token.Type);
+            Assert.AreEqual(TokenType.CloseParen, exception.Token.Type);
             Assert.AreEqual(")", exception.Token.Value);
         }
 
@@ -264,7 +264,7 @@ namespace Quixotic.ParsingTests
             // Execute & Assert
             var exception = Assert.Throws<UnexpectedTokenException>(() => parser.Parse().ToList());
 
-            Assert.AreEqual(TokenType.RightParen, exception.Token.Type);
+            Assert.AreEqual(TokenType.CloseParen, exception.Token.Type);
             Assert.AreEqual(")", exception.Token.Value);
         }
 
@@ -639,6 +639,76 @@ namespace Quixotic.ParsingTests
             stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
 
             Assert.AreEqual("It's gonna be a bright, bright, bright sunshiney day!", stringLiteralExpression.Value);
+        }
+
+        [TestMethod]
+        public void Parse_function_declaration_statement()
+        {
+            // Setup
+            var source = @"
+                function sayHello
+                    print ""Hello, windmills!""
+                end function
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            var functionStatement = Assert.IsInstanceOfType<QxFunctionDeclarationStatement>(statements[0]);
+
+            Assert.AreEqual("sayHello", functionStatement.Name);
+            Assert.HasCount(1, functionStatement.Body);
+
+            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(functionStatement.Body[0]);
+
+            var stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("Hello, windmills!", stringLiteralExpression.Value);
+
+        }
+
+        [TestMethod]
+        public void Parse_function_declaration_statement_with_call()
+        {
+            // Setup
+            var source = @"
+                function sayHello
+                    print ""Hello, windmills!""
+                end function
+
+                sayHello()
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            var functionStatement = Assert.IsInstanceOfType<QxFunctionDeclarationStatement>(statements[0]);
+
+            Assert.AreEqual("sayHello", functionStatement.Name);
+            Assert.HasCount(1, functionStatement.Body);
+
+            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(functionStatement.Body[0]);
+
+            var stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
+
+            Assert.AreEqual("Hello, windmills!", stringLiteralExpression.Value);
+
+            var functionCallStatement = Assert.IsInstanceOfType<QxFunctionCallStatement>(statements[1]);
+
+            Assert.AreEqual("sayHello", functionCallStatement.Name);
+
         }
 
     }

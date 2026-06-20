@@ -1,4 +1,4 @@
-﻿namespace Quixotic.Interpret.Values
+﻿namespace Quixotic.Interpret.Symbols
 {
     public class ValueType
     {
@@ -18,7 +18,7 @@
 
         public override bool Equals(object? obj)
         {
-            if (!base.Equals(obj) || obj is not ValueType other)
+            if (obj is not ValueType other)
                 return false;
 
             return other._typeOfValue.Equals(_typeOfValue);

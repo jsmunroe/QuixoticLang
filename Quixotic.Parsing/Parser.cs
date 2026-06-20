@@ -13,7 +13,7 @@ namespace Quixotic.Parsing
         private readonly Stepper<Token> _tokens = new(tokens);
 
         public Parser(Lexer lexer)
-            : this(lexer.Run())
+            : this(lexer.Tokenize())
         { }
 
         public IEnumerable<QxStatement> Parse()
@@ -63,17 +63,81 @@ namespace Quixotic.Parsing
             if (Match(TokenType.If))
                 return ParseIf();
 
+            if (Match(TokenType.Function))
+                return ParseFunctionDeclaration();
+
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
-        private QxStatement ParsePrint()
+        private QxFunctionDeclarationStatement ParseFunctionDeclaration()
+        {
+            var identifierToken = Expect(TokenType.Identifier);
+
+            var name = identifierToken.Value;
+
+            // Parse parameters
+            var parameters = ParseParameters();
+
+            var body = ParseBlock(() => false);
+
+            Expect(TokenType.End);
+            Expect(TokenType.Function);
+
+            return new(name) { Parameters = [.. parameters], Body = body };
+        }
+
+        private List<QxParameter> ParseParameters()
+        {
+            List<QxParameter> parameters = [];
+
+            while (Match(TokenType.Identifier, out var token))
+            {
+                parameters.Add(new QxParameter(token.Value));
+
+                if (Match(TokenType.NewLine))
+                    break;
+
+                Expect(TokenType.Comma);
+            }
+
+            return parameters;
+        }
+
+        private QxFunctionCallStatement ParseFunctionCall(Token token)
+        {
+            var name = token.Value;
+
+            // Parse arguments
+            var arguments = ParseArguments();
+
+            return new(name) { Arguments = [.. arguments] };
+        }
+
+        private List<QxExpression> ParseArguments()
+        {
+            List<QxExpression> parameters = [];
+            while (true)
+            {
+                var expression = ParseExpression();
+                parameters.Add(expression);
+
+                if (Match(TokenType.CloseParen))
+                    break;
+
+                Expect(TokenType.Comma);
+            }
+
+            return parameters;
+        }
+
+        private QxPrintStatement ParsePrint()
         {
             var expression = ParseExpression();
 
             return new QxPrintStatement(expression);
         }
 
-        private QxAssignmentStatement ParseIdentifier(Token token)
+        private QxStatement ParseIdentifier(Token token)
         {
             var identifier = new QxIdentifierExpression(token.Value);
 
@@ -84,6 +148,11 @@ namespace Quixotic.Parsing
                 var expression = ParseExpression();
 
                 return new QxAssignmentStatement(identifier, expression);
+            }
+
+            if (next.Type == TokenType.OpenParen)
+            {
+                return ParseFunctionCall(token);
             }
 
             throw new UnexpectedTokenException(next);
@@ -102,7 +171,7 @@ namespace Quixotic.Parsing
                 return new QxIfStatement(condition) { ThenBlock = [statement] };
             }
 
-            var thenBlock = ParseBlock(t => t.Type == TokenType.Else);
+            var thenBlock = ParseBlock(() => Peek().Type == TokenType.Else);
 
             List<QxElseIfClause> elseIfClauses = [];
 
@@ -117,7 +186,7 @@ namespace Quixotic.Parsing
                 }
                 else
                 {
-                    elseBlock = ParseBlock(t => t.Type == TokenType.Else);
+                    elseBlock = ParseBlock(() => Peek().Type == TokenType.Else);
                 }
             }
 
@@ -137,7 +206,7 @@ namespace Quixotic.Parsing
         {
             var condition = ParseExpression();
 
-            var block = ParseBlock(t => t.Type == TokenType.Else);
+            var block = ParseBlock(() => Peek().Type == TokenType.Else);
 
             return new QxElseIfClause(condition)
             {
@@ -180,13 +249,13 @@ namespace Quixotic.Parsing
         {
             var token = Pop();
 
-            if (token.Type == TokenType.LeftParen)
+            if (token.Type == TokenType.OpenParen)
             {
                 var expression = ParseExpression();
 
                 var nextToken = Pop();
-                if (nextToken.Type != TokenType.RightParen)
-                    throw new ExpectedTokenException(new TokenHead(TokenType.RightParen, ")"), nextToken);
+                if (nextToken.Type != TokenType.CloseParen)
+                    throw new ExpectedTokenException(new TokenHead(TokenType.CloseParen, ")"), nextToken);
 
                 return expression;
             }
@@ -217,14 +286,14 @@ namespace Quixotic.Parsing
             return ParsePrimary();
         }
 
-        private Block ParseBlock(Func<Token, bool> terminationCondition)
+        private Block ParseBlock(Func<bool> terminationCondition)
         {
             var block = new Block();
 
             bool isTerminated() =>
                 IsAtEnd ||
                 Peek().Type == TokenType.End ||
-                terminationCondition(Peek());
+                terminationCondition();
 
             while (!isTerminated())
             {
@@ -290,6 +359,12 @@ namespace Quixotic.Parsing
 
             token = null;
             return false;
+        }
+
+        private bool TokenIs(TokenType type)
+        {
+            var token = Peek();
+            return token.Type == type;
         }
     }
 }

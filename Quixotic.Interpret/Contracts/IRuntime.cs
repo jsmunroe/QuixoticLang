@@ -1,14 +1,15 @@
 ﻿using Quixotic.Interpret.Environment;
-using Quixotic.Interpret.Values;
+using Quixotic.Interpret.Symbols;
 
 namespace Quixotic.Interpret.Contracts
 {
     public interface IRuntime
     {
-        RuntimeFrame Frame { get; }
+        IRuntimeFrame Frame { get; }
 
         void ExecutePrint(Value value);
-        RuntimeFrame Pop();
-        RuntimeFrame Push(RuntimeFrameType type);
+        IRuntimeFrame Pop();
+        IRuntimeFrame PushBlock(RuntimeFrameType type);
+        IRuntimeFrame PushFunction();
     }
 }

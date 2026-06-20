@@ -1,6 +1,6 @@
 ﻿using Quixotic.Interpret.Exceptions;
 
-namespace Quixotic.Interpret.Values
+namespace Quixotic.Interpret.Symbols
 {
 
     public abstract record Value
@@ -126,7 +126,7 @@ namespace Quixotic.Interpret.Values
         public override Value Divide(Value right)
         {
             if (right is NumberValue numberValue)
-                return new NumberValue(Value * numberValue.Value);
+                return new NumberValue(Value / numberValue.Value);
 
             throw new BinaryOperatorException(Type, "/", right.Type);
         }

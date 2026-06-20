@@ -4,7 +4,7 @@ Interpreter.cs
 using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Environment;
 using Quixotic.Interpret.Exceptions;
-using Quixotic.Interpret.Values;
+using Quixotic.Interpret.Symbols;
 using Quixotic.Parsing.Expressions;
 using Quixotic.Parsing.Operations;
 using Quixotic.Parsing.Statements;
@@ -15,33 +15,15 @@ namespace Quixotic.Interpret
 {
     public class Interpreter(IRuntime runtime)
     {
-        private readonly static Dictionary<Type, Action<Interpreter, Statement>> _executeMap = [];
+        private readonly static Dictionary<Type, Action<Interpreter, QxStatement>> _executeMap = [];
 
-        private readonly static Dictionary<Type, Func<Interpreter, Expression, Value>> _evaluateMap = [];
+        private readonly static Dictionary<Type, Func<Interpreter, QxExpression, Value>> _evaluateMap = [];
 
-        static Interpreter()
+        static Interpreter() => LoadMapEntries();
+
+        public void Execute(IEnumerable<QxStatement> statements)
         {
-            foreach (var method in typeof(Interpreter).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
-            {
-                var methodParameters = method.GetParameters();
-
-                if (methodParameters.Length < 1)
-                    continue;
-
-                var methodParameter = method.GetParameters()[0];
-                var parameterType = methodParameter.ParameterType;
-
-                if (TryCreateExecuteMapEntry(method, out var execute))
-                    _executeMap[parameterType] = execute;
-
-                if (TryCreateEvaluateMapEntry(method, out var evaluate))
-                    _evaluateMap[parameterType] = evaluate;
-            }
-        }
-
-        public void Execute(IEnumerable<Statement> statements)
-        {
-            runtime.Push(RuntimeFrameType.Global);
+            runtime.PushBlock(RuntimeFrameType.Global);
 
             foreach (var statement in statements)
                 Execute(statement);
@@ -49,9 +31,9 @@ namespace Quixotic.Interpret
             runtime.Pop();
         }
 
-        public void Execute(IEnumerable<Statement> statements, RuntimeFrameType frameType)
+        public void Execute(IEnumerable<QxStatement> statements, RuntimeFrameType frameType)
         {
-            runtime.Push(frameType);
+            runtime.PushBlock(frameType);
 
             foreach (var statement in statements)
                 Execute(statement);
@@ -59,7 +41,20 @@ namespace Quixotic.Interpret
             runtime.Pop();
         }
 
-        public void Execute(Statement statement)
+        public void Execute(Function function, List<Argument> arguments)
+        {
+            runtime.PushFunction();
+
+            foreach (var argument in arguments)
+                runtime.Frame.Scope.DefineVariable(argument.Name, argument.Value);
+
+            foreach (var statement in function.Body)
+                Execute(statement);
+
+            runtime.Pop();
+        }
+
+        public void Execute(QxStatement statement)
         {
             var statementType = statement.GetType();
             if (!_executeMap.TryGetValue(statementType, out var action))
@@ -68,7 +63,7 @@ namespace Quixotic.Interpret
             action(this, statement);
         }
 
-        private Value Evaluate(Expression expression)
+        private Value Evaluate(QxExpression expression)
         {
             var expressionType = expression.GetType();
             if (!_evaluateMap.TryGetValue(expressionType, out var function))
@@ -78,20 +73,43 @@ namespace Quixotic.Interpret
         }
 
 
-        public void Execute(PrintStatement statement)
+        public void Execute(QxPrintStatement statement)
         {
             var value = Evaluate(statement.Expression);
             runtime.ExecutePrint(value);
         }
 
-        public void Execute(AssignmentStatement statement)
+        public void Execute(QxFunctionDeclarationStatement statement)
+        {
+            List<Parameter> parameters = [.. statement.Parameters.Select(p => new Parameter(p.Name))];
+
+            var function = new Function(statement.Body) { Parameters = [.. parameters] };
+            runtime.Frame.Scope.DefineFunction(statement.Name, function);
+        }
+
+        public void Execute(QxFunctionCallStatement statement)
+        {
+            var name = statement.Name;
+
+            var function = runtime.Frame.Scope.GetFunction(name);
+
+            var arguments = BindArguments(name, function, statement.Arguments);
+
+            Execute(function, arguments);
+        }
+
+        public void Execute(QxAssignmentStatement statement)
         {
             var value = Evaluate(statement.Value);
             var name = statement.Target.Name;
-            runtime.Frame[name] = value;
+
+            if (runtime.Frame.Scope.IsVariableDeclared(name))
+                runtime.Frame.Scope.AssignVariable(name, value);
+            else
+                runtime.Frame.Scope.DefineVariable(name, value);
         }
 
-        public void Execute(IfStatement statement)
+        public void Execute(QxIfStatement statement)
         {
             if (IsTruthy(Evaluate(statement.Condition)))
             {
@@ -111,25 +129,25 @@ namespace Quixotic.Interpret
             Execute(statement.ElseBlock, RuntimeFrameType.IfBlock);
         }
 
-        protected static Value Evaluate(NumberLiteralExpression expression)
+        protected static Value Evaluate(QxNumberLiteralExpression expression)
         {
             return new NumberValue(expression.Value);
         }
 
-        protected static Value Evaluate(StringLiteralExpression expression)
+        protected static Value Evaluate(QxStringLiteralExpression expression)
         {
             return new StringValue(expression.Value);
         }
 
-        protected Value Evaluate(IdentifierExpression expression)
+        protected Value Evaluate(QxIdentifierExpression expression)
         {
             var name = expression.Name;
-            var value = runtime.Frame[name];
+            var value = runtime.Frame.Scope.GetValue(name);
 
             return value;
         }
 
-        protected Value Evaluate(UnaryExpression expression)
+        protected Value Evaluate(QxUnaryExpression expression)
         {
             var operand = Evaluate(expression.Operand);
 
@@ -144,7 +162,7 @@ namespace Quixotic.Interpret
             };
         }
 
-        protected Value Evaluate(BinaryExpression expression)
+        protected Value Evaluate(QxBinaryExpression expression)
         {
             var left = Evaluate(expression.Left);
             var right = Evaluate(expression.Right);
@@ -237,8 +255,46 @@ namespace Quixotic.Interpret
             return left.Or(right);
         }
 
+        public List<Argument> BindArguments(string name, Function function, List<QxExpression> expressions)
+        {
+            var parameters = function.Parameters;
 
-        private static bool TryCreateExecuteMapEntry(MethodInfo method, [NotNullWhen(true)] out Action<Interpreter, Statement>? action)
+            if (parameters.Count != expressions.Count)
+                throw new ParameterCountException(name, parameters.Count, expressions.Count);
+
+            List<Argument> arguments = [];
+
+            // Push function parameters into 
+            foreach (var (parameter, expression) in parameters.Zip(expressions))
+            {
+                var value = Evaluate(expression);
+                arguments.Add(new Argument(parameter.Name, value));
+            }
+
+            return arguments;
+        }
+
+        private static void LoadMapEntries()
+        {
+            foreach (var method in typeof(Interpreter).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            {
+                var methodParameters = method.GetParameters();
+
+                if (methodParameters.Length < 1)
+                    continue;
+
+                var methodParameter = method.GetParameters()[0];
+                var parameterType = methodParameter.ParameterType;
+
+                if (TryCreateExecuteMapEntry(method, out var execute))
+                    _executeMap[parameterType] = execute;
+
+                if (TryCreateEvaluateMapEntry(method, out var evaluate))
+                    _evaluateMap[parameterType] = evaluate;
+            }
+        }
+
+        private static bool TryCreateExecuteMapEntry(MethodInfo method, [NotNullWhen(true)] out Action<Interpreter, QxStatement>? action)
         {
             action = null;
 
@@ -252,23 +308,23 @@ namespace Quixotic.Interpret
 
             var parameterType = parameters[0].ParameterType;
 
-            if (!typeof(Statement).IsAssignableFrom(parameterType))
+            if (!typeof(QxStatement).IsAssignableFrom(parameterType))
                 return false;
 
             var isStatic = method.IsStatic;
 
             var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
-            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(Statement), "statement");
+            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(QxStatement), "statement");
             var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
             var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Action<Interpreter, Statement>>(call, instance, parameter);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Action<Interpreter, QxStatement>>(call, instance, parameter);
 
             action = lambda.Compile();
 
             return true;
         }
 
-        private static bool TryCreateEvaluateMapEntry(MethodInfo method, [NotNullWhen(true)] out Func<Interpreter, Expression, Value>? action)
+        private static bool TryCreateEvaluateMapEntry(MethodInfo method, [NotNullWhen(true)] out Func<Interpreter, QxExpression, Value>? action)
         {
             action = null;
 
@@ -282,7 +338,7 @@ namespace Quixotic.Interpret
 
             var parameterType = parameters[0].ParameterType;
 
-            if (!typeof(Expression).IsAssignableFrom(parameterType))
+            if (!typeof(QxExpression).IsAssignableFrom(parameterType))
                 return false;
 
             if (!method.ReturnType.IsAssignableFrom(typeof(Value)))
@@ -291,10 +347,10 @@ namespace Quixotic.Interpret
             var isStatic = method.IsStatic;
 
             var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
-            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(Expression), "expression");
+            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(QxExpression), "expression");
             var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
             var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Func<Interpreter, Expression, Value>>(call, instance, parameter);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Func<Interpreter, QxExpression, Value>>(call, instance, parameter);
 
             action = lambda.Compile();
 
@@ -307,40 +363,91 @@ Contracts\IRuntime.cs
 =======================
 
 using Quixotic.Interpret.Environment;
-using Quixotic.Interpret.Values;
+using Quixotic.Interpret.Symbols;
 
 namespace Quixotic.Interpret.Contracts
 {
     public interface IRuntime
     {
-        RuntimeFrame Frame { get; }
+        IRuntimeFrame Frame { get; }
 
         void ExecutePrint(Value value);
-        RuntimeFrame Pop();
-        RuntimeFrame Push(RuntimeFrameType type);
+        IRuntimeFrame Pop();
+        IRuntimeFrame PushBlock(RuntimeFrameType type);
+        IRuntimeFrame PushFunction();
     }
 }
-Environment\Identifier.cs
-===========================
+Contracts\IRuntimeFrame.cs
+============================
 
+using Quixotic.Interpret.Environment;
+
+namespace Quixotic.Interpret.Contracts
+{
+    public interface IRuntimeFrame
+    {
+        IRuntimeFrame? Parent { get; }
+        RuntimeFrameType Type { get; }
+        Scope Scope { get; }
+        Scope GlobalScope { get; }
+    }
+}
+Environment\BlockRuntimeFrame.cs
+==================================
+
+using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Exceptions;
-using Quixotic.Interpret.Values;
 
 namespace Quixotic.Interpret.Environment
 {
-    public class Identifier(Value value)
+    public class BlockRuntimeFrame(RuntimeFrameType type, IRuntimeFrame? parent = null) : IRuntimeFrame
     {
-        public Value Value { get; private set; } = value;
+        public IRuntimeFrame? Parent { get; init; } = parent;
 
-        public Values.ValueType Type { get; } = value.Type;
+        public RuntimeFrameType Type { get; } = type;
 
-        public void Assign(Value value)
-        {
-            if (Type != Values.ValueType.Nada && !value.Type.Equals(Type))
-                throw new TypeMismatchException(Type, value.Type);
+        public Scope Scope { get; } = new(parent?.Scope);
 
-            Value = value;
-        }
+        public Scope GlobalScope => Parent?.GlobalScope ?? throw new RuntimeException($"{nameof(BlockRuntimeFrame)} cannot resolve global scope.");
+    }
+}
+
+Environment\FunctionRuntimeFrame.cs
+=====================================
+
+using Quixotic.Interpret.Contracts;
+using Quixotic.Interpret.Exceptions;
+
+namespace Quixotic.Interpret.Environment
+{
+    public class FunctionRuntimeFrame(IRuntimeFrame parent) : IRuntimeFrame
+    {
+        public IRuntimeFrame? Parent { get; } = parent;
+
+        public RuntimeFrameType Type => RuntimeFrameType.Function;
+
+        public Scope Scope { get; } = new(parent?.GlobalScope);
+
+        public Scope GlobalScope => Parent?.GlobalScope ?? throw new RuntimeException($"{nameof(FunctionRuntimeFrame)} cannot resolve global scope.");
+    }
+}
+
+Environment\GlobalRuntimeFrame.cs
+===================================
+
+using Quixotic.Interpret.Contracts;
+
+namespace Quixotic.Interpret.Environment
+{
+    public class GlobalRuntimeFrame : IRuntimeFrame
+    {
+        public IRuntimeFrame? Parent => null;
+
+        public RuntimeFrameType Type => RuntimeFrameType.Global;
+
+        public Scope Scope { get; } = new(null);
+
+        public Scope GlobalScope => Scope;
     }
 }
 
@@ -349,74 +456,51 @@ Environment\Runtime.cs
 
 using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Exceptions;
-using Quixotic.Interpret.Values;
+using Quixotic.Interpret.Symbols;
 
 namespace Quixotic.Interpret.Environment
 {
     public class Runtime : IRuntime
     {
-        protected readonly Stack<RuntimeFrame> _frames = [];
+        protected readonly Stack<IRuntimeFrame> _frames = [];
 
         public Runtime()
         {
-            Frame = new RuntimeFrame(RuntimeFrameType.Global);
+            Frame = new GlobalRuntimeFrame();
             _frames.Push(Frame);
         }
 
-        public RuntimeFrame Frame { get; private set; }
+        public IRuntimeFrame Frame { get; private set; }
 
-        public virtual RuntimeFrame Push(RuntimeFrameType type)
+        public virtual IRuntimeFrame PushBlock(RuntimeFrameType type)
         {
-            var frame = new RuntimeFrame(type, Frame);
+            var frame = new BlockRuntimeFrame(type, Frame);
+
+            _frames.Push(frame);
 
             return Frame = frame;
         }
 
-        public virtual RuntimeFrame Pop()
+        public virtual IRuntimeFrame PushFunction()
+        {
+            var frame = new FunctionRuntimeFrame(Frame);
+
+            _frames.Push(frame);
+
+            return Frame = frame;
+        }
+
+        public virtual IRuntimeFrame Pop()
         {
             if (_frames.Count == 0)
                 throw new RuntimeException("Execution is attempting to end frames when no frame is active.");
 
-            return _frames.Pop();
+            return Frame = _frames.Pop();
         }
 
         public virtual void ExecutePrint(Value value)
         {
             Console.WriteLine(value.Unwrap());
-        }
-    }
-}
-
-Environment\RuntimeFrame.cs
-=============================
-
-using Quixotic.Interpret.Values;
-
-namespace Quixotic.Interpret.Environment
-{
-    public class RuntimeFrame(RuntimeFrameType type, RuntimeFrame? parent = null)
-    {
-        public RuntimeFrame? Parent { get; init; } = parent;
-
-        public RuntimeFrameType Type { get; } = type;
-
-        public Scope LocalScope { get; } = new();
-
-        public bool ContainsName(string name)
-        {
-            return LocalScope.ContainsName(name) || (Parent?.ContainsName(name) ?? false);
-        }
-
-        public Value this[string name]
-        {
-            get { return LocalScope[name] ?? Parent?[name] ?? new NadaValue(); }
-            set
-            {
-                if (Parent?.ContainsName(name) == true)
-                    Parent[name] = value;
-
-                LocalScope[name] = value;
-            }
         }
     }
 }
@@ -439,33 +523,105 @@ namespace Quixotic.Interpret.Environment
 Environment\Scope.cs
 ======================
 
-using Quixotic.Interpret.Values;
+using Quixotic.Interpret.Exceptions;
+using Quixotic.Interpret.Symbols;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Interpret.Environment
 {
     // I changed this to scope because C# already has a static Environment object
     // under the System namespace, and it was colliding with this class.
-    public class Scope
+    public class Scope(Scope? parent)
     {
-        private readonly Dictionary<string, Identifier> _values = [];
+        private readonly Dictionary<string, Symbol> _values = [];
 
-        public bool ContainsName(string name) => _values.ContainsKey(name);
-
-        public Value this[string name]
+        public void DefineVariable(string name, Value value)
         {
-            get
-            {
-                var identifier = _values.GetValueOrDefault(name);
-                return (identifier is null) ? new NadaValue() : identifier.Value;
-            }
-            set
-            {
-                if (_values.TryGetValue(name, out Identifier? identifier))
-                    identifier.Assign(value); // Throws TypeConversionException if type of value is not type of set identifer.
-                else
-                    _values[name] = new Identifier(value);
-            }
+            ExpectUndefined(name);
+
+            _values[name] = new VariableSymbol(value);
         }
+
+        public bool IsSymbolDeclared(string name)
+        {
+            return _values.ContainsKey(name);
+        }
+
+        public bool IsFunctionDeclared(string name)
+        {
+            return _values.TryGetValue(name, out var symbol) && symbol is FunctionSymbol;
+        }
+
+        public bool IsVariableDeclared(string name)
+        {
+            return _values.TryGetValue(name, out var symbol) && symbol is VariableSymbol;
+        }
+
+        private bool TryGetSymbol(string name, [NotNullWhen(returnValue: true)] out Symbol? symbol)
+        {
+            if (_values.TryGetValue(name, out var localSymbol))
+            {
+                symbol = localSymbol;
+                return true;
+            }
+
+            if (parent?.TryGetSymbol(name, out var parentSymbol) == true)
+            {
+                symbol = parentSymbol;
+                return true;
+            }
+
+            symbol = default;
+            return false;
+        }
+
+        public void AssignVariable(string name, Value value)
+        {
+            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
+                throw new UndefinedSymbolException(name);
+
+            variableSymbol.Assign(value); // Throws TypeConversionException if type of value is not type of set identifer.
+        }
+
+        public Value GetValue(string name)
+        {
+            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
+                throw new UndefinedSymbolException(name);
+
+            return variableSymbol.Value;
+        }
+
+        public void DefineFunction(string name, Function function)
+        {
+            ExpectUndefined(name);
+
+            _values[name] = new FunctionSymbol(function);
+        }
+
+        public Function GetFunction(string name)
+        {
+            if (!TryGetSymbol(name, out var symbol) || symbol is not FunctionSymbol functionSymbol)
+                throw new UndefinedFunctionException(name);
+
+            return functionSymbol.Function;
+        }
+
+        private void ExpectUndefined(string name)
+        {
+            if (TryGetSymbol(name, out var symbol))
+            {
+                if (symbol is VariableSymbol)
+                    throw new VariableAlreadyDefinedException(name);
+
+                if (symbol is FunctionSymbol)
+                    throw new FunctionAlreadyDefinedException(name);
+
+                throw new SymbolAlreadyDefinedException(name);
+            }
+
+            parent?.ExpectUndefined(name);
+        }
+
     }
 }
 
@@ -474,7 +630,7 @@ Exceptions\BinaryOperatorException.cs
 
 namespace Quixotic.Interpret.Exceptions
 {
-    public class BinaryOperatorException(Values.ValueType left, string @operator, Values.ValueType right) : InterpreterException($"{@operator} is not supported between values of type {left.Name} and {right.Name}.");
+    public class BinaryOperatorException(Symbols.ValueType left, string @operator, Symbols.ValueType right) : InterpreterException($"{@operator} is not supported between values of type {left.Name} and {right.Name}.");
 }
 
 Exceptions\EnvironmentException.cs
@@ -485,12 +641,27 @@ namespace Quixotic.Interpret.Exceptions
     public class EnvironmentException(string message) : Exception(message);
 }
 
+Exceptions\FunctionAlreadyDefinedException.cs
+===============================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class FunctionAlreadyDefinedException(string functionName) : Exception($"A function with the name '{functionName}' has already been defined.");
+}
 Exceptions\InterpreterException.cs
 ====================================
 
 namespace Quixotic.Interpret.Exceptions
 {
     public class InterpreterException(string message) : Exception(message);
+}
+
+Exceptions\ParameterCountException.cs
+=======================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class ParameterCountException(string functionName, int expected, int actual) : Exception($"The function named '{functionName}' requires {expected} parameters. {actual} arguments were provided.");
 }
 
 Exceptions\RuntimeException.cs
@@ -501,12 +672,19 @@ namespace Quixotic.Interpret.Exceptions
     public class RuntimeException(string message) : Exception(message);
 }
 
+Exceptions\SymbolAlreadyDefinedException.cs
+=============================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class SymbolAlreadyDefinedException(string symbolName) : Exception($"A symbol with the name '{symbolName}' has already been defined.");
+}
 Exceptions\TypeMismatchException.cs
 =====================================
 
 namespace Quixotic.Interpret.Exceptions
 {
-    public class TypeMismatchException(Values.ValueType from, Values.ValueType to) : EnvironmentException($"Cannot convert from {from.Name} to {to.Name}.");
+    public class TypeMismatchException(Symbols.ValueType from, Symbols.ValueType to) : EnvironmentException($"Cannot convert from {from.Name} to {to.Name}.");
 }
 
 Exceptions\UnaryOperatorException.cs
@@ -517,12 +695,28 @@ namespace Quixotic.Interpret.Exceptions
     public class UnaryOperatorException(string @operator) : InterpreterException($"{@operator} is not supported as a unary operator.");
 }
 
-Exceptions\UndefinedVariableException.cs
+Exceptions\UndefinedFunctionException.cs
 ==========================================
 
 namespace Quixotic.Interpret.Exceptions
 {
-    public class UndefinedVariableException(string name) : EnvironmentException($"Variable '{name}' cannot be accessed because it is not defined.");
+    public class UndefinedFunctionException(string name) : RuntimeException($"No function named '{name}' has been defined.");
+}
+
+Exceptions\UndefinedIdentifierException.cs
+============================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UndefinedIdentifierException(string name) : RuntimeException($"No identifier named '{name}' has been defined.");
+}
+
+Exceptions\UndefinedSymbolException.cs
+========================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UndefinedSymbolException(string name) : RuntimeException($"No symbol named '{name}' has been defined.");
 }
 
 Exceptions\UnrecognizedStatementTypeException.cs
@@ -533,123 +727,72 @@ namespace Quixotic.Interpret.Exceptions
     public class UnrecognizedStatementTypeException(Type statementType) : InterpreterException($"{statementType.Name} is not a recognized type of statement.");
 }
 
-Values\ObjectType.cs
-======================
+Exceptions\VariableAlreadyDefinedException.cs
+===============================================
 
-namespace Quixotic.Interpret.Values
+namespace Quixotic.Interpret.Exceptions
 {
-    public class ValueType
+    public class VariableAlreadyDefinedException(string variableName) : Exception($"A variable with the name '{variableName}' has already been defined.");
+}
+Symbols\Function.cs
+=====================
+
+using Quixotic.Parsing;
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class Function(Block body)
     {
-        private readonly Type _typeOfValue;
+        public List<Parameter> Parameters { get; init; } = [];
 
-        protected ValueType(string name, Type typeOfValue)
-        {
-            _typeOfValue = typeOfValue;
-
-            Name = name;
-        }
-
-        public string Name { get; }
-
-        public bool Is(object value) => _typeOfValue.IsInstanceOfType(value);
-
-
-        public override bool Equals(object? obj)
-        {
-            if (!base.Equals(obj) || obj is not ValueType other)
-                return false;
-
-            return other._typeOfValue.Equals(_typeOfValue);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(Name, _typeOfValue);
-        }
-
-        public virtual bool IsTruthy(Value value)
-        {
-            return false;
-        }
-
-        public static ValueType Number { get; } = NumberType.Instance;
-        public static ValueType String { get; } = StringType.Instance;
-        public static ValueType Boolean { get; } = BooleanType.Instance;
-        public static ValueType Nada { get; } = NadaType.Instance;
+        public Block Body { get; } = body;
     }
 
-    public class NumberType : ValueType
-    {
-        public static NumberType Instance { get; } = new();
 
-        protected NumberType()
-            : base("number", typeof(NumberValue))
-        { }
-
-        public override bool IsTruthy(Value value)
-        {
-            if (value is not NumberValue numberValue)
-                return false;
-
-            return numberValue.Value != 0;
-        }
-    }
-
-    public class StringType : ValueType
-    {
-        public static StringType Instance { get; } = new();
-
-        protected StringType()
-            : base("string", typeof(StringValue))
-        { }
-
-        public override bool IsTruthy(Value value)
-        {
-            if (value is not StringValue numberValue)
-                return false;
-
-            return numberValue.Value != string.Empty;
-        }
-    }
-
-    public class BooleanType : ValueType
-    {
-        public static BooleanType Instance { get; } = new();
-
-        protected BooleanType()
-            : base("boolean", typeof(BooleanType))
-        { }
-
-        public override bool IsTruthy(Value value)
-        {
-            if (value is not BooleanValue booleanValue)
-                return false;
-
-            return booleanValue.Value;
-        }
-    }
-
-    public class NadaType : ValueType
-    {
-        public static NadaType Instance { get; } = new();
-
-        protected NadaType()
-            : base("nada", typeof(NadaValue))
-        { }
-
-        public override bool IsTruthy(Value value)
-        {
-            return false;
-        }
-    }
 }
 
-Values\Value.cs
-=================
+Symbols\FunctionArgument.cs
+=============================
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class Argument(string name, Value value)
+    {
+        public string Name { get; } = name;
+
+        public Value Value { get; } = value;
+    }
+
+}
+
+Symbols\Parameter.cs
+======================
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class Parameter(string name)
+    {
+        public string Name { get; } = name;
+    }
+
+}
+
+Symbols\Symbol.cs
+===================
+
+namespace Quixotic.Interpret.Symbols
+{
+    public abstract class Symbol
+    { }
+
+}
+
+Symbols\Value.cs
+==================
 
 using Quixotic.Interpret.Exceptions;
 
-namespace Quixotic.Interpret.Values
+namespace Quixotic.Interpret.Symbols
 {
 
     public abstract record Value
@@ -775,7 +918,7 @@ namespace Quixotic.Interpret.Values
         public override Value Divide(Value right)
         {
             if (right is NumberValue numberValue)
-                return new NumberValue(Value * numberValue.Value);
+                return new NumberValue(Value / numberValue.Value);
 
             throw new BinaryOperatorException(Type, "/", right.Type);
         }
@@ -876,5 +1019,144 @@ namespace Quixotic.Interpret.Values
     }
 
 
+}
+
+Symbols\ValueType.cs
+======================
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class ValueType
+    {
+        private readonly Type _typeOfValue;
+
+        protected ValueType(string name, Type typeOfValue)
+        {
+            _typeOfValue = typeOfValue;
+
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        public bool Is(object value) => _typeOfValue.IsInstanceOfType(value);
+
+
+        public override bool Equals(object? obj)
+        {
+            if (!base.Equals(obj) || obj is not ValueType other)
+                return false;
+
+            return other._typeOfValue.Equals(_typeOfValue);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Name, _typeOfValue);
+        }
+
+        public virtual bool IsTruthy(Value value)
+        {
+            return false;
+        }
+
+        public static ValueType Number { get; } = NumberType.Instance;
+        public static ValueType String { get; } = StringType.Instance;
+        public static ValueType Boolean { get; } = BooleanType.Instance;
+        public static ValueType Nada { get; } = NadaType.Instance;
+    }
+
+    public class NumberType : ValueType
+    {
+        public static NumberType Instance { get; } = new();
+
+        protected NumberType()
+            : base("number", typeof(NumberValue))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            if (value is not NumberValue numberValue)
+                return false;
+
+            return numberValue.Value != 0;
+        }
+    }
+
+    public class StringType : ValueType
+    {
+        public static StringType Instance { get; } = new();
+
+        protected StringType()
+            : base("string", typeof(StringValue))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            if (value is not StringValue numberValue)
+                return false;
+
+            return numberValue.Value != string.Empty;
+        }
+    }
+
+    public class BooleanType : ValueType
+    {
+        public static BooleanType Instance { get; } = new();
+
+        protected BooleanType()
+            : base("boolean", typeof(BooleanType))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            if (value is not BooleanValue booleanValue)
+                return false;
+
+            return booleanValue.Value;
+        }
+    }
+
+    public class NadaType : ValueType
+    {
+        public static NadaType Instance { get; } = new();
+
+        protected NadaType()
+            : base("nada", typeof(NadaValue))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            return false;
+        }
+    }
+}
+
+Symbols\VariableSymbol.cs
+===========================
+
+using Quixotic.Interpret.Exceptions;
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class VariableSymbol(Value value) : Symbol
+    {
+        public Value Value { get; private set; } = value;
+
+        public ValueType Type { get; } = value.Type;
+
+        public void Assign(Value value)
+        {
+            if (Type != Symbols.ValueType.Nada && !value.Type.Equals(Type))
+                throw new TypeMismatchException(Type, value.Type);
+
+            Value = value;
+        }
+    }
+
+    public class FunctionSymbol(Function function) : Symbol
+    {
+        public Function Function { get; } = function;
+    }
 }
 

@@ -1,4 +1,4 @@
 ﻿namespace Quixotic.Interpret.Exceptions
 {
-    public class BinaryOperatorException(Values.ValueType left, string @operator, Values.ValueType right) : InterpreterException($"{@operator} is not supported between values of type {left.Name} and {right.Name}.");
+    public class BinaryOperatorException(Symbols.ValueType left, string @operator, Symbols.ValueType right) : InterpreterException($"{@operator} is not supported between values of type {left.Name} and {right.Name}.");
 }

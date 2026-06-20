@@ -1,7 +1,7 @@
 ﻿using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Environment;
 using Quixotic.Interpret.Exceptions;
-using Quixotic.Interpret.Values;
+using Quixotic.Interpret.Symbols;
 using Quixotic.Parsing.Expressions;
 using Quixotic.Parsing.Operations;
 using Quixotic.Parsing.Statements;
@@ -20,7 +20,7 @@ namespace Quixotic.Interpret
 
         public void Execute(IEnumerable<QxStatement> statements)
         {
-            runtime.Push(RuntimeFrameType.Global);
+            runtime.PushBlock(RuntimeFrameType.Global);
 
             foreach (var statement in statements)
                 Execute(statement);
@@ -30,9 +30,22 @@ namespace Quixotic.Interpret
 
         public void Execute(IEnumerable<QxStatement> statements, RuntimeFrameType frameType)
         {
-            runtime.Push(frameType);
+            runtime.PushBlock(frameType);
 
             foreach (var statement in statements)
+                Execute(statement);
+
+            runtime.Pop();
+        }
+
+        public void Execute(Function function, List<Argument> arguments)
+        {
+            runtime.PushFunction();
+
+            foreach (var argument in arguments)
+                runtime.Frame.Scope.DefineVariable(argument.Name, argument.Value);
+
+            foreach (var statement in function.Body)
                 Execute(statement);
 
             runtime.Pop();
@@ -63,11 +76,34 @@ namespace Quixotic.Interpret
             runtime.ExecutePrint(value);
         }
 
+        public void Execute(QxFunctionDeclarationStatement statement)
+        {
+            List<Parameter> parameters = [.. statement.Parameters.Select(p => new Parameter(p.Name))];
+
+            var function = new Function(statement.Body) { Parameters = [.. parameters] };
+            runtime.Frame.Scope.DefineFunction(statement.Name, function);
+        }
+
+        public void Execute(QxFunctionCallStatement statement)
+        {
+            var name = statement.Name;
+
+            var function = runtime.Frame.Scope.GetFunction(name);
+
+            var arguments = BindArguments(name, function, statement.Arguments);
+
+            Execute(function, arguments);
+        }
+
         public void Execute(QxAssignmentStatement statement)
         {
             var value = Evaluate(statement.Value);
             var name = statement.Target.Name;
-            runtime.Frame[name] = value;
+
+            if (runtime.Frame.Scope.IsVariableDeclared(name))
+                runtime.Frame.Scope.AssignVariable(name, value);
+            else
+                runtime.Frame.Scope.DefineVariable(name, value);
         }
 
         public void Execute(QxIfStatement statement)
@@ -103,7 +139,7 @@ namespace Quixotic.Interpret
         protected Value Evaluate(QxIdentifierExpression expression)
         {
             var name = expression.Name;
-            var value = runtime.Frame[name];
+            var value = runtime.Frame.Scope.GetValue(name);
 
             return value;
         }
@@ -214,6 +250,25 @@ namespace Quixotic.Interpret
         private static BooleanValue Or(Value left, Value right)
         {
             return left.Or(right);
+        }
+
+        public List<Argument> BindArguments(string name, Function function, List<QxExpression> expressions)
+        {
+            var parameters = function.Parameters;
+
+            if (parameters.Count != expressions.Count)
+                throw new ParameterCountException(name, parameters.Count, expressions.Count);
+
+            List<Argument> arguments = [];
+
+            // Push function parameters into 
+            foreach (var (parameter, expression) in parameters.Zip(expressions))
+            {
+                var value = Evaluate(expression);
+                arguments.Add(new Argument(parameter.Name, value));
+            }
+
+            return arguments;
         }
 
         private static void LoadMapEntries()

@@ -15,7 +15,7 @@ namespace Quixotic.LexographyTests
             var lexer = new Lexer(source);
 
             // Execute
-            var result = lexer.Run().ToList();
+            var result = lexer.Tokenize().ToList();
 
             // Assert
             Assert.HasCount(3, result);
@@ -38,7 +38,7 @@ namespace Quixotic.LexographyTests
             var lexer = new Lexer(source);
 
             // Execute
-            var result = lexer.Run().ToList();
+            var result = lexer.Tokenize().ToList();
 
             // Assert
             Assert.HasCount(3, result);
@@ -61,7 +61,7 @@ namespace Quixotic.LexographyTests
             var lexer = new Lexer(source);
 
             // Execute & Assert
-            var ex = Assert.Throws<LexerUnexpectedCharacterException>(() => lexer.Run().ToList());
+            var ex = Assert.Throws<LexerUnexpectedCharacterException>(() => lexer.Tokenize().ToList());
 
             Assert.AreEqual('¶', ex.Character);
             Assert.AreEqual(1, ex.Position.Line);
@@ -82,7 +82,7 @@ namespace Quixotic.LexographyTests
             var lexer = new Lexer(source);
 
             // Execute
-            var tokens = lexer.Run().ToList();
+            var tokens = lexer.Tokenize().ToList();
 
             Assert.HasCount(11, tokens);
 
@@ -108,7 +108,7 @@ namespace Quixotic.LexographyTests
         {
             var lexer = new Lexer("x := 42");
 
-            var tokens = lexer.Run().ToList();
+            var tokens = lexer.Tokenize().ToList();
 
             Assert.AreEqual(TokenType.Identifier, tokens[0].Type);
             Assert.AreEqual(TokenType.Assignment, tokens[1].Type);

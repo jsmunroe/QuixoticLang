@@ -1,3 +1,345 @@
+Quixotic.Interpret\Interpreter.cs
+===================================
+
+using Quixotic.Interpret.Contracts;
+using Quixotic.Interpret.Environment;
+using Quixotic.Interpret.Exceptions;
+using Quixotic.Interpret.Symbols;
+using Quixotic.Parsing.Expressions;
+using Quixotic.Parsing.Operations;
+using Quixotic.Parsing.Statements;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+
+namespace Quixotic.Interpret
+{
+    public class Interpreter(IRuntime runtime)
+    {
+        private readonly static Dictionary<Type, Action<Interpreter, QxStatement>> _executeMap = [];
+
+        private readonly static Dictionary<Type, Func<Interpreter, QxExpression, Value>> _evaluateMap = [];
+
+        static Interpreter() => LoadMapEntries();
+
+        public void Execute(IEnumerable<QxStatement> statements)
+        {
+            runtime.PushBlock(RuntimeFrameType.Global);
+
+            foreach (var statement in statements)
+                Execute(statement);
+
+            runtime.Pop();
+        }
+
+        public void Execute(IEnumerable<QxStatement> statements, RuntimeFrameType frameType)
+        {
+            runtime.PushBlock(frameType);
+
+            foreach (var statement in statements)
+                Execute(statement);
+
+            runtime.Pop();
+        }
+
+        public void ExecuteFunction(FunctionCall function)
+        {
+            runtime.PushFunction();
+
+            foreach (var argument in function.Arguments)
+                runtime.Frame.Scope.DefineVariable(argument.Name, argument.Value);
+
+            foreach (var statement in function.Body)
+                Execute(statement);
+
+            runtime.Pop();
+        }
+
+        public void Execute(QxStatement statement)
+        {
+            var statementType = statement.GetType();
+            if (!_executeMap.TryGetValue(statementType, out var action))
+                throw new NotSupportedException($"Unsupported statement type: {statementType.Name}");
+
+            action(this, statement);
+        }
+
+        private Value Evaluate(QxExpression expression)
+        {
+            var expressionType = expression.GetType();
+            if (!_evaluateMap.TryGetValue(expressionType, out var function))
+                throw new NotSupportedException($"Unsupported expression type: {expressionType.Name}");
+
+            return function(this, expression);
+        }
+
+
+        public void Execute(QxPrintStatement statement)
+        {
+            var value = Evaluate(statement.Expression);
+            runtime.ExecutePrint(value);
+        }
+
+        public void Execute(QxFunctionDeclarationStatement statement)
+        {
+            List<FunctionParameter> parameters = [.. statement.Parameters.Select(p => new FunctionParameter(p.Name))];
+
+            var function = new Function(statement.Body) { Parameters = [.. parameters] };
+            runtime.Frame.Scope.DefineFunction(statement.Name, function);
+        }
+
+        public void Execute(QxFunctionCallStatement statement)
+        {
+            var function = runtime.Frame.Scope.GetFunction(statement.Name);
+
+            var arguments = statement.Arguments.Select(a => Evaluate(a)).ToList();
+
+            var functionCall = function.Call(statement.Name, arguments);
+
+            ExecuteFunction(functionCall);
+        }
+
+        public void Execute(QxAssignmentStatement statement)
+        {
+            var value = Evaluate(statement.Value);
+            var name = statement.Target.Name;
+
+            if (runtime.Frame.Scope.IsVariableDeclared(name))
+                runtime.Frame.Scope.AssignVariable(name, value);
+            else
+                runtime.Frame.Scope.DefineVariable(name, value);
+        }
+
+        public void Execute(QxIfStatement statement)
+        {
+            if (IsTruthy(Evaluate(statement.Condition)))
+            {
+                Execute(statement.ThenBlock, RuntimeFrameType.IfBlock);
+                return;
+            }
+
+            foreach (var elseIfClasue in statement.ElseIfClauses)
+            {
+                if (IsTruthy(Evaluate(elseIfClasue.Condition)))
+                {
+                    Execute(elseIfClasue.Block, RuntimeFrameType.IfBlock);
+                    return;
+                }
+            }
+
+            Execute(statement.ElseBlock, RuntimeFrameType.IfBlock);
+        }
+
+        protected static Value Evaluate(QxNumberLiteralExpression expression)
+        {
+            return new NumberValue(expression.Value);
+        }
+
+        protected static Value Evaluate(QxStringLiteralExpression expression)
+        {
+            return new StringValue(expression.Value);
+        }
+
+        protected Value Evaluate(QxIdentifierExpression expression)
+        {
+            var name = expression.Name;
+            var value = runtime.Frame.Scope.GetValue(name);
+
+            return value;
+        }
+
+        protected Value Evaluate(QxUnaryExpression expression)
+        {
+            var operand = Evaluate(expression.Operand);
+
+            var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator);
+
+            return expression.Operator switch
+            {
+                Operator.Not => new BooleanValue(!IsTruthy(operand)),
+                Operator.Subtract when operand is NumberValue number => new NumberValue(-number.Value),
+                Operator.Subtract when operand is not NumberValue => throw new UnaryOperatorException($"Cannot apply negative operator to operand that is type {operand.Type}."),
+                _ => throw new UnaryOperatorException($"{operatorValue} is not supported as a unary operator."),
+            };
+        }
+
+        protected Value Evaluate(QxBinaryExpression expression)
+        {
+            var left = Evaluate(expression.Left);
+            var right = Evaluate(expression.Right);
+
+            var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator) ?? string.Empty;
+
+            return expression.Operator switch
+            {
+                Operator.Add => Add(left, right),
+                Operator.Subtract => Subtract(left, right),
+                Operator.Multiply => Multiply(left, right),
+                Operator.Divide => Divide(left, right),
+
+                Operator.EqualTo => IsEqualTo(left, right),
+                Operator.NotEqualTo => IsNotEqualTo(left, right),
+                Operator.LessThan => IsLessThan(left, right),
+                Operator.LessThanOrEqualTo => IsLessThanOrEqualTo(left, right),
+                Operator.GreaterThan => IsGreaterThan(left, right),
+                Operator.GreaterThanOrEqualTo => IsGreaterThanOrEqualTo(left, right),
+
+                Operator.And => And(left, right),
+                Operator.Or => Or(left, right),
+
+                _ => throw new BinaryOperatorException(left.Type, operatorValue, right.Type),
+            };
+        }
+
+        private static bool IsTruthy(Value value)
+        {
+            return value.IsTruthy();
+        }
+
+        private static Value Add(Value left, Value right)
+        {
+            return left.Add(right);
+        }
+
+        private static Value Subtract(Value left, Value right)
+        {
+            return left.Subtract(right);
+        }
+
+        private static Value Multiply(Value left, Value right)
+        {
+            return left.Multiply(right);
+        }
+
+        private static Value Divide(Value left, Value right)
+        {
+            return left.Divide(right);
+        }
+
+        private static BooleanValue IsEqualTo(Value left, Value right)
+        {
+            return left.IsEqualTo(right);
+        }
+
+        private static BooleanValue IsNotEqualTo(Value left, Value right)
+        {
+            return left.IsEqualTo(right).Not();
+        }
+
+        private static BooleanValue IsLessThan(Value left, Value right)
+        {
+            return left.IsLessThan(right);
+        }
+
+        private static BooleanValue IsLessThanOrEqualTo(Value left, Value right)
+        {
+            return left.IsLessThanOrEqualTo(right);
+        }
+
+        private static BooleanValue IsGreaterThan(Value left, Value right)
+        {
+            return left.IsGreaterThan(right).Or(left.IsEqualTo(right));
+        }
+
+        private static BooleanValue IsGreaterThanOrEqualTo(Value left, Value right)
+        {
+            return left.IsGreaterThanOrEqualTo(right);
+        }
+
+        private static BooleanValue And(Value left, Value right)
+        {
+            return left.And(right);
+        }
+
+        private static BooleanValue Or(Value left, Value right)
+        {
+            return left.Or(right);
+        }
+
+        private static void LoadMapEntries()
+        {
+            foreach (var method in typeof(Interpreter).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+            {
+                var methodParameters = method.GetParameters();
+
+                if (methodParameters.Length < 1)
+                    continue;
+
+                var methodParameter = method.GetParameters()[0];
+                var parameterType = methodParameter.ParameterType;
+
+                if (TryCreateExecuteMapEntry(method, out var execute))
+                    _executeMap[parameterType] = execute;
+
+                if (TryCreateEvaluateMapEntry(method, out var evaluate))
+                    _evaluateMap[parameterType] = evaluate;
+            }
+        }
+
+        private static bool TryCreateExecuteMapEntry(MethodInfo method, [NotNullWhen(true)] out Action<Interpreter, QxStatement>? action)
+        {
+            action = null;
+
+            if (method.Name != "Execute")
+                return false;
+
+            var parameters = method.GetParameters();
+
+            if (parameters.Length != 1)
+                return false;
+
+            var parameterType = parameters[0].ParameterType;
+
+            if (!typeof(QxStatement).IsAssignableFrom(parameterType))
+                return false;
+
+            var isStatic = method.IsStatic;
+
+            var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
+            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(QxStatement), "statement");
+            var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
+            var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Action<Interpreter, QxStatement>>(call, instance, parameter);
+
+            action = lambda.Compile();
+
+            return true;
+        }
+
+        private static bool TryCreateEvaluateMapEntry(MethodInfo method, [NotNullWhen(true)] out Func<Interpreter, QxExpression, Value>? action)
+        {
+            action = null;
+
+            if (method.Name != "Evaluate")
+                return false;
+
+            var parameters = method.GetParameters();
+
+            if (parameters.Length != 1)
+                return false;
+
+            var parameterType = parameters[0].ParameterType;
+
+            if (!typeof(QxExpression).IsAssignableFrom(parameterType))
+                return false;
+
+            if (!method.ReturnType.IsAssignableFrom(typeof(Value)))
+                return false;
+
+            var isStatic = method.IsStatic;
+
+            var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
+            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(QxExpression), "expression");
+            var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
+            var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Func<Interpreter, QxExpression, Value>>(call, instance, parameter);
+
+            action = lambda.Compile();
+
+            return true;
+        }
+    }
+}
+
 Quixotic.Lexography\Lexer.cs
 ==============================
 
@@ -23,11 +365,10 @@ namespace QuixoticLang.Lexer
             { "and", TokenType.And },
             { "or", TokenType.Or },
             { "not", TokenType.Not },
+            { "function", TokenType.Function },
         };
 
-        private readonly IEqualityComparer<string> _keywordComparer = StringComparer.OrdinalIgnoreCase;
-
-        public IEnumerable<Token> Run()
+        public IEnumerable<Token> Tokenize()
         {
             while (!IsAtEnd())
             {
@@ -75,12 +416,12 @@ namespace QuixoticLang.Lexer
                 switch (c)
                 {
                     case '(':
-                        yield return Simple(TokenType.LeftParen, "(");
+                        yield return Simple(TokenType.OpenParen, "(");
                         Advance();
                         break;
 
                     case ')':
-                        yield return Simple(TokenType.RightParen, ")");
+                        yield return Simple(TokenType.CloseParen, ")");
                         Advance();
                         break;
 
@@ -90,13 +431,15 @@ namespace QuixoticLang.Lexer
                         break;
 
                     case '>':
-                        yield return Simple(TokenType.GreaterThan, ">");
-                        Advance();
+                        yield return ReadGreaterThanOperator();
                         break;
 
                     case '<':
-                        yield return Simple(TokenType.LessThan, "<");
-                        Advance();
+                        yield return ReadLessThanOperator();
+                        break;
+
+                    case '!':
+                        yield return ReadExclamationPoint();
                         break;
 
                     case ':':
@@ -120,6 +463,11 @@ namespace QuixoticLang.Lexer
 
                     case '*':
                         yield return Simple(TokenType.Multiply, "*");
+                        Advance();
+                        break;
+
+                    case ',':
+                        yield return Simple(TokenType.Comma, ",");
                         Advance();
                         break;
 
@@ -294,6 +642,57 @@ namespace QuixoticLang.Lexer
             throw new LexerUnexpectedCharacterException(c, position);
         }
 
+        private Token ReadGreaterThanOperator()
+        {
+            var position = CurrentPosition();
+
+            Advance();
+
+            var c = Peek();
+
+            if (c == '=')
+            {
+                Advance();
+                return Simple(TokenType.GreaterThanOrEqualTo, ">=", position);
+            }
+
+            return Simple(TokenType.GreaterThan, ">", position);
+        }
+
+        private Token ReadLessThanOperator()
+        {
+            var position = CurrentPosition();
+
+            Advance();
+
+            var c = Peek();
+
+            if (c == '=')
+            {
+                Advance();
+                return Simple(TokenType.LessThanOrEqualTo, "<=", position);
+            }
+
+            return Simple(TokenType.LessThan, "<", position);
+        }
+
+        private Token ReadExclamationPoint()
+        {
+            var position = CurrentPosition();
+
+            Advance();
+
+            var c = Peek();
+
+            if (c == '=')
+            {
+                Advance();
+                return Simple(TokenType.NotEqualTo, "!=", position);
+            }
+
+            throw new LexerUnexpectedCharacterException(c, position);
+        }
+
         private Token Simple(TokenType type, string? value, Position? position = null)
         {
             return new()
@@ -329,11 +728,11 @@ using System.Collections;
 
 namespace Quixotic.Parsing
 {
-    public class Block : IList<Statement>
+    public class Block : IList<QxStatement>
     {
-        private readonly List<Statement> _statements = [];
+        private readonly List<QxStatement> _statements = [];
 
-        public Statement this[int index]
+        public QxStatement this[int index]
         {
             get => _statements[index];
             set => _statements[index] = value;
@@ -343,7 +742,7 @@ namespace Quixotic.Parsing
 
         public bool IsReadOnly => false;
 
-        public void Add(Statement item)
+        public void Add(QxStatement item)
         {
             _statements.Add(item);
         }
@@ -353,27 +752,27 @@ namespace Quixotic.Parsing
             _statements.Clear();
         }
 
-        public bool Contains(Statement item)
+        public bool Contains(QxStatement item)
         {
             return _statements.Contains(item);
         }
 
-        public void CopyTo(Statement[] array, int arrayIndex)
+        public void CopyTo(QxStatement[] array, int arrayIndex)
         {
             _statements.CopyTo(array, arrayIndex);
         }
 
-        public int IndexOf(Statement item)
+        public int IndexOf(QxStatement item)
         {
             return _statements.IndexOf(item);
         }
 
-        public void Insert(int index, Statement item)
+        public void Insert(int index, QxStatement item)
         {
             _statements.Insert(index, item);
         }
 
-        public bool Remove(Statement item)
+        public bool Remove(QxStatement item)
         {
             return _statements.Remove(item);
         }
@@ -384,7 +783,7 @@ namespace Quixotic.Parsing
         }
 
         #region IEnumerable members
-        public IEnumerator<Statement> GetEnumerator()
+        public IEnumerator<QxStatement> GetEnumerator()
         {
             return _statements.GetEnumerator();
         }
@@ -415,10 +814,10 @@ namespace Quixotic.Parsing
         private readonly Stepper<Token> _tokens = new(tokens);
 
         public Parser(Lexer lexer)
-            : this(lexer.Run())
+            : this(lexer.Tokenize())
         { }
 
-        public IEnumerable<Statement> Parse()
+        public IEnumerable<QxStatement> Parse()
         {
             while (!IsAtEnd && Peek().Type != TokenType.Eof)
             {
@@ -454,7 +853,7 @@ namespace Quixotic.Parsing
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
-        private Statement ParseStatement()
+        private QxStatement ParseStatement()
         {
             if (Match(TokenType.Print))
                 return ParsePrint();
@@ -465,19 +864,83 @@ namespace Quixotic.Parsing
             if (Match(TokenType.If))
                 return ParseIf();
 
+            if (Match(TokenType.Function))
+                return ParseFunctionDeclaration();
+
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
-        private Statement ParsePrint()
+        private QxFunctionDeclarationStatement ParseFunctionDeclaration()
+        {
+            var identifierToken = Expect(TokenType.Identifier);
+
+            var name = identifierToken.Value;
+
+            // Parse parameters
+            var parameters = ParseParameters();
+
+            var body = ParseBlock(() => false);
+
+            Expect(TokenType.End);
+            Expect(TokenType.Function);
+
+            return new(name) { Parameters = [.. parameters], Body = body };
+        }
+
+        private List<QxParameter> ParseParameters()
+        {
+            List<QxParameter> parameters = [];
+
+            while (Match(TokenType.Identifier, out var token))
+            {
+                parameters.Add(new QxParameter(token.Value));
+
+                if (Match(TokenType.NewLine))
+                    break;
+
+                Expect(TokenType.Comma);
+            }
+
+            return parameters;
+        }
+
+        private QxFunctionCallStatement ParseFunctionCall(Token token)
+        {
+            var name = token.Value;
+
+            // Parse arguments
+            var arguments = ParseArguments();
+
+            return new(name) { Arguments = [.. arguments] };
+        }
+
+        private List<QxExpression> ParseArguments()
+        {
+            List<QxExpression> parameters = [];
+            while (true)
+            {
+                var expression = ParseExpression();
+                parameters.Add(expression);
+
+                if (Match(TokenType.CloseParen))
+                    break;
+
+                Expect(TokenType.Comma);
+            }
+
+            return parameters;
+        }
+
+        private QxPrintStatement ParsePrint()
         {
             var expression = ParseExpression();
 
-            return new PrintStatement(expression);
+            return new QxPrintStatement(expression);
         }
 
-        private AssignmentStatement ParseIdentifier(Token token)
+        private QxStatement ParseIdentifier(Token token)
         {
-            var identifier = new IdentifierExpression(token.Value);
+            var identifier = new QxIdentifierExpression(token.Value);
 
             var next = Pop();
 
@@ -485,13 +948,18 @@ namespace Quixotic.Parsing
             {
                 var expression = ParseExpression();
 
-                return new AssignmentStatement(identifier, expression);
+                return new QxAssignmentStatement(identifier, expression);
+            }
+
+            if (next.Type == TokenType.OpenParen)
+            {
+                return ParseFunctionCall(token);
             }
 
             throw new UnexpectedTokenException(next);
         }
 
-        private IfStatement ParseIf()
+        private QxIfStatement ParseIf()
         {
             var condition = ParseExpression();
 
@@ -501,12 +969,12 @@ namespace Quixotic.Parsing
             {
                 var statement = ParseStatement();
 
-                return new IfStatement(condition) { ThenBlock = [statement] };
+                return new QxIfStatement(condition) { ThenBlock = [statement] };
             }
 
-            var thenBlock = ParseBlock(t => t.Type == TokenType.Else);
+            var thenBlock = ParseBlock(() => Peek().Type == TokenType.Else);
 
-            List<ElseIfClause> elseIfClauses = [];
+            List<QxElseIfClause> elseIfClauses = [];
 
             Block elseBlock = [];
 
@@ -519,7 +987,7 @@ namespace Quixotic.Parsing
                 }
                 else
                 {
-                    elseBlock = ParseBlock(t => t.Type == TokenType.Else);
+                    elseBlock = ParseBlock(() => Peek().Type == TokenType.Else);
                 }
             }
 
@@ -527,7 +995,7 @@ namespace Quixotic.Parsing
 
             Expect(TokenType.If);
 
-            return new IfStatement(condition)
+            return new QxIfStatement(condition)
             {
                 ThenBlock = thenBlock,
                 ElseIfClauses = elseIfClauses,
@@ -535,19 +1003,19 @@ namespace Quixotic.Parsing
             };
         }
 
-        private ElseIfClause ParseElseIfClause()
+        private QxElseIfClause ParseElseIfClause()
         {
             var condition = ParseExpression();
 
-            var block = ParseBlock(t => t.Type == TokenType.Else);
+            var block = ParseBlock(() => Peek().Type == TokenType.Else);
 
-            return new ElseIfClause(condition)
+            return new QxElseIfClause(condition)
             {
                 Block = block,
             };
         }
 
-        private Expression ParseExpression(int parentPrecedence = 0)
+        private QxExpression ParseExpression(int parentPrecedence = 0)
         {
             var left = ParseUnary();
 
@@ -572,61 +1040,61 @@ namespace Quixotic.Parsing
 
                 var right = ParseExpression(operationMetadata.Precedence);
 
-                left = new BinaryExpression(operationMetadata.Operator, left, right);
+                left = new QxBinaryExpression(operationMetadata.Operator, left, right);
             }
 
             return left;
         }
 
-        private Expression ParsePrimary()
+        private QxExpression ParsePrimary()
         {
             var token = Pop();
 
-            if (token.Type == TokenType.LeftParen)
+            if (token.Type == TokenType.OpenParen)
             {
                 var expression = ParseExpression();
 
                 var nextToken = Pop();
-                if (nextToken.Type != TokenType.RightParen)
-                    throw new ExpectedTokenException(new TokenHead(TokenType.RightParen, ")"), nextToken);
+                if (nextToken.Type != TokenType.CloseParen)
+                    throw new ExpectedTokenException(new TokenHead(TokenType.CloseParen, ")"), nextToken);
 
                 return expression;
             }
 
             if (token.Type == TokenType.StringLiteral)
-                return new StringLiteralExpression(token.Value);
+                return new QxStringLiteralExpression(token.Value);
 
             if (token.Type == TokenType.NumberLiteral)
                 return ParseNumber(token);
 
             if (token.Type == TokenType.Identifier)
-                return new IdentifierExpression(token.Value);
+                return new QxIdentifierExpression(token.Value);
 
             throw new UnexpectedTokenException(token);
         }
 
-        private Expression ParseUnary()
+        private QxExpression ParseUnary()
         {
             if (Match(TokenType.Plus))
-                return new UnaryExpression(Operator.Add, ParseUnary());
+                return new QxUnaryExpression(Operator.Add, ParseUnary());
 
             if (Match(TokenType.Subtract))
-                return new UnaryExpression(Operator.Subtract, ParseUnary());
+                return new QxUnaryExpression(Operator.Subtract, ParseUnary());
 
             if (Match(TokenType.Not))
-                return new UnaryExpression(Operator.Not, ParseUnary());
+                return new QxUnaryExpression(Operator.Not, ParseUnary());
 
             return ParsePrimary();
         }
 
-        private Block ParseBlock(Func<Token, bool> terminationCondition)
+        private Block ParseBlock(Func<bool> terminationCondition)
         {
             var block = new Block();
 
             bool isTerminated() =>
                 IsAtEnd ||
                 Peek().Type == TokenType.End ||
-                terminationCondition(Peek());
+                terminationCondition();
 
             while (!isTerminated())
             {
@@ -644,10 +1112,10 @@ namespace Quixotic.Parsing
             return block;
         }
 
-        private static NumberLiteralExpression ParseNumber(Token token)
+        private static QxNumberLiteralExpression ParseNumber(Token token)
         {
             if (double.TryParse(token.Value, out var number))
-                return new NumberLiteralExpression(number);
+                return new QxNumberLiteralExpression(number);
 
             throw new TokenException("Invalid number literal", token);
         }
@@ -693,6 +1161,848 @@ namespace Quixotic.Parsing
             token = null;
             return false;
         }
+
+        private bool TokenIs(TokenType type)
+        {
+            var token = Peek();
+            return token.Type == type;
+        }
+    }
+}
+
+Quixotic.Interpret\Contracts\IRuntime.cs
+==========================================
+
+using Quixotic.Interpret.Environment;
+using Quixotic.Interpret.Symbols;
+
+namespace Quixotic.Interpret.Contracts
+{
+    public interface IRuntime
+    {
+        IRuntimeFrame Frame { get; }
+
+        void ExecutePrint(Value value);
+        IRuntimeFrame Pop();
+        IRuntimeFrame PushBlock(RuntimeFrameType type);
+        IRuntimeFrame PushFunction();
+    }
+}
+Quixotic.Interpret\Contracts\IRuntimeFrame.cs
+===============================================
+
+using Quixotic.Interpret.Environment;
+
+namespace Quixotic.Interpret.Contracts
+{
+    public interface IRuntimeFrame
+    {
+        IRuntimeFrame? Parent { get; }
+        RuntimeFrameType Type { get; }
+        Scope Scope { get; }
+        Scope GlobalScope { get; }
+    }
+}
+Quixotic.Interpret\Environment\BlockRuntimeFrame.cs
+=====================================================
+
+using Quixotic.Interpret.Contracts;
+using Quixotic.Interpret.Exceptions;
+
+namespace Quixotic.Interpret.Environment
+{
+    public class BlockRuntimeFrame(RuntimeFrameType type, IRuntimeFrame? parent = null) : IRuntimeFrame
+    {
+        public IRuntimeFrame? Parent { get; init; } = parent;
+
+        public RuntimeFrameType Type { get; } = type;
+
+        public Scope Scope { get; } = new(parent?.Scope);
+
+        public Scope GlobalScope => Parent?.GlobalScope ?? throw new RuntimeException($"{nameof(BlockRuntimeFrame)} cannot resolve global scope.");
+    }
+}
+
+Quixotic.Interpret\Environment\FunctionRuntimeFrame.cs
+========================================================
+
+using Quixotic.Interpret.Contracts;
+using Quixotic.Interpret.Exceptions;
+
+namespace Quixotic.Interpret.Environment
+{
+    public class FunctionRuntimeFrame(IRuntimeFrame parent) : IRuntimeFrame
+    {
+        public IRuntimeFrame? Parent { get; } = parent;
+
+        public RuntimeFrameType Type => RuntimeFrameType.Function;
+
+        public Scope Scope { get; } = new(parent?.GlobalScope);
+
+        public Scope GlobalScope => Parent?.GlobalScope ?? throw new RuntimeException($"{nameof(FunctionRuntimeFrame)} cannot resolve global scope.");
+    }
+}
+
+Quixotic.Interpret\Environment\GlobalRuntimeFrame.cs
+======================================================
+
+using Quixotic.Interpret.Contracts;
+
+namespace Quixotic.Interpret.Environment
+{
+    public class GlobalRuntimeFrame : IRuntimeFrame
+    {
+        public IRuntimeFrame? Parent => null;
+
+        public RuntimeFrameType Type => RuntimeFrameType.Global;
+
+        public Scope Scope { get; } = new(null);
+
+        public Scope GlobalScope => Scope;
+    }
+}
+
+Quixotic.Interpret\Environment\Runtime.cs
+===========================================
+
+using Quixotic.Interpret.Contracts;
+using Quixotic.Interpret.Exceptions;
+using Quixotic.Interpret.Symbols;
+
+namespace Quixotic.Interpret.Environment
+{
+    public class Runtime : IRuntime
+    {
+        protected readonly Stack<IRuntimeFrame> _frames = [];
+
+        public Runtime()
+        {
+            Frame = new GlobalRuntimeFrame();
+            _frames.Push(Frame);
+        }
+
+        public IRuntimeFrame Frame { get; private set; }
+
+        public virtual IRuntimeFrame PushBlock(RuntimeFrameType type)
+        {
+            var frame = new BlockRuntimeFrame(type, Frame);
+
+            _frames.Push(frame);
+
+            return Frame = frame;
+        }
+
+        public virtual IRuntimeFrame PushFunction()
+        {
+            var frame = new FunctionRuntimeFrame(Frame);
+
+            _frames.Push(frame);
+
+            return Frame = frame;
+        }
+
+        public virtual IRuntimeFrame Pop()
+        {
+            if (_frames.Count == 0)
+                throw new RuntimeException("Execution is attempting to end frames when no frame is active.");
+
+            return _frames.Pop();
+        }
+
+        public virtual void ExecutePrint(Value value)
+        {
+            Console.WriteLine(value.Unwrap());
+        }
+    }
+}
+
+Quixotic.Interpret\Environment\RuntimeFrameType.cs
+====================================================
+
+namespace Quixotic.Interpret.Environment
+{
+    public enum RuntimeFrameType
+    {
+        Global,
+        Function,
+        IfBlock,
+        WhileBlock,
+        ForBlock,
+    }
+}
+
+Quixotic.Interpret\Environment\Scope.cs
+=========================================
+
+using Quixotic.Interpret.Exceptions;
+using Quixotic.Interpret.Symbols;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Quixotic.Interpret.Environment
+{
+    // I changed this to scope because C# already has a static Environment object
+    // under the System namespace, and it was colliding with this class.
+    public class Scope(Scope? parent)
+    {
+        private readonly Dictionary<string, Symbol> _values = [];
+
+        public void DefineVariable(string name, Value value)
+        {
+            ExpectUndefined(name);
+
+            _values[name] = new VariableSymbol(value);
+        }
+
+        public bool IsSymbolDeclared(string name)
+        {
+            return _values.ContainsKey(name);
+        }
+
+        public bool IsFunctionDeclared(string name)
+        {
+            return _values.TryGetValue(name, out var symbol) && symbol is FunctionSymbol;
+        }
+
+        public bool IsVariableDeclared(string name)
+        {
+            return _values.TryGetValue(name, out var symbol) && symbol is VariableSymbol;
+        }
+
+        private bool TryGetSymbol(string name, [NotNullWhen(returnValue: true)] out Symbol? symbol)
+        {
+            if (_values.TryGetValue(name, out var localSymbol))
+            {
+                symbol = localSymbol;
+                return true;
+            }
+
+            if (parent?.TryGetSymbol(name, out var parentSymbol) == true)
+            {
+                symbol = parentSymbol;
+                return true;
+            }
+
+            symbol = default;
+            return false;
+        }
+
+        public void AssignVariable(string name, Value value)
+        {
+            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
+                throw new UndefinedSymbolException(name);
+
+            variableSymbol.Assign(value); // Throws TypeConversionException if type of value is not type of set identifer.
+        }
+
+        public Value GetValue(string name)
+        {
+            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
+                throw new UndefinedSymbolException(name);
+
+            return variableSymbol.Value;
+        }
+
+        public void DefineFunction(string name, Function function)
+        {
+            ExpectUndefined(name);
+
+            _values[name] = new FunctionSymbol(function);
+        }
+
+        public Function GetFunction(string name)
+        {
+            if (!TryGetSymbol(name, out var symbol) || symbol is not FunctionSymbol functionSymbol)
+                throw new UndefinedFunctionException(name);
+
+            return functionSymbol.Function;
+        }
+
+        private void ExpectUndefined(string name)
+        {
+            if (TryGetSymbol(name, out var symbol))
+            {
+                if (symbol is VariableSymbol)
+                    throw new VariableAlreadyDefinedException(name);
+
+                if (symbol is FunctionSymbol)
+                    throw new FunctionAlreadyDefinedException(name);
+
+                throw new SymbolAlreadyDefinedException(name);
+            }
+
+            parent?.ExpectUndefined(name);
+        }
+
+    }
+}
+
+Quixotic.Interpret\Exceptions\BinaryOperatorException.cs
+==========================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class BinaryOperatorException(Symbols.ValueType left, string @operator, Symbols.ValueType right) : InterpreterException($"{@operator} is not supported between values of type {left.Name} and {right.Name}.");
+}
+
+Quixotic.Interpret\Exceptions\EnvironmentException.cs
+=======================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class EnvironmentException(string message) : Exception(message);
+}
+
+Quixotic.Interpret\Exceptions\FunctionAlreadyDefinedException.cs
+==================================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class FunctionAlreadyDefinedException(string functionName) : Exception($"A function with the name '{functionName}' has already been defined.");
+}
+Quixotic.Interpret\Exceptions\InterpreterException.cs
+=======================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class InterpreterException(string message) : Exception(message);
+}
+
+Quixotic.Interpret\Exceptions\ParameterCountException.cs
+==========================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class ParameterCountException(string functionName, int expected, int actual) : Exception($"The function named '{functionName}' requires {expected} parameters. {actual} arguments were provided.");
+}
+
+Quixotic.Interpret\Exceptions\RuntimeException.cs
+===================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class RuntimeException(string message) : Exception(message);
+}
+
+Quixotic.Interpret\Exceptions\SymbolAlreadyDefinedException.cs
+================================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class SymbolAlreadyDefinedException(string symbolName) : Exception($"A symbol with the name '{symbolName}' has already been defined.");
+}
+Quixotic.Interpret\Exceptions\TypeMismatchException.cs
+========================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class TypeMismatchException(Symbols.ValueType from, Symbols.ValueType to) : EnvironmentException($"Cannot convert from {from.Name} to {to.Name}.");
+}
+
+Quixotic.Interpret\Exceptions\UnaryOperatorException.cs
+=========================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UnaryOperatorException(string @operator) : InterpreterException($"{@operator} is not supported as a unary operator.");
+}
+
+Quixotic.Interpret\Exceptions\UndefinedFunctionException.cs
+=============================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UndefinedFunctionException(string name) : RuntimeException($"No function named '{name}' has been defined.");
+}
+
+Quixotic.Interpret\Exceptions\UndefinedIdentifierException.cs
+===============================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UndefinedIdentifierException(string name) : RuntimeException($"No identifier named '{name}' has been defined.");
+}
+
+Quixotic.Interpret\Exceptions\UndefinedSymbolException.cs
+===========================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UndefinedSymbolException(string name) : RuntimeException($"No symbol named '{name}' has been defined.");
+}
+
+Quixotic.Interpret\Exceptions\UnrecognizedStatementTypeException.cs
+=====================================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class UnrecognizedStatementTypeException(Type statementType) : InterpreterException($"{statementType.Name} is not a recognized type of statement.");
+}
+
+Quixotic.Interpret\Exceptions\VariableAlreadyDefinedException.cs
+==================================================================
+
+namespace Quixotic.Interpret.Exceptions
+{
+    public class VariableAlreadyDefinedException(string variableName) : Exception($"A variable with the name '{variableName}' has already been defined.");
+}
+Quixotic.Interpret\Symbols\Function.cs
+========================================
+
+using Quixotic.Interpret.Exceptions;
+using Quixotic.Parsing;
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class Function(Block body)
+    {
+        public List<FunctionParameter> Parameters { get; init; } = [];
+
+        public Block Body { get; } = body;
+
+        public FunctionCall Call(string name, List<Value> arguments)
+        {
+            if (Parameters.Count != arguments.Count)
+                throw new ParameterCountException(name, Parameters.Count, arguments.Count);
+
+            var functionCall = new FunctionCall
+            {
+                Body = Body
+            };
+
+            // Push function parameters into 
+            foreach (var (parameter, argument) in Parameters.Zip(arguments))
+                functionCall.Arguments.Add(new FunctionArgument(parameter.Name, argument));
+
+            return functionCall;
+        }
+    }
+
+
+}
+
+Quixotic.Interpret\Symbols\FunctionArgument.cs
+================================================
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class FunctionArgument(string name, Value value)
+    {
+        public string Name { get; } = name;
+
+        public Value Value { get; } = value;
+    }
+
+}
+
+Quixotic.Interpret\Symbols\FunctionCall.cs
+============================================
+
+using Quixotic.Parsing;
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class FunctionCall
+    {
+        public List<FunctionArgument> Arguments { get; init; } = [];
+
+        public required Block Body { get; init; }
+    }
+
+
+}
+
+Quixotic.Interpret\Symbols\FunctionParameter.cs
+=================================================
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class FunctionParameter(string name)
+    {
+        public string Name { get; } = name;
+    }
+
+}
+
+Quixotic.Interpret\Symbols\Symbol.cs
+======================================
+
+namespace Quixotic.Interpret.Symbols
+{
+    public abstract class Symbol
+    { }
+
+}
+
+Quixotic.Interpret\Symbols\Value.cs
+=====================================
+
+using Quixotic.Interpret.Exceptions;
+
+namespace Quixotic.Interpret.Symbols
+{
+
+    public abstract record Value
+    {
+        private readonly object? _value;
+
+        protected Value(ValueType type, object? value)
+        {
+            Type = type;
+            _value = value;
+        }
+
+        public ValueType Type { get; }
+
+        public virtual bool IsTruthy()
+        {
+            return Type.IsTruthy(this);
+        }
+
+        public object? Unwrap() => _value;
+
+        public virtual Value Add(Value right)
+        {
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+
+        public virtual Value Subtract(Value right)
+        {
+            throw new BinaryOperatorException(Type, "-", right.Type);
+        }
+
+        public virtual Value Multiply(Value right)
+        {
+            throw new BinaryOperatorException(Type, "*", right.Type);
+        }
+
+        public virtual Value Divide(Value right)
+        {
+            throw new BinaryOperatorException(Type, "/", right.Type);
+        }
+
+        public virtual BooleanValue IsEqualTo(Value right)
+        {
+            if (Type != right.Type)
+                return BooleanValue.False;
+
+            return new BooleanValue(Equals(Unwrap(), right.Unwrap()));
+        }
+
+        public virtual BooleanValue IsNotEqualTo(Value right)
+        {
+            if (Type != right.Type)
+                return BooleanValue.True;
+
+            return new BooleanValue(!Equals(Unwrap(), right.Unwrap()));
+        }
+
+        public virtual BooleanValue IsLessThan(Value right)
+        {
+            throw new BinaryOperatorException(Type, "<", right.Type);
+        }
+
+        public virtual BooleanValue IsLessThanOrEqualTo(Value right)
+        {
+            throw new BinaryOperatorException(Type, "<", right.Type);
+        }
+
+        public virtual BooleanValue IsGreaterThan(Value right)
+        {
+            throw new BinaryOperatorException(Type, ">", right.Type);
+        }
+
+        public virtual BooleanValue IsGreaterThanOrEqualTo(Value right)
+        {
+            throw new BinaryOperatorException(Type, ">", right.Type);
+        }
+
+        public virtual BooleanValue And(Value right)
+        {
+            return new BooleanValue(IsTruthy() && right.IsTruthy());
+        }
+
+        public virtual BooleanValue Or(Value right)
+        {
+            return new BooleanValue(IsTruthy() || right.IsTruthy());
+        }
+
+    }
+
+    public record NumberValue(double value) : Value(ValueType.Number, value)
+    {
+        public double Value { get; } = value;
+
+        public override string ToString() => Value.ToString();
+
+        public override Value Add(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new NumberValue(Value + numberValue.Value);
+
+            if (right is StringValue stringValue)
+                return new StringValue(Value.ToString() + stringValue.Value);
+
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+
+        public override Value Subtract(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new NumberValue(Value - numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "-", right.Type);
+        }
+
+        public override Value Multiply(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new NumberValue(Value * numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "*", right.Type);
+        }
+
+        public override Value Divide(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new NumberValue(Value / numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "/", right.Type);
+        }
+
+        public override BooleanValue IsLessThan(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new BooleanValue(Value < numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "<", right.Type);
+        }
+        public override BooleanValue IsLessThanOrEqualTo(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new BooleanValue(Value <= numberValue.Value);
+
+            throw new BinaryOperatorException(Type, "<=", right.Type);
+        }
+
+
+        public override BooleanValue IsGreaterThan(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new BooleanValue(Value > numberValue.Value);
+
+            throw new BinaryOperatorException(Type, ">", right.Type);
+        }
+
+        public override BooleanValue IsGreaterThanOrEqualTo(Value right)
+        {
+            if (right is NumberValue numberValue)
+                return new BooleanValue(Value >= numberValue.Value);
+
+            throw new BinaryOperatorException(Type, ">=", right.Type);
+        }
+
+    }
+
+    public record StringValue(string value) : Value(ValueType.String, value)
+    {
+        public string Value { get; } = value;
+
+        public override string ToString() => Value;
+
+        public override Value Add(Value right)
+        {
+            if (right is StringValue stringValue)
+                return new StringValue(Value + stringValue.Value);
+
+            if (right is NumberValue numberValue)
+                return new StringValue(Value + numberValue.ToString());
+
+            if (right is BooleanValue booleanValue)
+                return new StringValue(Value + booleanValue.ToString());
+
+            if (right is NadaValue nadaValue)
+                return new StringValue(Value + "nada");
+
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+    }
+
+    public record BooleanValue(bool value) : Value(ValueType.Boolean, value)
+    {
+        public bool Value { get; } = value;
+
+        public override string ToString() => Value == true ? "true" : "false";
+
+        public override Value Add(Value right)
+        {
+            if (right is StringValue stringValue)
+                return new StringValue(Value + stringValue.Value);
+
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+
+        public BooleanValue Not()
+        {
+            return new BooleanValue(!Value);
+        }
+
+        public static BooleanValue True { get; } = new(true);
+
+        public static BooleanValue False { get; } = new(false);
+    }
+
+    public record NadaValue() : Value(ValueType.Nada, null)
+    {
+        public override string ToString() => "nada";
+
+        public override Value Add(Value right)
+        {
+            if (right is StringValue stringValue)
+                return new StringValue("nada" + stringValue.Value);
+
+            throw new BinaryOperatorException(Type, "+", right.Type);
+        }
+    }
+
+
+}
+
+Quixotic.Interpret\Symbols\ValueType.cs
+=========================================
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class ValueType
+    {
+        private readonly Type _typeOfValue;
+
+        protected ValueType(string name, Type typeOfValue)
+        {
+            _typeOfValue = typeOfValue;
+
+            Name = name;
+        }
+
+        public string Name { get; }
+
+        public bool Is(object value) => _typeOfValue.IsInstanceOfType(value);
+
+
+        public override bool Equals(object? obj)
+        {
+            if (!base.Equals(obj) || obj is not ValueType other)
+                return false;
+
+            return other._typeOfValue.Equals(_typeOfValue);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Name, _typeOfValue);
+        }
+
+        public virtual bool IsTruthy(Value value)
+        {
+            return false;
+        }
+
+        public static ValueType Number { get; } = NumberType.Instance;
+        public static ValueType String { get; } = StringType.Instance;
+        public static ValueType Boolean { get; } = BooleanType.Instance;
+        public static ValueType Nada { get; } = NadaType.Instance;
+    }
+
+    public class NumberType : ValueType
+    {
+        public static NumberType Instance { get; } = new();
+
+        protected NumberType()
+            : base("number", typeof(NumberValue))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            if (value is not NumberValue numberValue)
+                return false;
+
+            return numberValue.Value != 0;
+        }
+    }
+
+    public class StringType : ValueType
+    {
+        public static StringType Instance { get; } = new();
+
+        protected StringType()
+            : base("string", typeof(StringValue))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            if (value is not StringValue numberValue)
+                return false;
+
+            return numberValue.Value != string.Empty;
+        }
+    }
+
+    public class BooleanType : ValueType
+    {
+        public static BooleanType Instance { get; } = new();
+
+        protected BooleanType()
+            : base("boolean", typeof(BooleanType))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            if (value is not BooleanValue booleanValue)
+                return false;
+
+            return booleanValue.Value;
+        }
+    }
+
+    public class NadaType : ValueType
+    {
+        public static NadaType Instance { get; } = new();
+
+        protected NadaType()
+            : base("nada", typeof(NadaValue))
+        { }
+
+        public override bool IsTruthy(Value value)
+        {
+            return false;
+        }
+    }
+}
+
+Quixotic.Interpret\Symbols\VariableSymbol.cs
+==============================================
+
+using Quixotic.Interpret.Exceptions;
+
+namespace Quixotic.Interpret.Symbols
+{
+    public class VariableSymbol(Value value) : Symbol
+    {
+        public Value Value { get; private set; } = value;
+
+        public ValueType Type { get; } = value.Type;
+
+        public void Assign(Value value)
+        {
+            if (Type != Symbols.ValueType.Nada && !value.Type.Equals(Type))
+                throw new TypeMismatchException(Type, value.Type);
+
+            Value = value;
+        }
+    }
+
+    public class FunctionSymbol(Function function) : Symbol
+    {
+        public Function Function { get; } = function;
     }
 }
 
@@ -802,20 +2112,25 @@ namespace Quixotic.Lexography.Tokens
         Else,
         End,
         EqualTo,
+        NotEqualTo,
         GreaterThan,
+        GreaterThanOrEqualTo,
         LessThan,
+        LessThanOrEqualTo,
         Assignment,
-        LeftParen,
-        RightParen,
+        OpenParen,
+        CloseParen,
         Subtract,
         Plus,
         Multiply,
         Divide,
+        Comma,
         NewLine,
         Eof,
         Or,
         And,
         Not,
+        Function,
     }
 }
 
@@ -864,73 +2179,91 @@ namespace Quixotic.Parsing.Exceptions
     public class UnexpectedTokenException(Token token) : TokenException($"Unexpected token '{token}'", token);
 }
 
-Quixotic.Parsing\Expressions\BinaryExpression.cs
-==================================================
+Quixotic.Parsing\Expressions\QxBinaryExpression.cs
+====================================================
 
 using Quixotic.Parsing.Operations;
 
 namespace Quixotic.Parsing.Expressions
 {
 
-    public class BinaryExpression(Operator @operator, Expression left, Expression right) : Expression
+    public class QxBinaryExpression(Operator @operator, QxExpression left, QxExpression right) : QxExpression
     {
         public Operator Operator { get; } = @operator;
 
-        public Expression Left { get; } = left;
+        public QxExpression Left { get; } = left;
 
-        public Expression Right { get; } = right;
+        public QxExpression Right { get; } = right;
     }
 }
 
-Quixotic.Parsing\Expressions\Expression.cs
-============================================
+Quixotic.Parsing\Expressions\QxExpression.cs
+==============================================
 
 namespace Quixotic.Parsing.Expressions
 {
-    public abstract class Expression
+    public abstract class QxExpression
     {
 
     }
 }
 
-Quixotic.Parsing\Expressions\IdentifierExpression.cs
-======================================================
+Quixotic.Parsing\Expressions\QxIdentifierExpression.cs
+========================================================
 
 namespace Quixotic.Parsing.Expressions
 {
-    public class IdentifierExpression(string name) : Expression
+    public class QxIdentifierExpression(string name) : QxExpression
     {
         public string Name { get; } = name;
     }
 }
 
-Quixotic.Parsing\Expressions\StringLiteralExpression.cs
-=========================================================
+Quixotic.Parsing\Expressions\QxNumberLiteralExpression.cs
+===========================================================
 
 namespace Quixotic.Parsing.Expressions
 {
-    public sealed class StringLiteralExpression(string value) : Expression
-    {
-        public string Value { get; } = value;
-    }
-
-    public sealed class NumberLiteralExpression(double value) : Expression
+    public sealed class QxNumberLiteralExpression(double value) : QxExpression
     {
         public double Value { get; } = value;
     }
 }
 
-Quixotic.Parsing\Expressions\UnaryExpression.cs
-=================================================
+Quixotic.Parsing\Expressions\QxParameter.cs
+=============================================
+
+namespace Quixotic.Parsing.Expressions
+{
+    public class QxParameter(string name)
+    {
+        public string Name { get; } = name;
+    }
+
+}
+
+Quixotic.Parsing\Expressions\QxStringLiteralExpression.cs
+===========================================================
+
+namespace Quixotic.Parsing.Expressions
+{
+    public sealed class QxStringLiteralExpression(string value) : QxExpression
+    {
+        public string Value { get; } = value;
+    }
+}
+
+Quixotic.Parsing\Expressions\QxUnaryExpression.cs
+===================================================
 
 using Quixotic.Parsing.Operations;
 
 namespace Quixotic.Parsing.Expressions
 {
-    public class UnaryExpression(Operator @operator, Expression operand) : Expression
+    public class QxUnaryExpression(Operator @operator, QxExpression operand) : QxExpression
     {
         public Operator Operator { get; } = @operator;
-        public Expression Operand { get; } = operand;
+        public QxExpression Operand { get; } = operand;
     }
 }
 
@@ -972,8 +2305,11 @@ namespace Quixotic.Parsing.Operations
             [TokenType.Divide] = new(Quotient, "/", Operator.Divide, Associativity.Left),
             [TokenType.Multiply] = new(Product, "*", Operator.Multiply, Associativity.Left),
             [TokenType.EqualTo] = new(Comparison, "=", Operator.EqualTo, Associativity.Left),
+            [TokenType.NotEqualTo] = new(Comparison, "!=", Operator.NotEqualTo, Associativity.Left),
             [TokenType.LessThan] = new(Comparison, "<", Operator.LessThan, Associativity.Left),
+            [TokenType.LessThanOrEqualTo] = new(Comparison, "<=", Operator.LessThanOrEqualTo, Associativity.Left),
             [TokenType.GreaterThan] = new(Comparison, ">", Operator.GreaterThan, Associativity.Left),
+            [TokenType.GreaterThanOrEqualTo] = new(Comparison, ">=", Operator.GreaterThanOrEqualTo, Associativity.Left),
             [TokenType.And] = new(Logical, "and", Operator.And, Associativity.Left),
             [TokenType.Or] = new(Logical, "or", Operator.Or, Associativity.Left),
         };
@@ -1014,73 +2350,108 @@ namespace Quixotic.Parsing.Operations
         Not,
         And,
         Or,
+        NotEqualTo,
+        LessThanOrEqualTo,
+        GreaterThanOrEqualTo,
     }
 }
 
-Quixotic.Parsing\Statements\AssignmentStatement.cs
-====================================================
+Quixotic.Parsing\Statements\QxAssignmentStatement.cs
+======================================================
 
 using Quixotic.Parsing.Expressions;
 
 namespace Quixotic.Parsing.Statements
 {
-    public class AssignmentStatement(IdentifierExpression target, Expression value) : Statement
+    public class QxAssignmentStatement(QxIdentifierExpression target, QxExpression value) : QxStatement
     {
-        public IdentifierExpression Target { get; } = target;
-        public Expression Value { get; } = value;
+        public QxIdentifierExpression Target { get; } = target;
+        public QxExpression Value { get; } = value;
     }
 }
 
-Quixotic.Parsing\Statements\ElseIfClause.cs
-=============================================
+Quixotic.Parsing\Statements\QxElseIfClause.cs
+===============================================
 
 namespace Quixotic.Parsing.Statements
 {
-    public class ElseIfClause(Expressions.Expression condition)
+    public class QxElseIfClause(Expressions.QxExpression condition)
     {
-        public Expressions.Expression Condition { get; } = condition;
+        public Expressions.QxExpression Condition { get; } = condition;
 
         public Block Block { get; set; } = [];
     }
 }
 
-Quixotic.Parsing\Statements\IfStatement.cs
-============================================
+Quixotic.Parsing\Statements\QxFunctionCallStatement.cs
+========================================================
+
+using Quixotic.Parsing.Expressions;
 
 namespace Quixotic.Parsing.Statements
 {
-    public class IfStatement(Expressions.Expression condition) : Statement
+    public class QxFunctionCallStatement(string name) : QxStatement
     {
-        public Expressions.Expression Condition { get; } = condition;
+        public string Name { get; } = name;
+
+        public List<QxExpression> Arguments { get; init; } = [];
+    }
+}
+
+Quixotic.Parsing\Statements\QxFunctionDeclarationStatement.cs
+===============================================================
+
+using Quixotic.Parsing.Expressions;
+
+namespace Quixotic.Parsing.Statements
+{
+    public class QxFunctionDeclarationStatement(string name) : QxStatement
+    {
+        public string Name { get; } = name;
+
+        public List<QxParameter> Parameters { get; init; } = [];
+
+        public Block Body { get; init; } = [];
+    }
+}
+
+Quixotic.Parsing\Statements\QxIfStatement.cs
+==============================================
+
+namespace Quixotic.Parsing.Statements
+{
+    public class QxIfStatement(Expressions.QxExpression condition) : QxStatement
+    {
+        public Expressions.QxExpression Condition { get; } = condition;
 
         public Block ThenBlock { get; init; } = [];
 
-        public List<ElseIfClause> ElseIfClauses { get; init; } = [];
+        public List<QxElseIfClause> ElseIfClauses { get; init; } = [];
 
         public Block ElseBlock { get; init; } = [];
 
     }
 }
 
-Quixotic.Parsing\Statements\PrintStatement.cs
-===============================================
+Quixotic.Parsing\Statements\QxPrintStatement.cs
+=================================================
 
 using Quixotic.Parsing.Expressions;
 
 namespace Quixotic.Parsing.Statements
 {
-    public sealed class PrintStatement(Expression expression) : Statement
+    public sealed class QxPrintStatement(QxExpression expression) : QxStatement
     {
-        public Expression Expression { get; } = expression;
+        public QxExpression Expression { get; } = expression;
     }
 }
 
-Quixotic.Parsing\Statements\Statement.cs
-==========================================
+Quixotic.Parsing\Statements\QxStatement.cs
+============================================
 
 namespace Quixotic.Parsing.Statements
 {
-    public abstract class Statement
+    public abstract class QxStatement
     {
     }
 }

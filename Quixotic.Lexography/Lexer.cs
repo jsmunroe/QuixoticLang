@@ -20,9 +20,10 @@ namespace QuixoticLang.Lexer
             { "and", TokenType.And },
             { "or", TokenType.Or },
             { "not", TokenType.Not },
+            { "function", TokenType.Function },
         };
 
-        public IEnumerable<Token> Run()
+        public IEnumerable<Token> Tokenize()
         {
             while (!IsAtEnd())
             {
@@ -70,12 +71,12 @@ namespace QuixoticLang.Lexer
                 switch (c)
                 {
                     case '(':
-                        yield return Simple(TokenType.LeftParen, "(");
+                        yield return Simple(TokenType.OpenParen, "(");
                         Advance();
                         break;
 
                     case ')':
-                        yield return Simple(TokenType.RightParen, ")");
+                        yield return Simple(TokenType.CloseParen, ")");
                         Advance();
                         break;
 
@@ -117,6 +118,11 @@ namespace QuixoticLang.Lexer
 
                     case '*':
                         yield return Simple(TokenType.Multiply, "*");
+                        Advance();
+                        break;
+
+                    case ',':
+                        yield return Simple(TokenType.Comma, ",");
                         Advance();
                         break;
 
