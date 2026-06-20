@@ -69,6 +69,50 @@ namespace Quixotic.InterpretTests.TestImplementations
             Assert.IsTrue(AllFrames[frameIndex].Scope.IsFunctionDeclared(name), $"No function named '{name}' was decleared.");
         }
 
+        public void AssertVariableIsNull(string name)
+        {
+            List<string> otherFrameValues = [];
+
+            for (var i = 0; i < AllFrames.Count; i++)
+            {
+                var frame = AllFrames[i];
+
+                if (!frame.Scope.IsVariableDeclared(name))
+                    continue;
+
+                var value = frame.Scope.GetValue(name);
+                if (value is NadaValue)
+                    return;
+                else
+                    otherFrameValues.Add($"In frame #{i}, {name} = {value}.");
+            }
+
+            if (otherFrameValues.Count == 0)
+                throw new AssertFailedException($"A variable named '{name}' was never defined.");
+            else
+                throw new AssertFailedException($"In no frame was a variable named '{name}' left as null. \r\n\t{string.Join("\r\n\t", otherFrameValues)}");
+        }
+
+        public void AssertVariableIsNull(int frameIndex, string name)
+        {
+            if (frameIndex < 0)
+                throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
+
+            if (frameIndex >= AllFrames.Count)
+                throw new AssertFailedException($"There frames executions at index {frameIndex}.");
+
+            var frame = AllFrames[frameIndex];
+
+            if (!frame.Scope.IsVariableDeclared(name))
+                throw new AssertFailedException($"A variable named '{name}' has not been defined.");
+
+            var variableValue = frame.Scope.GetValue(name);
+
+            if (variableValue is not NadaValue)
+                throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
+        }
+
+
         public void AssertVariableHasValue(string name, string value)
         {
             List<string> otherFrameValues = [];

@@ -224,6 +224,8 @@ namespace Quixotic.Interpret.Symbols
 
             throw new BinaryOperatorException(Type, "+", right.Type);
         }
+
+        public static NadaValue Value { get; } = new();
     }
 
 

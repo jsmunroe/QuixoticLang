@@ -169,7 +169,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                windmills := 5
+                let windmills := 5
             ";
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
@@ -184,11 +184,57 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
+        public void Parse_identifier_statement_without_assignment()
+        {
+            // Setup
+            var source = @"
+                let windmills
+                print windmills
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert 
+            runtime.AssertVariableIsNull("windmills");
+            runtime.AssertHasPrinted("nada");
+        }
+
+        [TestMethod]
+        public void Parse_identifier_assign_to_variable_without_assignment()
+        {
+            // Setup
+            var source = @"
+                let windmills
+                print windmills
+                windmills := 8
+                print windmills
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert 
+            runtime.AssertVariableHasValue("windmills", 8);
+            runtime.AssertHasPrinted("nada");
+            runtime.AssertHasPrinted("8");
+        }
+
+
+        [TestMethod]
         public void Parse_identifier_statement_with_parenthetical_expression()
         {
             // Setup
             var source = @"
-                windmills := (5 + 3) * 2
+                let windmills := (5 + 3) * 2
             ";
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
@@ -208,7 +254,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                windmills := 5
+                let windmills := 5
                 print windmills
             ";
             var lexer = new Lexer(source);
@@ -229,7 +275,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                cost := -5
+                let cost := -5
             ";
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
@@ -248,7 +294,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                cost := -5 + 2 * (3 - 1)
+                let cost := -5 + 2 * (3 - 1)
                 print cost
             ";
             var lexer = new Lexer(source);
@@ -269,7 +315,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                c := 5
+                let c := 5
                 if c > 3
                     print ""c is greater than 3""
                 end if
@@ -292,7 +338,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                c := 2
+                let c := 2
                 if c > 3
                     print ""c is greater than 3""
                 else
@@ -318,7 +364,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                c := 2
+                let c := 2
                 if c > 3 and c < 10 then
                     print ""c is greater than 3""
                 else if c > 1

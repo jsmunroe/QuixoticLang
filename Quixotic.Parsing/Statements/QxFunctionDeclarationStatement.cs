@@ -2,6 +2,7 @@
 
 namespace Quixotic.Parsing.Statements
 {
+
     public class QxFunctionDeclarationStatement(string name) : QxStatement
     {
         public string Name { get; } = name;

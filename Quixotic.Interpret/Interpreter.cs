@@ -76,6 +76,16 @@ namespace Quixotic.Interpret
             runtime.ExecutePrint(value);
         }
 
+        public void Execute(QxVariableDeclarationStatement statement)
+        {
+            Value value = NadaValue.Value;
+
+            if (statement.Value is not null)
+                value = Evaluate(statement.Value);
+
+            runtime.Frame.Scope.DefineVariable(statement.Name, value);
+        }
+
         public void Execute(QxFunctionDeclarationStatement statement)
         {
             List<Parameter> parameters = [.. statement.Parameters.Select(p => new Parameter(p.Name))];
@@ -100,10 +110,8 @@ namespace Quixotic.Interpret
             var value = Evaluate(statement.Value);
             var name = statement.Target.Name;
 
-            if (runtime.Frame.Scope.IsVariableDeclared(name))
-                runtime.Frame.Scope.AssignVariable(name, value);
-            else
-                runtime.Frame.Scope.DefineVariable(name, value);
+            runtime.Frame.Scope.AssignVariable(name, value);
+
         }
 
         public void Execute(QxIfStatement statement)

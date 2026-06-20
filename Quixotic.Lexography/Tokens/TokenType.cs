@@ -6,6 +6,7 @@
         Identifier,
         NumberLiteral,
         Print,
+        Let,
         If,
         Then,
         Else,
@@ -24,11 +25,11 @@
         Multiply,
         Divide,
         Comma,
-        NewLine,
-        Eof,
         Or,
         And,
         Not,
         Function,
+        NewLine,
+        Eof,
     }
 }

@@ -13,6 +13,7 @@ namespace QuixoticLang.Lexer
         private static Dictionary<string, TokenType> Keywords { get; } = new(StringComparer.OrdinalIgnoreCase)
         {
             { "print", TokenType.Print },
+            { "let", TokenType.Let },
             { "if", TokenType.If },
             { "then", TokenType.Then },
             { "else", TokenType.Else },

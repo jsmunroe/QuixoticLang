@@ -63,10 +63,27 @@ namespace Quixotic.Parsing
             if (Match(TokenType.If))
                 return ParseIf();
 
+            if (Match(TokenType.Let))
+                return ParseVariableDeclaration();
+
             if (Match(TokenType.Function))
                 return ParseFunctionDeclaration();
 
             throw new UnexpectedTokenException(_tokens.Peek());
+        }
+
+        private QxVariableDeclarationStatement ParseVariableDeclaration()
+        {
+            var identifierToken = Expect(TokenType.Identifier);
+
+            var name = identifierToken.Value;
+
+            QxExpression? expression = null;
+
+            if (Match(TokenType.Assignment))
+                expression = ParseExpression();
+
+            return new(name, expression);
         }
 
         private QxFunctionDeclarationStatement ParseFunctionDeclaration()
@@ -116,7 +133,7 @@ namespace Quixotic.Parsing
         private List<QxExpression> ParseArguments()
         {
             List<QxExpression> parameters = [];
-            while (true)
+            while (!Match(TokenType.CloseParen))
             {
                 var expression = ParseExpression();
                 parameters.Add(expression);
