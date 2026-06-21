@@ -22,6 +22,7 @@ namespace QuixoticLang.Lexer
             { "or", TokenType.Or },
             { "not", TokenType.Not },
             { "function", TokenType.Function },
+            { "return", TokenType.Return },
         };
 
         public IEnumerable<Token> Tokenize()

@@ -260,4 +260,35 @@ namespace Quixotic.ParsingTests.TestModels
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(Name, identifierExpression.Name, $"\r\n{positionDescription}\r\nExpected identifier name was '{Name}' but actual operator was '{identifierExpression.Name}'.");
         }
     }
+
+    public record TestFunctionCallExpression(string name, params TestExpression[] arguments) : TestExpression
+    {
+        public string Name { get; } = name;
+
+        public override string GetPositionDescription(TestExpression expression)
+        {
+            if (Parent is null)
+                return "X";
+
+            return Parent.GetPositionDescription(expression);
+        }
+
+        public override string ToString(TestExpression expression)
+        {
+            return ReferenceEquals(expression, this) ? "X" : $"#({string.Join(", ", arguments.Select(s => s.ToString(expression)))})";
+        }
+
+        public override void Assert(QxExpression expression)
+        {
+            var positionDescription = GetPositionDescription(this);
+
+            var functionCallExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxFunctionCallExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not an identifier expression.");
+
+            if (arguments.Length != functionCallExpression.Arguments.Count)
+                throw new AssertFailedException($"Function did not have {arguments.Length} arguments. It had {functionCallExpression.Arguments.Count}.");
+
+            foreach (var (argument, argumentExpression) in arguments.Zip(functionCallExpression.Arguments))
+                argument.Assert(argumentExpression);
+        }
+    }
 }

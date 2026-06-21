@@ -2,6 +2,7 @@
 using Quixotic.Interpret.Environment;
 using Quixotic.Interpret.Exceptions;
 using Quixotic.Interpret.Symbols;
+using Quixotic.Parsing;
 using Quixotic.Parsing.Expressions;
 using Quixotic.Parsing.Operations;
 using Quixotic.Parsing.Statements;
@@ -20,20 +21,26 @@ namespace Quixotic.Interpret
 
         public void Execute(IEnumerable<QxStatement> statements)
         {
-            runtime.PushBlock(RuntimeFrameType.Global);
+            // Executes statements in global space
 
             foreach (var statement in statements)
                 Execute(statement);
-
-            runtime.Pop();
         }
 
-        public void Execute(IEnumerable<QxStatement> statements, RuntimeFrameType frameType)
+        public void Execute(Block statements, RuntimeFrameType frameType)
         {
             runtime.PushBlock(frameType);
 
-            foreach (var statement in statements)
-                Execute(statement);
+            try
+            {
+                foreach (var statement in statements)
+                    Execute(statement);
+            }
+            catch (ReturnException)
+            {
+                runtime.Pop(); // Need to pop out of runtime frame since we are returning. Returned value will be caught higher up the stack.
+                throw;
+            }
 
             runtime.Pop();
         }
@@ -45,8 +52,17 @@ namespace Quixotic.Interpret
             foreach (var argument in arguments)
                 runtime.Frame.Scope.DefineVariable(argument.Name, argument.Value);
 
-            foreach (var statement in function.Body)
-                Execute(statement);
+            try
+            {
+
+                foreach (var statement in function.Body)
+                    Execute(statement);
+            }
+            catch (ReturnException)
+            {
+                runtime.Pop(); // Need to pop out of runtime frame since we are returning. Returned value will be caught higher up the stack.
+                throw;
+            }
 
             runtime.Pop();
         }
@@ -102,7 +118,20 @@ namespace Quixotic.Interpret
 
             var arguments = BindArguments(name, function, statement.Arguments);
 
-            Execute(function, arguments);
+            try
+            {
+                Execute(function, arguments);
+            }
+            catch (ReturnException) { } // Ignore returned value;
+        }
+
+        public void Execute(QxReturnStatement statement)
+        {
+            Value? value = null;
+            if (statement.Expression is not null)
+                value = Evaluate(statement.Expression);
+
+            throw new ReturnException(value);
         }
 
         public void Execute(QxAssignmentStatement statement)
@@ -193,6 +222,27 @@ namespace Quixotic.Interpret
 
                 _ => throw new BinaryOperatorException(left.Type, operatorValue, right.Type),
             };
+        }
+
+        protected Value Evaluate(QxFunctionCallExpression expression)
+        {
+            var name = expression.Name;
+
+            var function = runtime.Frame.Scope.GetFunction(name);
+
+            var arguments = BindArguments(name, function, expression.Arguments);
+
+            try
+            {
+                Execute(function, arguments);
+            }
+            catch (ReturnException returnException)
+            {
+                if (returnException.Value is not null)
+                    return returnException.Value;
+            }
+
+            throw new ExpectedReturnValueException(name);
         }
 
         private static bool IsTruthy(Value value)

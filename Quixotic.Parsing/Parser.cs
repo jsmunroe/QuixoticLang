@@ -69,6 +69,9 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Function))
                 return ParseFunctionDeclaration();
 
+            if (Match(TokenType.Return))
+                return ParseReturn();
+
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
@@ -103,6 +106,15 @@ namespace Quixotic.Parsing
             return new(name) { Parameters = [.. parameters], Body = body };
         }
 
+        private QxReturnStatement ParseReturn()
+        {
+            if (Match(TokenType.NewLine))
+                return new QxReturnStatement(null);
+
+            var expression = ParseExpression();
+            return new QxReturnStatement(expression);
+        }
+
         private List<QxParameter> ParseParameters()
         {
             List<QxParameter> parameters = [];
@@ -124,6 +136,13 @@ namespace Quixotic.Parsing
         {
             var name = token.Value;
 
+            // Parse arguments
+            var arguments = ParseArguments();
+
+            return new(name) { Arguments = [.. arguments] };
+        }
+        private QxFunctionCallExpression ParseFunctionCallExpression(string name)
+        {
             // Parse arguments
             var arguments = ParseArguments();
 
@@ -284,9 +303,19 @@ namespace Quixotic.Parsing
                 return ParseNumber(token);
 
             if (token.Type == TokenType.Identifier)
-                return new QxIdentifierExpression(token.Value);
+                return ParseIdentifierExpression(token);
 
             throw new UnexpectedTokenException(token);
+        }
+
+        private QxExpression ParseIdentifierExpression(Token token)
+        {
+            var name = token.Value;
+
+            if (Match(TokenType.OpenParen))
+                return ParseFunctionCallExpression(name);
+
+            return new QxIdentifierExpression(name);
         }
 
         private QxExpression ParseUnary()

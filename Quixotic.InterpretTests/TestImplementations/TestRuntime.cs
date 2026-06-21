@@ -6,6 +6,11 @@ namespace Quixotic.InterpretTests.TestImplementations
 {
     internal class TestRuntime : Runtime
     {
+        public TestRuntime()
+        {
+            AllFrames.Add(Frame); // Add global frame
+        }
+
         public List<IRuntimeFrame> AllFrames { get; } = [];
 
         public List<string> PrintExecutions { get; } = [];

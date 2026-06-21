@@ -31,5 +31,6 @@
         Function,
         NewLine,
         Eof,
+        Return,
     }
 }

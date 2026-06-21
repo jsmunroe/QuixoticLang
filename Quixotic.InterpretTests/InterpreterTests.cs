@@ -9,7 +9,7 @@ namespace Quixotic.InterpretTests
     {
 
         [TestMethod]
-        public void Parse_print_statement_with_lexer()
+        public void Execute_print_statement_with_lexer()
         {
             // Setup
             var source = @"
@@ -28,7 +28,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_print_statement_with_number()
+        public void Execute_print_statement_with_number()
         {
             // Setup
             var source = @"
@@ -47,7 +47,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_print_statement_with_addition_expression()
+        public void Execute_print_statement_with_addition_expression()
         {
             // Setup
             var source = @"
@@ -66,7 +66,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_print_statement_with_addition_expression_with_parentheses()
+        public void Execute_print_statement_with_addition_expression_with_parentheses()
         {
             // Setup
             var source = @"
@@ -85,7 +85,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_print_statement_where_parentheses_override_precedence()
+        public void Execute_print_statement_where_parentheses_override_precedence()
         {
             // Setup
             var source = @"
@@ -104,7 +104,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_print_statement_with_arithmetic_series()
+        public void Execute_print_statement_with_arithmetic_series()
         {
             // Setup
             var source = @"
@@ -123,7 +123,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_print_statement_with_multi_tier_parenthetical_series()
+        public void Execute_print_statement_with_multi_tier_parenthetical_series()
         {
             // Setup
             var source = @"
@@ -142,7 +142,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_multiple_print_statements()
+        public void Execute_multiple_print_statements()
         {
             // Setup
             var source = @"
@@ -165,7 +165,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_identifier_statement()
+        public void Execute_identifier_statement()
         {
             // Setup
             var source = @"
@@ -184,7 +184,28 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_identifier_statement_without_assignment()
+        public void Execute_identifier_statement_from_identifier()
+        {
+            // Setup
+            var source = @"
+                let windmills := 5
+                let w := windmills
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert 
+            runtime.AssertVariableHasValue("windmills", 5);
+            runtime.AssertVariableHasValue("w", 5);
+        }
+
+        [TestMethod]
+        public void Execute_identifier_statement_without_assignment()
         {
             // Setup
             var source = @"
@@ -205,7 +226,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_identifier_assign_to_variable_without_assignment()
+        public void Execute_identifier_assign_to_variable_without_assignment()
         {
             // Setup
             var source = @"
@@ -230,7 +251,7 @@ namespace Quixotic.InterpretTests
 
 
         [TestMethod]
-        public void Parse_identifier_statement_with_parenthetical_expression()
+        public void Execute_identifier_statement_with_parenthetical_expression()
         {
             // Setup
             var source = @"
@@ -250,7 +271,7 @@ namespace Quixotic.InterpretTests
 
 
         [TestMethod]
-        public void Parse_identifier_statement_with_print_statement()
+        public void Execute_identifier_statement_with_print_statement()
         {
             // Setup
             var source = @"
@@ -271,7 +292,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_unary_subtract_expression()
+        public void Execute_unary_subtract_expression()
         {
             // Setup
             var source = @"
@@ -290,7 +311,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_unary_subtract_expression_in_exrpression_series()
+        public void Execute_unary_subtract_expression_in_exrpression_series()
         {
             // Setup
             var source = @"
@@ -311,7 +332,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_if_statement()
+        public void Execute_if_statement()
         {
             // Setup
             var source = @"
@@ -334,7 +355,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_if_statement_with_else()
+        public void Execute_if_statement_with_else()
         {
             // Setup
             var source = @"
@@ -360,7 +381,7 @@ namespace Quixotic.InterpretTests
 
 
         [TestMethod]
-        public void Parse_if_statement_with_else_if()
+        public void Execute_if_statement_with_else_if()
         {
             // Setup
             var source = @"
@@ -390,7 +411,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_function_declaration_statement()
+        public void Execute_function_declaration_statement()
         {
             // Setup
             var source = @"
@@ -413,7 +434,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_function_declaration_statement_with_call()
+        public void Execute_function_declaration_statement_with_call()
         {
             // Setup
             var source = @"
@@ -438,7 +459,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_function_declaration_statement_with_call_with_parameters()
+        public void Execute_function_declaration_statement_with_call_with_parameters()
         {
             // Setup
             var source = @"
@@ -460,6 +481,33 @@ namespace Quixotic.InterpretTests
             // Assert
             runtime.AssertFunctionDeclared("sayHello");
             runtime.AssertHasPrinted("6");
+        }
+
+
+        [TestMethod]
+        public void Execute_function_call_with_return_value()
+        {
+            // Setup
+            var source = @"
+                function sayHello
+                    return ""Hello, windmills!""
+                end function
+
+                let hello := sayHello()
+                print hello
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertFunctionDeclared("sayHello");
+            runtime.AssertHasPrinted("Hello, windmills!");
         }
 
     }
