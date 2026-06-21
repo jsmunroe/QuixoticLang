@@ -510,5 +510,152 @@ namespace Quixotic.InterpretTests
             runtime.AssertHasPrinted("Hello, windmills!");
         }
 
+
+        [TestMethod]
+        public void Parse_do_while_loop()
+        {
+            // Setup
+            var source = @"
+                let i := 0
+
+                do while i < 10
+                    print i
+                    i := i + 1
+                loop
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted("0");
+            runtime.AssertHasPrinted("1");
+            runtime.AssertHasPrinted("2");
+            runtime.AssertHasPrinted("3");
+            runtime.AssertHasPrinted("4");
+            runtime.AssertHasPrinted("5");
+            runtime.AssertHasPrinted("6");
+            runtime.AssertHasPrinted("7");
+            runtime.AssertHasPrinted("8");
+            runtime.AssertHasPrinted("9");
+
+            runtime.AssertVariableHasValue("i", 10);
+        }
+
+        [TestMethod]
+        public void Parse_do_until_loop()
+        {
+            // Setup
+            var source = @"
+                let i := 0
+
+                do until i >= 10
+                    print i
+                    i := i + 1
+                loop
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted("0");
+            runtime.AssertHasPrinted("1");
+            runtime.AssertHasPrinted("2");
+            runtime.AssertHasPrinted("3");
+            runtime.AssertHasPrinted("4");
+            runtime.AssertHasPrinted("5");
+            runtime.AssertHasPrinted("6");
+            runtime.AssertHasPrinted("7");
+            runtime.AssertHasPrinted("8");
+            runtime.AssertHasPrinted("9");
+
+            runtime.AssertVariableHasValue("i", 10);
+        }
+
+        [TestMethod]
+        public void Parse_do_loop_while()
+        {
+            // Setup
+            var source = @"
+                let i := 0
+
+                do
+                    print i
+                    i := i + 1
+                loop while i < 10
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted("0");
+            runtime.AssertHasPrinted("1");
+            runtime.AssertHasPrinted("2");
+            runtime.AssertHasPrinted("3");
+            runtime.AssertHasPrinted("4");
+            runtime.AssertHasPrinted("5");
+            runtime.AssertHasPrinted("6");
+            runtime.AssertHasPrinted("7");
+            runtime.AssertHasPrinted("8");
+            runtime.AssertHasPrinted("9");
+
+            runtime.AssertVariableHasValue("i", 10);
+
+        }
+
+        [TestMethod]
+        public void Parse_do_loop_until()
+        {
+            // Setup
+            var source = @"
+                let i := 0
+
+                do
+                    print i
+                    i := i + 1
+                loop until i >= 10
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted("0");
+            runtime.AssertHasPrinted("1");
+            runtime.AssertHasPrinted("2");
+            runtime.AssertHasPrinted("3");
+            runtime.AssertHasPrinted("4");
+            runtime.AssertHasPrinted("5");
+            runtime.AssertHasPrinted("6");
+            runtime.AssertHasPrinted("7");
+            runtime.AssertHasPrinted("8");
+            runtime.AssertHasPrinted("9");
+
+            runtime.AssertVariableHasValue("i", 10);
+        }
+
+
     }
 }

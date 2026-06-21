@@ -9,6 +9,5 @@
         public List<QxElseIfClause> ElseIfClauses { get; init; } = [];
 
         public Block ElseBlock { get; init; } = [];
-
     }
 }

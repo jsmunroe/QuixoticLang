@@ -163,6 +163,20 @@ namespace Quixotic.Interpret
             Execute(statement.ElseBlock, RuntimeFrameType.IfBlock);
         }
 
+        public void Execute(QxDoStatement statement)
+        {
+            while (true)
+            {
+                if (statement.EntryControlled && !IsTruthy(Evaluate(statement.Condition)))
+                    break;
+
+                Execute(statement.Block);
+
+                if (!statement.EntryControlled && !IsTruthy(Evaluate(statement.Condition)))
+                    break;
+            }
+        }
+
         protected static Value Evaluate(QxNumberLiteralExpression expression)
         {
             return new NumberValue(expression.Value);

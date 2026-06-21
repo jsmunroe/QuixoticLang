@@ -63,6 +63,9 @@ namespace Quixotic.Parsing
             if (Match(TokenType.If))
                 return ParseIf();
 
+            if (Match(TokenType.Do))
+                return ParseDo();
+
             if (Match(TokenType.Let))
                 return ParseVariableDeclaration();
 
@@ -98,7 +101,7 @@ namespace Quixotic.Parsing
             // Parse parameters
             var parameters = ParseParameters();
 
-            var body = ParseBlock(() => false);
+            var body = ParseBlock(TokenType.End);
 
             Expect(TokenType.End);
             Expect(TokenType.Function);
@@ -207,7 +210,7 @@ namespace Quixotic.Parsing
                 return new QxIfStatement(condition) { ThenBlock = [statement] };
             }
 
-            var thenBlock = ParseBlock(() => Peek().Type == TokenType.Else);
+            var thenBlock = ParseBlock(TokenType.End, TokenType.Else);
 
             List<QxElseIfClause> elseIfClauses = [];
 
@@ -222,7 +225,7 @@ namespace Quixotic.Parsing
                 }
                 else
                 {
-                    elseBlock = ParseBlock(() => Peek().Type == TokenType.Else);
+                    elseBlock = ParseBlock(TokenType.End, TokenType.Else);
                 }
             }
 
@@ -242,11 +245,58 @@ namespace Quixotic.Parsing
         {
             var condition = ParseExpression();
 
-            var block = ParseBlock(() => Peek().Type == TokenType.Else);
+            var block = ParseBlock(TokenType.End, TokenType.Else);
 
             return new QxElseIfClause(condition)
             {
                 Block = block,
+            };
+        }
+
+        private QxDoStatement ParseDo()
+        {
+            var isEntryControlled = false;
+            QxExpression? condition = null;
+            if (Match(TokenType.While))
+            {
+                isEntryControlled = true;
+                condition = ParseExpression();
+            }
+            else if (Match(TokenType.Until))
+            {
+                isEntryControlled = true;
+                condition = ParseExpression();
+                condition = new QxUnaryExpression(Operator.Not, condition);
+            }
+
+            var block = ParseBlock(TokenType.Loop);
+
+            Expect(TokenType.Loop);
+
+            if (Match(TokenType.While))
+            {
+                if (condition is not null)
+                    throw new DoLoopDualConditionException();
+
+                isEntryControlled = false;
+                condition = ParseExpression();
+            }
+            else if (Match(TokenType.Until))
+            {
+                if (condition is not null)
+                    throw new DoLoopDualConditionException();
+
+                isEntryControlled = false;
+                condition = ParseExpression();
+                condition = new QxUnaryExpression(Operator.Not, condition);
+            }
+
+            if (condition is null)
+                throw new DoLoopNoConditionException();
+
+            return new(condition, isEntryControlled)
+            {
+                Block = [.. block],
             };
         }
 
@@ -332,14 +382,11 @@ namespace Quixotic.Parsing
             return ParsePrimary();
         }
 
-        private Block ParseBlock(Func<bool> terminationCondition)
+        private Block ParseBlock(params TokenType[] terminatingTypes)
         {
             var block = new Block();
 
-            bool isTerminated() =>
-                IsAtEnd ||
-                Peek().Type == TokenType.End ||
-                terminationCondition();
+            bool isTerminated() => terminatingTypes.Any(t => Peek().Type == t);
 
             while (!isTerminated())
             {

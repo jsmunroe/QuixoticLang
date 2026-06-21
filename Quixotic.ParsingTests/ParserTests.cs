@@ -597,6 +597,134 @@ namespace Quixotic.ParsingTests
             AssertPrint(statements[2], new TestIdentifierExpression("hello"));
         }
 
+        [TestMethod]
+        public void Parse_do_while_loop()
+        {
+            // Setup
+            var source = @"
+                let i := 0
+
+                do while i < 10
+                    print i
+                    i := i + 1
+                loop
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "i", 0);
+
+            AssertDo(statements[1], ("[i]", "<", 10), isEntryControl: true,
+                block: block =>
+                {
+                    AssertPrint(block[0], new TestIdentifierExpression("i"));
+                    AssertAssignment(block[1], "i", ("[i]", "+", 1.0));
+                });
+        }
+
+        [TestMethod]
+        public void Parse_do_until_loop()
+        {
+            // Setup
+            var source = @"
+                let i := 0
+
+                do until i >= 10
+                    print i
+                    i := i + 1
+                loop
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "i", 0);
+
+            AssertDo(statements[1], new TestUnaryExpression(Parsing.Operations.Operator.Not, ("[i]", ">=", 10)), isEntryControl: true,
+                block: block =>
+                {
+                    AssertPrint(block[0], new TestIdentifierExpression("i"));
+                    AssertAssignment(block[1], "i", ("[i]", "+", 1.0));
+                });
+        }
+
+        [TestMethod]
+        public void Parse_do_loop_while()
+        {
+            // Setup
+            var source = @"
+                let i := 0
+
+                do
+                    print i
+                    i := i + 1
+                loop while i < 10
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "i", 0);
+
+            AssertDo(statements[1], ("[i]", "<", 10), isEntryControl: false,
+                block: block =>
+                {
+                    AssertPrint(block[0], new TestIdentifierExpression("i"));
+                    AssertAssignment(block[1], "i", ("[i]", "+", 1.0));
+                });
+        }
+
+        [TestMethod]
+        public void Parse_do_loop_until()
+        {
+            // Setup
+            var source = @"
+                let i := 0
+
+                do
+                    print i
+                    i := i + 1
+                loop until i >= 10
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "i", 0);
+
+            AssertDo(statements[1], new TestUnaryExpression(Parsing.Operations.Operator.Not, ("[i]", ">=", 10)), isEntryControl: false,
+                block: block =>
+                {
+                    AssertPrint(block[0], new TestIdentifierExpression("i"));
+                    AssertAssignment(block[1], "i", ("[i]", "+", 1.0));
+                });
+        }
+
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression? expression = null)
         {
             var variableDeclarationStatement = Assert.IsInstanceOfType<QxVariableDeclarationStatement>(statement);
@@ -647,6 +775,22 @@ namespace Quixotic.ParsingTests
                 elseBlock(ifStatement.ElseBlock);
 
             return ifStatement;
+        }
+
+        private QxDoStatement AssertDo(QxStatement statement, TestExpression? condition = null, bool? isEntryControl = null, Action<Block>? block = null)
+        {
+            var doStatement = Assert.IsInstanceOfType<QxDoStatement>(statement);
+
+            if (condition is not null)
+                condition.Assert(doStatement.Condition);
+
+            if (isEntryControl is not null)
+                Assert.AreEqual(isEntryControl, doStatement.EntryControlled);
+
+            if (block is not null)
+                block(doStatement.Block);
+
+            return doStatement;
         }
 
         private QxFunctionCallStatement AssertFunctionCall(QxStatement statement, string name)
