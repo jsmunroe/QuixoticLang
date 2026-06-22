@@ -16,6 +16,8 @@
         While,
         Until,
         Loop,
+        Continue,
+        Break,
         EqualTo,
         NotEqualTo,
         GreaterThan,

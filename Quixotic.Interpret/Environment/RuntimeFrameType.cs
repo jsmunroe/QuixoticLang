@@ -7,5 +7,6 @@
         IfBlock,
         WhileBlock,
         ForBlock,
+        Loop,
     }
 }

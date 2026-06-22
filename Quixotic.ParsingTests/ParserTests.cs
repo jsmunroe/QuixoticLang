@@ -786,6 +786,58 @@ namespace Quixotic.ParsingTests
                 });
         }
 
+        [TestMethod]
+        public void Parse_do_loop_with_break()
+        {
+            // Setup
+            var source = @"
+                do while true
+                    break
+                loop
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            AssertDo(statements[0], true, isEntryControl: true,
+                block: block =>
+                {
+                    AssertBreak(block[0]);
+                });
+        }
+
+        [TestMethod]
+        public void Parse_do_loop_with_continue()
+        {
+            // Setup
+            var source = @"
+                do while true
+                    continue
+                loop
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            AssertDo(statements[0], true, isEntryControl: true,
+                block: block =>
+                {
+                    AssertContinue(block[0]);
+                });
+        }
+
 
 
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression? expression = null)
@@ -924,6 +976,18 @@ namespace Quixotic.ParsingTests
             }
 
             return returnStatement;
+        }
+
+        private QxBreakStatement AssertBreak(QxStatement statement)
+        {
+            var breakStatement = Assert.IsInstanceOfType<QxBreakStatement>(statement);
+            return breakStatement;
+        }
+
+        private QxContinueStatement AssertContinue(QxStatement statement)
+        {
+            var continueStatement = Assert.IsInstanceOfType<QxContinueStatement>(statement);
+            return continueStatement;
         }
     }
 }

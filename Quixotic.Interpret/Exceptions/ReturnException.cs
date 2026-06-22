@@ -2,7 +2,7 @@
 
 namespace Quixotic.Interpret.Exceptions
 {
-    public class ReturnException(Value? value) : Exception
+    public class ReturnException(Value? value) : FlowControlException
     {
         public Value? Value { get; } = value;
     }

@@ -75,6 +75,12 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Return))
                 return ParseReturn();
 
+            if (Match(TokenType.Break))
+                return ParseBreak();
+
+            if (Match(TokenType.Continue))
+                return ParseContinue();
+
             throw new UnexpectedTokenException(_tokens.Peek());
         }
 
@@ -116,6 +122,16 @@ namespace Quixotic.Parsing
 
             var expression = ParseExpression();
             return new QxReturnStatement(expression);
+        }
+
+        private QxBreakStatement ParseBreak()
+        {
+            return new();
+        }
+
+        private QxContinueStatement ParseContinue()
+        {
+            return new();
         }
 
         private List<QxParameter> ParseParameters()

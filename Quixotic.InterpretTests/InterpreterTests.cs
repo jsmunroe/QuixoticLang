@@ -766,5 +766,60 @@ namespace Quixotic.InterpretTests
         }
 
 
+        [TestMethod]
+        public void Execute_do_loop_with_break()
+        {
+            // Setup
+            var source = @"
+                do while true
+                    print ""before break""
+                    break
+                    print ""after break""
+                loop
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted("before break");
+            runtime.AssertHasNotPrinted("after break");
+        }
+
+        [TestMethod]
+        public void Execute_do_loop_with_continue()
+        {
+            // Setup
+            var source = @"
+                let keepItUp := true
+
+                do while keepItUp
+                    print ""before continue""
+
+                    keepItUp := false
+                    continue
+
+                    print ""after continue""
+                loop
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted("before continue");
+            runtime.AssertHasNotPrinted("after continue");
+        }
+
     }
 }

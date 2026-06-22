@@ -36,7 +36,7 @@ namespace Quixotic.Interpret
                 foreach (var statement in statements)
                     Execute(statement);
             }
-            catch (ReturnException)
+            catch (FlowControlException)
             {
                 runtime.Pop(); // Need to pop out of runtime frame since we are returning. Returned value will be caught higher up the stack.
                 throw;
@@ -58,7 +58,7 @@ namespace Quixotic.Interpret
                 foreach (var statement in function.Body)
                     Execute(statement);
             }
-            catch (ReturnException)
+            catch (FlowControlException)
             {
                 runtime.Pop(); // Need to pop out of runtime frame since we are returning. Returned value will be caught higher up the stack.
                 throw;
@@ -134,6 +134,16 @@ namespace Quixotic.Interpret
             throw new ReturnException(value);
         }
 
+        public static void Execute(QxContinueStatement statement)
+        {
+            throw new ContinueException();
+        }
+
+        public static void Execute(QxBreakStatement statement)
+        {
+            throw new BreakException();
+        }
+
         public void Execute(QxAssignmentStatement statement)
         {
             var value = Evaluate(statement.Value);
@@ -170,7 +180,18 @@ namespace Quixotic.Interpret
                 if (statement.EntryControlled && !IsTruthy(Evaluate(statement.Condition)))
                     break;
 
-                Execute(statement.Block);
+                try
+                {
+                    Execute(statement.Block, RuntimeFrameType.Loop);
+                }
+                catch (BreakException)
+                {
+                    break;
+                }
+                catch (ContinueException)
+                {
+                    continue;
+                }
 
                 if (!statement.EntryControlled && !IsTruthy(Evaluate(statement.Condition)))
                     break;
