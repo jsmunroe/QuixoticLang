@@ -48,7 +48,7 @@ namespace Quixotic.Cli
         {
             while (!Parser.IsSourceComplete(source))
             {
-                Console.Write(" +    ");
+                Console.Write("+ ");
                 var continuation = Console.ReadLine();
 
                 source += "\r\n" + continuation;

@@ -416,7 +416,7 @@ namespace Quixotic.Parsing
             bool isTerminated()
             {
                 if (IsAtEnd || Match(TokenType.Eof))
-                    throw new IncompleteSourceException("Block is not terminated.");
+                    throw new IncompleteSourceException("Encountered end of file before block is terminated.");
 
                 return terminatingTypes.Any(t => Peek().Type == t);
             }
@@ -426,7 +426,7 @@ namespace Quixotic.Parsing
                 ConsumeNewLines();
 
                 if (IsAtEnd || Match(TokenType.Eof))
-                    throw new IncompleteSourceException("Block is not terminated.");
+                    throw new IncompleteSourceException("Encountered end of file before block is terminated.");
 
                 if (isTerminated())
                     break;
@@ -470,7 +470,7 @@ namespace Quixotic.Parsing
                 return token;
 
             if (Match(TokenType.Eof))
-                throw new IncompleteSourceException($"Expected {type} before end of input.");
+                throw new IncompleteSourceException($"Encountered end of file before expected {type}.");
 
             throw new ExpectedTokenException(new TokenHead(type, type.ToString()), Peek());
         }
