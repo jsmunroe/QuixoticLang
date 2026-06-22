@@ -22,6 +22,8 @@ namespace QuixoticLang.Lexer
             { "loop", TokenType.Loop },
             { "else", TokenType.Else },
             { "end", TokenType.End },
+            { "true", TokenType.BooleanLiteral },
+            { "false", TokenType.BooleanLiteral },
             { "and", TokenType.And },
             { "or", TokenType.Or },
             { "not", TokenType.Not },

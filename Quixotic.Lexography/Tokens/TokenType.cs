@@ -3,8 +3,9 @@
     public enum TokenType
     {
         StringLiteral,
-        Identifier,
         NumberLiteral,
+        BooleanLiteral,
+        Identifier,
         Print,
         Let,
         If,
@@ -33,8 +34,8 @@
         And,
         Not,
         Function,
+        Return,
         NewLine,
         Eof,
-        Return,
     }
 }

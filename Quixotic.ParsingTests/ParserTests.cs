@@ -2,6 +2,7 @@
 using Quixotic.Parsing;
 using Quixotic.Parsing.Exceptions;
 using Quixotic.Parsing.Expressions;
+using Quixotic.Parsing.Operations;
 using Quixotic.Parsing.Statements;
 using Quixotic.ParsingTests.TestModels;
 using QuixoticLang.Lexer;
@@ -724,6 +725,68 @@ namespace Quixotic.ParsingTests
                     AssertAssignment(block[1], "i", ("[i]", "+", 1.0));
                 });
         }
+
+        [TestMethod]
+        public void Parse_assignment_with_boolean_literal_true()
+        {
+            // Setup
+            var source = @"
+                let isAGiant := true
+
+                if isAGiant then
+                    print ""Attack!""
+                end if
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "isAGiant", true);
+
+            AssertIf(statements[1], new TestIdentifierExpression("isAGiant"),
+                thenBlock: block =>
+                {
+                    AssertPrint(block[0], "Attack!");
+                });
+        }
+
+        [TestMethod]
+        public void Parse_assignment_with_boolean_literal_false()
+        {
+            // Setup
+            var source = @"
+                let isAWindmill := false
+
+                if not isAWindmill then
+                    print ""Attack!""
+                end if
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "isAWindmill", false);
+
+            AssertIf(statements[1], new TestUnaryExpression(Operator.Not, new TestIdentifierExpression("isAWindmill")),
+                thenBlock: block =>
+                {
+                    AssertPrint(block[0], "Attack!");
+                });
+        }
+
+
 
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression? expression = null)
         {

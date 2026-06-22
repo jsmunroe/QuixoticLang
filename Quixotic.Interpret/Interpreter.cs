@@ -187,6 +187,11 @@ namespace Quixotic.Interpret
             return new StringValue(expression.Value);
         }
 
+        protected static Value Evaluate(QxBooleanLiteralExpression expression)
+        {
+            return new BooleanValue(expression.Value);
+        }
+
         protected Value Evaluate(QxIdentifierExpression expression)
         {
             var name = expression.Name;

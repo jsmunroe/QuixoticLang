@@ -681,8 +681,89 @@ namespace Quixotic.InterpretTests
 
             // Execute
             interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasNotPrinted("Explosions and distruction!!!");
+            runtime.AssertHasNotPrinted("Important stuff!");
         }
 
+        [TestMethod]
+        public void Execute_or_short_circuiting()
+        {
+            // Setup
+            var source = @"
+                function boom 
+                    print ""Explosions and distruction!!!""
+                    return false
+                end function
+
+                let i := 1
+
+                if i = 1 or boom() then
+                    print ""Important stuff!""
+                end if
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasNotPrinted("Explosions and distruction!!!");
+            runtime.AssertHasPrinted("Important stuff!");
+        }
+
+        [TestMethod]
+        public void Parse_assignment_with_boolean_literal_true()
+        {
+            // Setup
+            var source = @"
+                let isAGiant := true
+
+                if isAGiant then
+                    print ""Attack!""
+                end if
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted("Attack!");
+        }
+
+        [TestMethod]
+        public void Parse_assignment_with_boolean_literal_false()
+        {
+            // Setup
+            var source = @"
+                let isAWindmill := false
+
+                if not isAWindmill then
+                    print ""Attack!""
+                end if
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted("Attack!");
+        }
 
 
     }

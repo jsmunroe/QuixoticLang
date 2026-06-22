@@ -58,6 +58,31 @@ namespace Quixotic.InterpretTests.TestImplementations
             Assert.AreEqual(expected, actual, $"The actual print execution at index {index} is '{actual}'. It was not '{expected}'.");
         }
 
+
+        public void AssertHasNotPrinted(string value)
+        {
+            var printExecutions = PrintExecutions.Count == 0 ? "\r\nThere were no print executions." : $"\r\nPrint executions were:\r\n\t{string.Join("\r\n\t", PrintExecutions)}\r\n";
+
+            if (PrintExecutions.Contains(value))
+                throw new AssertFailedException($"At least one print executions was made with the string '{value}'.{printExecutions}");
+        }
+
+        public void AssertHasNotPrinted(int index, string value)
+        {
+            if (index < 0)
+                throw new AssertFailedException($"The {nameof(index)} cannot be negative.");
+
+            if (index >= PrintExecutions.Count)
+                throw new AssertFailedException($"There are no print executions at index {index}.");
+
+            var expected = value;
+            var actual = PrintExecutions[index];
+
+            Assert.AreNotEqual(expected, actual, $"'{expected}' was printed at index {index}.");
+        }
+
+
+
         public void AssertFunctionDeclared(string name)
         {
             Assert.IsTrue(AllFrames.Any(f => f.Scope.IsFunctionDeclared(name)), $"No function named '{name}' was decleared.");

@@ -44,6 +44,11 @@ namespace Quixotic.ParsingTests.TestModels
             return new TestStringExpression(value);
         }
 
+        public static implicit operator TestExpression(bool value)
+        {
+            return new TestBooleanExpression(value);
+        }
+
         public static implicit operator TestExpression((double left, string op, double right) tuple)
         {
             return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
@@ -204,6 +209,33 @@ namespace Quixotic.ParsingTests.TestModels
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(stringLiteralExpression.Value, Value, $"\r\n{positionDescription}\r\nExpected number value was {Value}, but actual number value was {stringLiteralExpression.Value}.");
         }
 
+    }
+
+    public record TestBooleanExpression(bool Value) : TestExpression
+    {
+        public bool Value { get; } = Value;
+
+        public override string GetPositionDescription(TestExpression expression)
+        {
+            if (Parent is null)
+                return "X";
+
+            return Parent.GetPositionDescription(expression);
+        }
+
+        public override string ToString(TestExpression expression)
+        {
+            return ReferenceEquals(expression, this) ? "'X'" : "''";
+        }
+
+        public override void Assert(Parsing.Expressions.QxExpression expression)
+        {
+            var positionDescription = GetPositionDescription(this);
+
+            var stringLiteralExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxBooleanLiteralExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a string literal expression.");
+
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(stringLiteralExpression.Value, Value, $"\r\n{positionDescription}\r\nExpected boolean value was {Value}, but actual boolean value was {stringLiteralExpression.Value}.");
+        }
     }
 
     public record TestUnaryExpression(Operator Operator, TestExpression Operand) : TestExpression

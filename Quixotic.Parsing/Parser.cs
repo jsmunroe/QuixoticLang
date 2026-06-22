@@ -352,6 +352,9 @@ namespace Quixotic.Parsing
             if (token.Type == TokenType.NumberLiteral)
                 return ParseNumber(token);
 
+            if (token.Type == TokenType.BooleanLiteral)
+                return new QxBooleanLiteralExpression(string.Equals(token.Value, "true", StringComparison.OrdinalIgnoreCase));
+
             if (token.Type == TokenType.Identifier)
                 return ParseIdentifierExpression(token);
 
