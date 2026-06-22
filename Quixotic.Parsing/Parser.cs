@@ -12,6 +12,10 @@ namespace Quixotic.Parsing
     {
         private readonly Stepper<Token> _tokens = new(tokens);
 
+        public Parser(string source)
+            : this(new Lexer(source))
+        { }
+
         public Parser(Lexer lexer)
             : this(lexer.Tokenize())
         { }
@@ -26,6 +30,7 @@ namespace Quixotic.Parsing
                     yield break;
 
                 var statement = ParseStatement();
+
                 yield return statement;
 
                 ConsumeStatementTerminator();
@@ -221,6 +226,9 @@ namespace Quixotic.Parsing
 
             if (!Match(TokenType.NewLine))
             {
+                if (Match(TokenType.Eof))
+                    throw new IncompleteSourceException("End of file encountered before if block terminates.");
+
                 var statement = ParseStatement();
 
                 return new QxIfStatement(condition) { ThenBlock = [statement] };
@@ -405,11 +413,20 @@ namespace Quixotic.Parsing
         {
             var block = new Block();
 
-            bool isTerminated() => terminatingTypes.Any(t => Peek().Type == t);
+            bool isTerminated()
+            {
+                if (IsAtEnd || Match(TokenType.Eof))
+                    throw new IncompleteSourceException("Block is not terminated.");
+
+                return terminatingTypes.Any(t => Peek().Type == t);
+            }
 
             while (!isTerminated())
             {
                 ConsumeNewLines();
+
+                if (IsAtEnd || Match(TokenType.Eof))
+                    throw new IncompleteSourceException("Block is not terminated.");
 
                 if (isTerminated())
                     break;
@@ -452,6 +469,9 @@ namespace Quixotic.Parsing
             if (Match(type, out var token))
                 return token;
 
+            if (Match(TokenType.Eof))
+                throw new IncompleteSourceException($"Expected {type} before end of input.");
+
             throw new ExpectedTokenException(new TokenHead(type, type.ToString()), Peek());
         }
 
@@ -462,6 +482,12 @@ namespace Quixotic.Parsing
 
         private bool Match(TokenType type, [NotNullWhen(true)] out Token? token)
         {
+            if (IsAtEnd)
+            {
+                token = null;
+                return false;
+            }
+
             token = Peek();
             if (!_tokens.IsAtEnd && token.Type == type)
             {
@@ -473,10 +499,20 @@ namespace Quixotic.Parsing
             return false;
         }
 
-        private bool TokenIs(TokenType type)
+        public static bool IsSourceComplete(string source)
         {
-            var token = Peek();
-            return token.Type == type;
+            try
+            {
+                var parser = new Parser(source);
+                parser.Parse().ToList();
+            }
+            catch (IncompleteSourceException)
+            {
+                return false;
+            }
+
+            return true;
         }
+
     }
 }

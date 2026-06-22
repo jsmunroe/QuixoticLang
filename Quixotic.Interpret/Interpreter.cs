@@ -6,6 +6,7 @@ using Quixotic.Parsing;
 using Quixotic.Parsing.Expressions;
 using Quixotic.Parsing.Operations;
 using Quixotic.Parsing.Statements;
+using QuixoticLang.Lexer;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
@@ -18,6 +19,15 @@ namespace Quixotic.Interpret
         private readonly static Dictionary<Type, Func<Interpreter, QxExpression, Value>> _evaluateMap = [];
 
         static Interpreter() => LoadMapEntries();
+
+        public void Execute(string source)
+        {
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var statements = parser.Parse();
+
+            Execute(statements);
+        }
 
         public void Execute(IEnumerable<QxStatement> statements)
         {

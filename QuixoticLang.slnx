@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="Quixotic.Cli/Quixotic.Cli.csproj" Id="cd9acbae-0b21-40a9-a9fb-2bc81cb035df" />
   <Project Path="Quixotic.Interpret/Quixotic.Interpret.csproj" />
   <Project Path="Quixotic.InterpretTests/Quixotic.InterpretTests.csproj" />
   <Project Path="Quixotic.Lexography/Quixotic.Lexography.csproj" />

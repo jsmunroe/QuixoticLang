@@ -10,6 +10,8 @@ namespace QuixoticLang.Lexer
         private int _line = 1;
         private int _column = 1;
 
+        public List<Token> Tokens { get; } = [];
+
         private static Dictionary<string, TokenType> Keywords { get; } = new(StringComparer.OrdinalIgnoreCase)
         {
             { "print", TokenType.Print },
@@ -34,6 +36,16 @@ namespace QuixoticLang.Lexer
         };
 
         public IEnumerable<Token> Tokenize()
+        {
+            Tokens.Clear();
+            foreach (var token in TokenizeInternal())
+            {
+                Tokens.Add(token);
+                yield return token;
+            }
+        }
+
+        private IEnumerable<Token> TokenizeInternal()
         {
             while (!IsAtEnd())
             {
