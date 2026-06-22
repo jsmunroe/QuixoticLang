@@ -212,8 +212,8 @@ namespace Quixotic.Interpret
 
         protected Value Evaluate(QxBinaryExpression expression)
         {
-            var left = Evaluate(expression.Left);
-            var right = Evaluate(expression.Right);
+            var left = expression.Left;
+            var right = expression.Right;
 
             var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator) ?? string.Empty;
 
@@ -234,7 +234,7 @@ namespace Quixotic.Interpret
                 Operator.And => And(left, right),
                 Operator.Or => Or(left, right),
 
-                _ => throw new BinaryOperatorException(left.Type, operatorValue, right.Type),
+                _ => throw new BinaryOperatorException(left.Kind, operatorValue, right.Kind),
             };
         }
 
@@ -264,64 +264,108 @@ namespace Quixotic.Interpret
             return value.IsTruthy();
         }
 
-        private static Value Add(Value left, Value right)
+        private Value Add(QxExpression left, QxExpression right)
         {
-            return left.Add(right);
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.Add(rightValue);
         }
 
-        private static Value Subtract(Value left, Value right)
+        private Value Subtract(QxExpression left, QxExpression right)
         {
-            return left.Subtract(right);
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.Subtract(rightValue);
         }
 
-        private static Value Multiply(Value left, Value right)
+        private Value Multiply(QxExpression left, QxExpression right)
         {
-            return left.Multiply(right);
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.Multiply(rightValue);
         }
 
-        private static Value Divide(Value left, Value right)
+        private Value Divide(QxExpression left, QxExpression right)
         {
-            return left.Divide(right);
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.Divide(rightValue);
         }
 
-        private static BooleanValue IsEqualTo(Value left, Value right)
+        private BooleanValue IsEqualTo(QxExpression left, QxExpression right)
         {
-            return left.IsEqualTo(right);
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.IsEqualTo(rightValue);
         }
 
-        private static BooleanValue IsNotEqualTo(Value left, Value right)
+        private BooleanValue IsNotEqualTo(QxExpression left, QxExpression right)
         {
-            return left.IsEqualTo(right).Not();
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.IsNotEqualTo(rightValue);
         }
 
-        private static BooleanValue IsLessThan(Value left, Value right)
+        private BooleanValue IsLessThan(QxExpression left, QxExpression right)
         {
-            return left.IsLessThan(right);
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.IsLessThan(rightValue);
         }
 
-        private static BooleanValue IsLessThanOrEqualTo(Value left, Value right)
+        private BooleanValue IsLessThanOrEqualTo(QxExpression left, QxExpression right)
         {
-            return left.IsLessThanOrEqualTo(right);
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.IsLessThanOrEqualTo(rightValue);
         }
 
-        private static BooleanValue IsGreaterThan(Value left, Value right)
+        private BooleanValue IsGreaterThan(QxExpression left, QxExpression right)
         {
-            return left.IsGreaterThan(right).Or(left.IsEqualTo(right));
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.IsGreaterThan(rightValue);
         }
 
-        private static BooleanValue IsGreaterThanOrEqualTo(Value left, Value right)
+        private BooleanValue IsGreaterThanOrEqualTo(QxExpression left, QxExpression right)
         {
-            return left.IsGreaterThanOrEqualTo(right);
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            return leftValue.IsGreaterThanOrEqualTo(rightValue);
         }
 
-        private static BooleanValue And(Value left, Value right)
+        private BooleanValue And(QxExpression left, QxExpression right)
         {
-            return left.And(right);
+            var leftValue = Evaluate(left);
+
+            if (!IsTruthy(leftValue))
+                return BooleanValue.False;
+
+            var rightValue = Evaluate(right);
+
+            return IsTruthy(rightValue) ? BooleanValue.True : BooleanValue.False;
         }
 
-        private static BooleanValue Or(Value left, Value right)
+        private BooleanValue Or(QxExpression left, QxExpression right)
         {
-            return left.Or(right);
+            var leftValue = Evaluate(left);
+
+            if (IsTruthy(leftValue))
+                return BooleanValue.True;
+
+            var rightValue = Evaluate(right);
+
+            return IsTruthy(rightValue) ? BooleanValue.True : BooleanValue.False;
         }
 
         public List<Argument> BindArguments(string name, Function function, List<QxExpression> expressions)

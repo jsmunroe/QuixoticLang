@@ -512,7 +512,7 @@ namespace Quixotic.InterpretTests
 
 
         [TestMethod]
-        public void Parse_do_while_loop()
+        public void Execute_do_while_loop()
         {
             // Setup
             var source = @"
@@ -548,7 +548,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_do_until_loop()
+        public void Execute_do_until_loop()
         {
             // Setup
             var source = @"
@@ -584,7 +584,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_do_loop_while()
+        public void Execute_do_loop_while()
         {
             // Setup
             var source = @"
@@ -621,7 +621,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_do_loop_until()
+        public void Execute_do_loop_until()
         {
             // Setup
             var source = @"
@@ -655,6 +655,34 @@ namespace Quixotic.InterpretTests
 
             runtime.AssertVariableHasValue("i", 10);
         }
+
+
+        [TestMethod]
+        public void Execute_and_short_circuiting()
+        {
+            // Setup
+            var source = @"
+                function boom 
+                    print ""Explosions and distruction!!!""
+                    return false
+                end function
+
+                let i := 1
+
+                if i = 0 and boom() then
+                    print ""Important stuff!""
+                end if
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+        }
+
 
 
     }
