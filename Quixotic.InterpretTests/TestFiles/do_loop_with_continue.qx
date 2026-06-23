@@ -1,0 +1,10 @@
+﻿let keepItUp := true
+
+do while keepItUp
+    print "before continue"
+
+    keepItUp := false
+    continue
+
+    print "after continue"
+loop

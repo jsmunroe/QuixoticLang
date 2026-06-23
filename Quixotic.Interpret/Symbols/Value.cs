@@ -7,13 +7,13 @@ namespace Quixotic.Interpret.Symbols
     {
         private readonly object? _value;
 
-        protected Value(ValueType type, object? value)
+        protected Value(QxType type, object? value)
         {
             Type = type;
             _value = value;
         }
 
-        public ValueType Type { get; }
+        public QxType Type { get; }
 
         public virtual bool IsTruthy()
         {
@@ -90,7 +90,7 @@ namespace Quixotic.Interpret.Symbols
 
     }
 
-    public record NumberValue(double value) : Value(ValueType.Number, value)
+    public record NumberValue(double value) : Value(QxType.Number, value)
     {
         public double Value { get; } = value;
 
@@ -165,7 +165,7 @@ namespace Quixotic.Interpret.Symbols
 
     }
 
-    public record StringValue(string value) : Value(ValueType.String, value)
+    public record StringValue(string value) : Value(QxType.String, value)
     {
         public string Value { get; } = value;
 
@@ -189,7 +189,7 @@ namespace Quixotic.Interpret.Symbols
         }
     }
 
-    public record BooleanValue(bool value) : Value(ValueType.Boolean, value)
+    public record BooleanValue(bool value) : Value(QxType.Boolean, value)
     {
         public bool Value { get; } = value;
 
@@ -213,7 +213,7 @@ namespace Quixotic.Interpret.Symbols
         public static BooleanValue False { get; } = new(false);
     }
 
-    public record NadaValue() : Value(ValueType.Nada, null)
+    public record NadaValue() : Value(QxType.Nada, null)
     {
         public override string ToString() => "nada";
 

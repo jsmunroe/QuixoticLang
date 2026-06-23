@@ -8,7 +8,7 @@ namespace Quixotic.Interpret.Exceptions
             : base($"{@operator} is not supported between values of type {left} and {right}.")
         { }
 
-        public BinaryOperatorException(Symbols.ValueType left, string @operator, Symbols.ValueType right)
+        public BinaryOperatorException(Symbols.QxType left, string @operator, Symbols.QxType right)
             : base($"{@operator} is not supported between values of type {left.Name} and {right.Name}.")
         { }
     }

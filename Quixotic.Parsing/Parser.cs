@@ -68,6 +68,9 @@ namespace Quixotic.Parsing
             if (Match(TokenType.If))
                 return ParseIf();
 
+            if (Match(TokenType.For))
+                return ParseFor();
+
             if (Match(TokenType.Do))
                 return ParseDo();
 
@@ -273,6 +276,36 @@ namespace Quixotic.Parsing
 
             return new QxElseIfClause(condition)
             {
+                Block = block,
+            };
+        }
+
+        private QxForStatement ParseFor()
+        {
+            var identifierToken = Expect(TokenType.Identifier);
+            var identifier = new QxIdentifierExpression(identifierToken.Value);
+
+            Expect(TokenType.Assignment);
+
+            var from = ParseExpression();
+
+            Expect(TokenType.To);
+
+            var to = ParseExpression();
+
+            QxExpression step;
+            if (Match(TokenType.Step))
+                step = ParseExpression();
+            else
+                step = new QxNumberLiteralExpression(1);
+
+            var block = ParseBlock(TokenType.Next);
+
+            Expect(TokenType.Next);
+
+            return new(identifier, from, to)
+            {
+                Step = step,
                 Block = block,
             };
         }

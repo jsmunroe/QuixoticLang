@@ -795,18 +795,7 @@ namespace Quixotic.InterpretTests
         public void Execute_do_loop_with_continue()
         {
             // Setup
-            var source = @"
-                let keepItUp := true
-
-                do while keepItUp
-                    print ""before continue""
-
-                    keepItUp := false
-                    continue
-
-                    print ""after continue""
-                loop
-            ";
+            using var source = GetTestFile("do_loop_with_continue");
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
@@ -821,5 +810,140 @@ namespace Quixotic.InterpretTests
             runtime.AssertHasNotPrinted("after continue");
         }
 
+        [TestMethod]
+        public void Execute_for_loop()
+        {
+            // Setup
+            var source = @"
+                for i := 0 to 10
+                    print i
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted(0, "0");
+            runtime.AssertHasPrinted(1, "1");
+            runtime.AssertHasPrinted(2, "2");
+            runtime.AssertHasPrinted(3, "3");
+            runtime.AssertHasPrinted(4, "4");
+            runtime.AssertHasPrinted(5, "5");
+            runtime.AssertHasPrinted(6, "6");
+            runtime.AssertHasPrinted(7, "7");
+            runtime.AssertHasPrinted(8, "8");
+            runtime.AssertHasPrinted(9, "9");
+            runtime.AssertHasPrinted(10, "10");
+
+            runtime.AssertVariableHasValue("i", 10);
+        }
+
+        [TestMethod]
+        public void Execute_for_loop_backwards()
+        {
+            // Setup
+            var source = @"
+                for i := 10 to 0 step -1
+                    print i
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted(0, "10");
+            runtime.AssertHasPrinted(1, "9");
+            runtime.AssertHasPrinted(2, "8");
+            runtime.AssertHasPrinted(3, "7");
+            runtime.AssertHasPrinted(4, "6");
+            runtime.AssertHasPrinted(5, "5");
+            runtime.AssertHasPrinted(6, "4");
+            runtime.AssertHasPrinted(7, "3");
+            runtime.AssertHasPrinted(8, "2");
+            runtime.AssertHasPrinted(9, "1");
+            runtime.AssertHasPrinted(10, "0");
+
+            runtime.AssertVariableHasValue("i", 0);
+        }
+
+        [TestMethod]
+        public void Execute_for_loop_with_step()
+        {
+            // Setup
+            var source = @"
+                for i := 0 to 10 step 2
+                    print i
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted(0, "0");
+            runtime.AssertHasPrinted(1, "2");
+            runtime.AssertHasPrinted(2, "4");
+            runtime.AssertHasPrinted(3, "6");
+            runtime.AssertHasPrinted(4, "8");
+            runtime.AssertHasPrinted(5, "10");
+
+            runtime.AssertVariableHasValue("i", 10);
+        }
+
+        [TestMethod]
+        public void Execute_for_loop_to_compute_pi()
+        {
+            // Setup
+            var source = @"
+                let denominator := 1
+                let piOverFour := 0
+                let sign := 1
+
+                for i := 0 to 1000
+                    piOverFour := piOverFour + 1/denominator
+
+                    print piOverFour * 4
+
+                    denominator := denominator + 2
+                    sign := sign * -1
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+        }
+
+
+        private Stream GetTestFile(string name)
+        {
+            if (!name.EndsWith(".qx"))
+                name += ".qx";
+
+            var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestFiles", name);
+
+            return File.OpenRead(filePath);
+        }
     }
 }

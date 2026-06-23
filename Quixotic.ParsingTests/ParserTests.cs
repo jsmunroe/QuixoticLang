@@ -838,6 +838,61 @@ namespace Quixotic.ParsingTests
                 });
         }
 
+        [TestMethod]
+        public void Parse_for_loop()
+        {
+            // Setup
+            var source = @"
+                for i := 0 to 10
+                    print i
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            AssertFor(statements[0],
+                iterator: "i",
+                from: 0,
+                to: 10,
+                block: block =>
+                {
+                    AssertPrint(block[0], "[i]");
+                });
+        }
+
+        [TestMethod]
+        public void Parse_for_loop_to_compute_pi()
+        {
+            // Setup
+            var source = @"
+                let denominator := 1
+                let piOverFour := 0
+                let sign := 1
+
+                for i := 0 to 1000
+                    piOverFour := piOverFour + 1/denominator
+
+                    print piOverFour * 4
+
+                    denominator := denominator + 2
+                    sign := sign * -1
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+        }
+
 
 
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression? expression = null)
@@ -892,6 +947,32 @@ namespace Quixotic.ParsingTests
             return ifStatement;
         }
 
+        private QxForStatement AssertFor(QxStatement statement, string? iterator = null, TestExpression? from = null, TestExpression? to = null, TestExpression? step = null, Action<Block>? block = null)
+        {
+            var forStatement = Assert.IsInstanceOfType<QxForStatement>(statement);
+
+            if (iterator is not null)
+                Assert.AreEqual(iterator, forStatement.Iterator.Name);
+
+            if (from is not null)
+                from.Assert(forStatement.From);
+
+            if (to is not null)
+                to.Assert(forStatement.To);
+
+            if (step is not null)
+            {
+                Assert.IsNotNull(forStatement.Step);
+                step.Assert(forStatement.Step);
+            }
+
+            if (block is not null)
+                block(forStatement.Block);
+
+            return forStatement;
+
+        }
+
         private QxDoStatement AssertDo(QxStatement statement, TestExpression? condition = null, bool? isEntryControl = null, Action<Block>? block = null)
         {
             var doStatement = Assert.IsInstanceOfType<QxDoStatement>(statement);
@@ -929,31 +1010,6 @@ namespace Quixotic.ParsingTests
                 expression.Assert(assignmentStatement.Value);
 
             return assignmentStatement;
-        }
-
-        private QxPrintStatement AssertPrint(QxStatement statement, string? text = null)
-        {
-            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(statement);
-
-            if (text is not null)
-            {
-                var stringLiteralExpression = Assert.IsInstanceOfType<QxStringLiteralExpression>(printStatement.Expression);
-
-                Assert.AreEqual(text, stringLiteralExpression.Value);
-            }
-
-            return printStatement;
-        }
-
-        private QxPrintStatement AssertPrint(QxStatement statement, int text)
-        {
-            var printStatement = Assert.IsInstanceOfType<QxPrintStatement>(statement);
-
-            var numberLiteralExpression = Assert.IsInstanceOfType<QxNumberLiteralExpression>(printStatement.Expression);
-
-            Assert.AreEqual(text, numberLiteralExpression.Value);
-
-            return printStatement;
         }
 
         private QxPrintStatement AssertPrint(QxStatement statement, TestExpression expression)

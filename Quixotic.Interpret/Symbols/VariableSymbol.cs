@@ -6,11 +6,11 @@ namespace Quixotic.Interpret.Symbols
     {
         public Value Value { get; private set; } = value;
 
-        public ValueType Type { get; } = value.Type;
+        public QxType Type { get; } = value.Type;
 
         public void Assign(Value value)
         {
-            if (Type != Symbols.ValueType.Nada && !value.Type.Equals(Type))
+            if (Type != Symbols.QxType.Nada && !value.Type.Equals(Type))
                 throw new TypeMismatchException(Type, value.Type);
 
             Value = value;

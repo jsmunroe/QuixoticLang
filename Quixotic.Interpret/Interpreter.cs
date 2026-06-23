@@ -29,6 +29,15 @@ namespace Quixotic.Interpret
             Execute(statements);
         }
 
+        public void Execute(Stream source)
+        {
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var statements = parser.Parse();
+
+            Execute(statements);
+        }
+
         public void Execute(IEnumerable<QxStatement> statements)
         {
             // Executes statements in global space
@@ -37,9 +46,14 @@ namespace Quixotic.Interpret
                 Execute(statement);
         }
 
-        public void Execute(Block statements, RuntimeFrameType frameType)
+        public void Execute(Block statements, RuntimeFrameType frameType, List<Argument>? arguments = null)
         {
             runtime.PushBlock(frameType);
+
+            if (arguments is not null)
+
+                foreach (var argument in arguments)
+                    runtime.Frame.Scope.DefineVariable(argument.Name, argument.Value);
 
             try
             {
@@ -183,6 +197,36 @@ namespace Quixotic.Interpret
             Execute(statement.ElseBlock, RuntimeFrameType.IfBlock);
         }
 
+        public void Execute(QxForStatement statement)
+        {
+            var iterator = statement.Iterator.Name;
+
+            var from = ExpectType<NumberValue>(Evaluate(statement.From));
+            var to = ExpectType<NumberValue>(Evaluate(statement.To));
+
+            double start() => from.Value;
+
+            bool check(double i)
+            {
+                if (from.Value < to.Value)
+                    return i <= to.Value;
+
+                return i >= to.Value;
+            }
+
+            NumberValue step;
+            double iterate(double i) => i += step.Value;
+
+            for (var i = start(); check(i); i = iterate(i))
+            {
+                from = ExpectType<NumberValue>(Evaluate(statement.From));
+                to = ExpectType<NumberValue>(Evaluate(statement.To));
+                step = ExpectType<NumberValue>(Evaluate(statement.Step));
+
+                Execute(statement.Block, RuntimeFrameType.ForBlock, [new(iterator, new NumberValue(i))]);
+            }
+        }
+
         public void Execute(QxDoStatement statement)
         {
             while (true)
@@ -298,6 +342,18 @@ namespace Quixotic.Interpret
         private static bool IsTruthy(Value value)
         {
             return value.IsTruthy();
+        }
+
+        private TValue ExpectType<TValue>(Value value)
+            where TValue : Value
+        {
+            if (value is not TValue expectedValue)
+            {
+                var expectedType = QxType.GetType<TValue>();
+                throw new UnexpectedTypeException(expectedType, value.Type);
+            }
+
+            return expectedValue;
         }
 
         private Value Add(QxExpression left, QxExpression right)

@@ -1,10 +1,10 @@
 ﻿namespace Quixotic.Interpret.Symbols
 {
-    public class ValueType
+    public class QxType
     {
         private readonly Type _typeOfValue;
 
-        protected ValueType(string name, Type typeOfValue)
+        protected QxType(string name, Type typeOfValue)
         {
             _typeOfValue = typeOfValue;
 
@@ -18,7 +18,7 @@
 
         public override bool Equals(object? obj)
         {
-            if (obj is not ValueType other)
+            if (obj is not QxType other)
                 return false;
 
             return other._typeOfValue.Equals(_typeOfValue);
@@ -34,13 +34,26 @@
             return false;
         }
 
-        public static ValueType Number { get; } = NumberType.Instance;
-        public static ValueType String { get; } = StringType.Instance;
-        public static ValueType Boolean { get; } = BooleanType.Instance;
-        public static ValueType Nada { get; } = NadaType.Instance;
+        public static QxType GetType<TValue>()
+            where TValue : Value
+        {
+            return typeof(TValue) switch
+            {
+                var t when t == typeof(NumberValue) => Number,
+                var t when t == typeof(StringType) => String,
+                var t when t == typeof(BooleanType) => Boolean,
+                var t when t == typeof(NadaType) => Nada,
+                _ => throw new NotImplementedException($"Type {typeof(TValue).Name} is not implemented.")
+            };
+        }
+
+        public static QxType Number { get; } = NumberType.Instance;
+        public static QxType String { get; } = StringType.Instance;
+        public static QxType Boolean { get; } = BooleanType.Instance;
+        public static QxType Nada { get; } = NadaType.Instance;
     }
 
-    public class NumberType : ValueType
+    public class NumberType : QxType
     {
         public static NumberType Instance { get; } = new();
 
@@ -57,7 +70,7 @@
         }
     }
 
-    public class StringType : ValueType
+    public class StringType : QxType
     {
         public static StringType Instance { get; } = new();
 
@@ -74,7 +87,7 @@
         }
     }
 
-    public class BooleanType : ValueType
+    public class BooleanType : QxType
     {
         public static BooleanType Instance { get; } = new();
 
@@ -91,7 +104,7 @@
         }
     }
 
-    public class NadaType : ValueType
+    public class NadaType : QxType
     {
         public static NadaType Instance { get; } = new();
 

@@ -10,6 +10,6 @@ namespace Quixotic.Parsing.Statements
 
         public bool ExitControlled { get; } = !entryControlled;
 
-        public Block Block { get; set; } = [];
+        public Block Block { get; init; } = [];
     }
 }

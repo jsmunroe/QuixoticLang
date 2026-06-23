@@ -6,26 +6,48 @@ namespace Quixotic.Cli
 {
     internal class Program
     {
+        private static ConsoleWriter Console { get; } = new();
+
         static void Main(string[] args)
         {
-            // TODO: If given a file path in args, interpet and run the file.
-
-            // Run REPL
             var runtime = new Runtime();
-            var interpeter = new Interpreter(runtime);
+            var interpreter = new Interpreter(runtime);
 
+            if (args.Length > 0)
+                InterpretFile(interpreter, args[0]);
+            else
+                RunRepl(interpreter);
+        }
+
+        private static void InterpretFile(Interpreter interpreter, string path)
+        {
+            if (!File.Exists(path))
+                Console.WriteError($"File not found. {path}");
+
+            try
+            {
+                var fileStream = File.OpenRead(path);
+
+                interpreter.Execute(fileStream);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteError($"[{ex.GetType().Name}]", ex);
+            }
+        }
+
+        private static void RunRepl(Interpreter interpreter)
+        {
             Console.Clear();
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("Quixotic");
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine("========");
+            Console.Write("Quixotic ", ConsoleColor.Cyan);
+            Console.WriteLine("v0.1", ConsoleColor.White);
+            Console.WriteLine("========", ConsoleColor.White);
             Console.WriteLine();
 
             while (true)
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write("> ");
-                Console.ResetColor();
+                Console.Write("> ", ConsoleColor.Cyan);
+
                 var source = Console.ReadLine();
 
                 if (source is null)
@@ -33,15 +55,14 @@ namespace Quixotic.Cli
 
                 try
                 {
-                    Execute(interpeter, source);
+                    Execute(interpreter, source);
                 }
                 catch (Exception ex)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"[{ex.GetType().Name}] {ex.Message}");
-                    Console.ResetColor();
+                    Console.WriteError($"[{ex.GetType().Name}]", ex);
                 }
             }
+
         }
 
         private static void Execute(Interpreter interpreter, string source)

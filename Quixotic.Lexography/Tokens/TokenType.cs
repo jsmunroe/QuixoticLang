@@ -39,5 +39,9 @@
         Return,
         NewLine,
         Eof,
+        For,
+        To,
+        Next,
+        Step,
     }
 }

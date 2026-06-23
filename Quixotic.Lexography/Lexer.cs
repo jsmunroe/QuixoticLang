@@ -3,12 +3,19 @@ using Quixotic.Lexography.Tokens;
 
 namespace QuixoticLang.Lexer
 {
-    public class Lexer(string source)
+    public class Lexer(TextReader reader)
     {
-        private readonly string _source = source;
         private int _index;
         private int _line = 1;
         private int _column = 1;
+
+        public Lexer(string source)
+            : this(new StringReader(source))
+        { }
+
+        public Lexer(Stream stream)
+            : this(new StreamReader(stream))
+        { }
 
         public List<Token> Tokens { get; } = [];
 
@@ -19,6 +26,10 @@ namespace QuixoticLang.Lexer
             { "if", TokenType.If },
             { "then", TokenType.Then },
             { "else", TokenType.Else },
+            { "for", TokenType.For },
+            { "to", TokenType.To },
+            { "step", TokenType.Step },
+            { "next", TokenType.Next },
             { "do", TokenType.Do },
             { "while", TokenType.While },
             { "until", TokenType.Until },
@@ -158,30 +169,29 @@ namespace QuixoticLang.Lexer
 
         private char Peek(int offset = 0)
         {
-            if (_index + offset >= _source.Length)
-                return '\0'; // null char to indicate end of input
+            var next = reader.Peek();
 
-            return _source[_index + offset];
+            return next == -1 ? '\0' : (char)next;
         }
 
         private char Advance()
         {
-            if (_index >= _source.Length)
-                return '\0'; // null char to indicate end of input
+            var next = reader.Read();
+            var nextChar = next == -1 ? '\0' : (char)next;
 
-            char c = _source[_index++];
+            _index++;
             _column++;
 
-            if (c == '\n')
+            if (nextChar == '\n')
             {
                 _line++;
                 _column = 1;
             }
 
-            return c;
+            return nextChar;
         }
 
-        private bool IsAtEnd() => _index >= _source.Length;
+        private bool IsAtEnd() => reader.Peek() == -1;
 
         private Position CurrentPosition() => new()
         {
@@ -206,10 +216,14 @@ namespace QuixoticLang.Lexer
             var start = _index;
             var position = CurrentPosition();
 
-            while (!IsAtEnd() && char.IsLetter(Peek()))
+            string text = string.Empty;
+            var next = Peek();
+            while (!IsAtEnd() && char.IsLetter(next))
+            {
+                text += next;
                 Advance();
-
-            var text = _source[start.._index];
+                next = Peek();
+            }
 
             if (!Keywords.TryGetValue(text, out var tokenType))
                 tokenType = TokenType.Identifier;
@@ -231,18 +245,21 @@ namespace QuixoticLang.Lexer
             bool hasDot = false;
             bool hasExponent = false;
 
+            var number = string.Empty;
             while (!IsAtEnd())
             {
                 char c = Peek();
 
                 if (char.IsDigit(c))
                 {
+                    number += c;
                     Advance();
                     continue;
                 }
 
                 if (c == '.' && !hasDot && !hasExponent)
                 {
+                    number += c;
                     hasDot = true;
                     Advance();
                     continue;
@@ -250,6 +267,7 @@ namespace QuixoticLang.Lexer
 
                 if ((c == 'e' || c == 'E') && !hasExponent)
                 {
+                    number += c;
                     hasExponent = true;
                     Advance();
 
@@ -263,12 +281,10 @@ namespace QuixoticLang.Lexer
                 break;
             }
 
-            var value = _source[start.._index];
-
             return new Token
             {
                 Type = TokenType.NumberLiteral,
-                Value = value,
+                Value = number,
                 Position = position
             };
         }
@@ -280,24 +296,24 @@ namespace QuixoticLang.Lexer
 
             int start = _index;
 
+            var stringValue = string.Empty;
+
             while (!IsAtEnd() && Peek() != '"')
             {
-                if (Peek() == '\\' && Peek(1) == '"') // Handle escape quotes
-                    Advance();
+                if (Peek() == '\\')  // Handle escape quotes
+                    stringValue += Advance();
 
-                Advance();
+                stringValue += Advance();
             }
 
-            var value = _source[start.._index];
-
-            value = Unescape(value);
+            stringValue = Unescape(stringValue);
 
             Advance(); // skip closing quote (")
 
             return new Token
             {
                 Type = TokenType.StringLiteral,
-                Value = value,
+                Value = stringValue,
                 Position = position
             };
         }

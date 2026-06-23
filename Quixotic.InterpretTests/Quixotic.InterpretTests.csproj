@@ -8,6 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="TestFiles\do_loop_with_continue.qx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="TestFiles\do_loop_with_continue.qx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MSTest" Version="4.0.2" />
   </ItemGroup>
 
