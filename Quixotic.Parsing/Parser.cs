@@ -1,8 +1,8 @@
-﻿using Quixotic.Lexography.Tokens;
-using Quixotic.Parsing.Exceptions;
-using Quixotic.Parsing.Expressions;
-using Quixotic.Parsing.Operations;
-using Quixotic.Parsing.Statements;
+﻿using Quixotic.Common.Exceptions.Parsing;
+using Quixotic.Common.Expressions;
+using Quixotic.Common.Operations;
+using Quixotic.Common.Statements;
+using Quixotic.Common.Tokens;
 using QuixoticLang.Lexer;
 using System.Diagnostics.CodeAnalysis;
 

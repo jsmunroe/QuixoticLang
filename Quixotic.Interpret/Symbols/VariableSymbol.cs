@@ -1,4 +1,4 @@
-﻿using Quixotic.Interpret.Exceptions;
+﻿using Quixotic.Common.Exceptions.Interpret;
 
 namespace Quixotic.Interpret.Symbols
 {
@@ -10,7 +10,7 @@ namespace Quixotic.Interpret.Symbols
 
         public void Assign(Value value)
         {
-            if (Type != Symbols.QxType.Nada && !value.Type.Equals(Type))
+            if (Type != QxType.Nada && !value.Type.Equals(Type))
                 throw new TypeMismatchException(Type, value.Type);
 
             Value = value;

@@ -1,9 +1,9 @@
-﻿using Quixotic.Lexography.Tokens;
+﻿using Quixotic.Common.Exceptions.Parsing;
+using Quixotic.Common.Expressions;
+using Quixotic.Common.Operations;
+using Quixotic.Common.Statements;
+using Quixotic.Common.Tokens;
 using Quixotic.Parsing;
-using Quixotic.Parsing.Exceptions;
-using Quixotic.Parsing.Expressions;
-using Quixotic.Parsing.Operations;
-using Quixotic.Parsing.Statements;
 using Quixotic.ParsingTests.TestModels;
 using QuixoticLang.Lexer;
 
@@ -17,9 +17,9 @@ namespace Quixotic.ParsingTests
         {
             // Setup
             List<Token> tokens = [
-                new Token { Type = TokenType.Print, Value = "print", Position = new Position(),},
-                new Token { Type = TokenType.StringLiteral, Value = "Hello, windmill!", Position = new Position(),},
-                new Token { Type = TokenType.Eof, Value = string.Empty, Position = new Position(),},
+                new Token { Type = TokenType.Print, Value = "print", Span = Span.Empty },
+                new Token { Type = TokenType.StringLiteral, Value = "Hello, windmill!", Span = Span.Empty },
+                new Token { Type = TokenType.Eof, Value = string.Empty, Span = Span.Empty,},
             ];
             var parser = new Parser(tokens);
 
@@ -654,7 +654,7 @@ namespace Quixotic.ParsingTests
 
             AssertVariableDeclaration(statements[0], "i", 0);
 
-            AssertDo(statements[1], new TestUnaryExpression(Parsing.Operations.Operator.Not, ("[i]", ">=", 10)), isEntryControl: true,
+            AssertDo(statements[1], new TestUnaryExpression(Common.Operations.Operator.Not, ("[i]", ">=", 10)), isEntryControl: true,
                 block: block =>
                 {
                     AssertPrint(block[0], new TestIdentifierExpression("i"));
@@ -718,7 +718,7 @@ namespace Quixotic.ParsingTests
 
             AssertVariableDeclaration(statements[0], "i", 0);
 
-            AssertDo(statements[1], new TestUnaryExpression(Parsing.Operations.Operator.Not, ("[i]", ">=", 10)), isEntryControl: false,
+            AssertDo(statements[1], new TestUnaryExpression(Common.Operations.Operator.Not, ("[i]", ">=", 10)), isEntryControl: false,
                 block: block =>
                 {
                     AssertPrint(block[0], new TestIdentifierExpression("i"));

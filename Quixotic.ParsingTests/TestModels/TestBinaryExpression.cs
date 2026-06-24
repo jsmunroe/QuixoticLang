@@ -1,5 +1,5 @@
-﻿using Quixotic.Parsing.Expressions;
-using Quixotic.Parsing.Operations;
+﻿using Quixotic.Common.Expressions;
+using Quixotic.Common.Operations;
 using System.Text.RegularExpressions;
 
 namespace Quixotic.ParsingTests.TestModels
@@ -12,7 +12,7 @@ namespace Quixotic.ParsingTests.TestModels
 
         public abstract string ToString(TestExpression expression);
 
-        public abstract void Assert(Parsing.Expressions.QxExpression expression);
+        public abstract void Assert(QxExpression expression);
 
         public static TestExpression Create(TestExpression expression)
         {
@@ -27,7 +27,7 @@ namespace Quixotic.ParsingTests.TestModels
         public static implicit operator TestExpression(double value)
         {
             if (value < 0)
-                return new TestUnaryExpression(Parsing.Operations.Operator.Subtract, new TestNumberExpression(-value));
+                return new TestUnaryExpression(Common.Operations.Operator.Subtract, new TestNumberExpression(-value));
 
             return new TestNumberExpression(value);
         }
@@ -124,11 +124,11 @@ namespace Quixotic.ParsingTests.TestModels
                 right.AssignParent();
         }
 
-        public override void Assert(Parsing.Expressions.QxExpression expression)
+        public override void Assert(QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
-            var binaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<Parsing.Expressions.QxBinaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a binary expression.");
+            var binaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxBinaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a binary expression.");
 
             Left.Assert(binaryExpression.Left);
 
@@ -173,7 +173,7 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "X" : "#";
         }
 
-        public override void Assert(Parsing.Expressions.QxExpression expression)
+        public override void Assert(QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
@@ -200,7 +200,7 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "'X'" : "''";
         }
 
-        public override void Assert(Parsing.Expressions.QxExpression expression)
+        public override void Assert(QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
@@ -228,7 +228,7 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "'X'" : "''";
         }
 
-        public override void Assert(Parsing.Expressions.QxExpression expression)
+        public override void Assert(QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
@@ -255,11 +255,11 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "X" : "-#"; ;
         }
 
-        public override void Assert(Parsing.Expressions.QxExpression expression)
+        public override void Assert(QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 
-            var unaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<Parsing.Expressions.QxUnaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a unary expression.");
+            var unaryExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxUnaryExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not a unary expression.");
 
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(Operator, unaryExpression.Operator, $"\r\n{positionDescription}\r\nExpected operator was '{Operator}' but actual operator was '{unaryExpression.Operator}'.");
             Operand.Assert(unaryExpression.Operand);
@@ -283,7 +283,7 @@ namespace Quixotic.ParsingTests.TestModels
             return ReferenceEquals(expression, this) ? "X" : "[#]";
         }
 
-        public override void Assert(Parsing.Expressions.QxExpression expression)
+        public override void Assert(QxExpression expression)
         {
             var positionDescription = GetPositionDescription(this);
 

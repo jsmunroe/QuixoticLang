@@ -1,5 +1,5 @@
-﻿using Quixotic.Interpret.Contracts;
-using Quixotic.Interpret.Exceptions;
+﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Symbols;
 
 namespace Quixotic.Interpret.Environment

@@ -1,4 +1,4 @@
-﻿using Quixotic.Parsing;
+﻿using Quixotic.Common.Statements;
 
 namespace Quixotic.Interpret.Symbols
 {

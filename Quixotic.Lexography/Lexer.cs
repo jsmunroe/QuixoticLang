@@ -1,5 +1,5 @@
-﻿using Quixotic.Lexography.Exceptions;
-using Quixotic.Lexography.Tokens;
+﻿using Quixotic.Common.Exceptions.Lexography;
+using Quixotic.Common.Tokens;
 
 namespace QuixoticLang.Lexer
 {
@@ -236,7 +236,11 @@ namespace QuixoticLang.Lexer
             {
                 Type = tokenType,
                 Value = text,
-                Position = position,
+                Span = new Span
+                {
+                    Start = position,
+                    End = CurrentPosition(),
+                }
             };
         }
 
@@ -289,7 +293,11 @@ namespace QuixoticLang.Lexer
             {
                 Type = TokenType.NumberLiteral,
                 Value = number,
-                Position = position
+                Span = new()
+                {
+                    Start = position,
+                    End = CurrentPosition(),
+                }
             };
         }
 
@@ -318,7 +326,11 @@ namespace QuixoticLang.Lexer
             {
                 Type = TokenType.StringLiteral,
                 Value = stringValue,
-                Position = position
+                Span = new()
+                {
+                    Start = position,
+                    End = CurrentPosition(),
+                },
             };
         }
 
@@ -411,13 +423,19 @@ namespace QuixoticLang.Lexer
             return Simple(TokenType.Comment, commentText);
         }
 
-        private Token Simple(TokenType type, string? value, Position? position = null)
+        private Token Simple(TokenType type, string? value, Position? position = null, int length = 1)
         {
+            position ??= CurrentPosition();
+
             return new()
             {
                 Type = type,
                 Value = value ?? string.Empty,
-                Position = position ?? CurrentPosition(),
+                Span = new()
+                {
+                    Start = position.Value,
+                    End = position.Value + 1
+                }
             };
         }
 
@@ -428,11 +446,17 @@ namespace QuixoticLang.Lexer
 
         private Token Eof()
         {
+            var position = CurrentPosition();
+
             return new()
             {
                 Type = TokenType.Eof,
                 Value = string.Empty,
-                Position = CurrentPosition(),
+                Span = new()
+                {
+                    Start = position,
+                    End = position + 1,
+                },
             };
         }
     }

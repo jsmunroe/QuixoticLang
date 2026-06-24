@@ -1,0 +1,11 @@
+﻿namespace Quixotic.Common.Expressions
+{
+    public class QxFunctionCallExpression(string name) : QxExpression
+    {
+        public string Name { get; } = name;
+
+        public List<QxExpression> Arguments { get; init; } = [];
+
+        public override ExpressionKind Kind => ExpressionKind.Unknown;
+    }
+}

@@ -1,5 +1,5 @@
-﻿using Quixotic.Lexography.Exceptions;
-using Quixotic.Lexography.Tokens;
+﻿using Quixotic.Common.Exceptions.Lexography;
+using Quixotic.Common.Tokens;
 using QuixoticLang.Lexer;
 
 namespace Quixotic.LexographyTests

@@ -1,4 +1,5 @@
-﻿using Quixotic.Interpret.Environment;
+﻿
+using Quixotic.Interpret.Environment;
 
 namespace Quixotic.Interpret.Contracts
 {

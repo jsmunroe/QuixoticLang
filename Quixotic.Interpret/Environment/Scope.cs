@@ -1,4 +1,4 @@
-﻿using Quixotic.Interpret.Exceptions;
+﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Interpret.Symbols;
 using System.Diagnostics.CodeAnalysis;
 

@@ -1,9 +1,0 @@
-﻿namespace Quixotic.Parsing.Expressions
-{
-    public sealed class QxBooleanLiteralExpression(bool value) : QxExpression
-    {
-        public bool Value { get; } = value;
-
-        public override ExpressionKind Kind => ExpressionKind.Boolean;
-    }
-}

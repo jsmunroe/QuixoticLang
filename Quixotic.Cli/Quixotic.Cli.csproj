@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Quixotic.Common\Quixotic.Common.csproj" />
     <ProjectReference Include="..\Quixotic.Interpret\Quixotic.Interpret.csproj" />
   </ItemGroup>
 

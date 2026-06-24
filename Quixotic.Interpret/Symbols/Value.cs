@@ -1,4 +1,4 @@
-﻿using Quixotic.Interpret.Exceptions;
+﻿using Quixotic.Common.Exceptions.Interpret;
 
 namespace Quixotic.Interpret.Symbols
 {
