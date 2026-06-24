@@ -908,22 +908,16 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Execute_for_loop_to_compute_pi()
+        public void Execute_for_loop_with_comments()
         {
             // Setup
             var source = @"
-                let denominator := 1
-                let piOverFour := 0
-                let sign := 1
-
-                for i := 0 to 1000
-                    piOverFour := piOverFour + 1/denominator
-
-                    print piOverFour * 4
-
-                    denominator := denominator + 2
-                    sign := sign * -1
-                next
+                ' This is a for loop
+                for i := 0 to 10 ' from 1 to 10
+                    print i ' printe each number
+                    ' this is a comment inside the for loop block!
+                next ' end the loop!
+                ' so long '''
             ";
 
             var lexer = new Lexer(source);
@@ -934,7 +928,6 @@ namespace Quixotic.InterpretTests
             // Execute
             interpreter.Execute(parser.Parse());
         }
-
 
         private Stream GetTestFile(string name)
         {

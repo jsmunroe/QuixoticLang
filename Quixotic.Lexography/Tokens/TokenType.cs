@@ -43,5 +43,6 @@
         To,
         Next,
         Step,
+        Comment,
     }
 }

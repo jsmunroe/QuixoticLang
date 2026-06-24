@@ -11,12 +11,16 @@
             Advance(); // Move to the first item.
         }
 
+        public List<TItem> PastItems { get; } = [];
+
         public bool IsAtEnd => _isAtEnd;
 
         public bool Advance()
         {
             if (_isAtEnd)
                 return false;
+
+            PastItems.Add(Peek());
 
             _isAtEnd = !_tokens.MoveNext();
             return !_isAtEnd;

@@ -103,6 +103,10 @@ namespace QuixoticLang.Lexer
                 // single-character tokens
                 switch (c)
                 {
+                    case '\'':
+                        ReadComment(); // Ignore comments
+                        continue;
+
                     case '(':
                         yield return Simple(TokenType.OpenParen, "(");
                         Advance();
@@ -384,6 +388,27 @@ namespace QuixoticLang.Lexer
             }
 
             throw new LexerUnexpectedCharacterException(c, position);
+        }
+
+        private Token ReadComment()
+        {
+            var c = Peek();
+            var commentText = string.Empty;
+            while (c != '\n')
+            {
+                if (c == '\r')
+                {
+                    Advance();
+                    c = Peek();
+                    continue;
+                }
+
+                commentText += c;
+                Advance();
+                c = Peek();
+            }
+
+            return Simple(TokenType.Comment, commentText);
         }
 
         private Token Simple(TokenType type, string? value, Position? position = null)

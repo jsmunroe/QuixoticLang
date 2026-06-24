@@ -893,7 +893,37 @@ namespace Quixotic.ParsingTests
             var statements = parser.Parse().ToList();
         }
 
+        [TestMethod]
+        public void Parse_for_loop_with_comments()
+        {
+            // Setup
+            var source = @"
+                ' This is a for loop
+                for i := 0 to 10 ' from 1 to 10
+                    print i ' printe each number
+                    ' this is a comment inside the for loop block!
+                next ' end the loop!
+                ' so long '''
+            ";
 
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            AssertFor(statements[0],
+                iterator: "i",
+                from: 0,
+                to: 10,
+                block: block =>
+                {
+                    AssertPrint(block[0], "[i]");
+                });
+        }
 
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression? expression = null)
         {
