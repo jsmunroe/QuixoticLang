@@ -9,5 +9,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Quixotic.Parsing\Quixotic.Parsing.csproj" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Include="..\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
+  </ItemGroup>
 
 </Project>

@@ -1,23 +1,23 @@
-﻿using Quixotic.Common.Exceptions.Lexography;
+﻿using Quixotic.Common.Contracts;
+using Quixotic.Common.Exceptions.Lexography;
+using Quixotic.Common.Source;
 using Quixotic.Common.Tokens;
 
 namespace QuixoticLang.Lexer
 {
-    public class Lexer(TextReader reader)
+    public class Lexer(ISource source)
     {
-        private int _index;
-        private int _line = 1;
-        private int _column = 1;
-
         public Lexer(string source)
-            : this(new StringReader(source))
+            : this(new StringSource(source))
         { }
 
         public Lexer(Stream stream)
-            : this(new StreamReader(stream))
+            : this(StringSource.FromStream(stream))
         { }
 
         public List<Token> Tokens { get; } = [];
+
+        public ISource Source => source;
 
         private static Dictionary<string, TokenType> Keywords { get; } = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -58,7 +58,7 @@ namespace QuixoticLang.Lexer
 
         private IEnumerable<Token> TokenizeInternal()
         {
-            while (!IsAtEnd())
+            while (!IsAtEnd)
             {
                 var c = Peek();
 
@@ -164,50 +164,25 @@ namespace QuixoticLang.Lexer
                         break;
 
                     default:
-                        throw new LexerUnexpectedCharacterException(c, CurrentPosition());
+                        throw new LexerUnexpectedCharacterException(c, CurrentPosition);
                 }
             }
 
             yield return Eof();
         }
 
-        private char Peek(int offset = 0)
-        {
-            var next = reader.Peek();
+        private char Peek() => source.Peek();
 
-            return next == -1 ? '\0' : (char)next;
-        }
+        private char Advance() => source.Advance();
 
-        private char Advance()
-        {
-            var next = reader.Read();
-            var nextChar = next == -1 ? '\0' : (char)next;
+        private bool IsAtEnd => source.IsAtEnd;
 
-            _index++;
-            _column++;
-
-            if (nextChar == '\n')
-            {
-                _line++;
-                _column = 1;
-            }
-
-            return nextChar;
-        }
-
-        private bool IsAtEnd() => reader.Peek() == -1;
-
-        private Position CurrentPosition() => new()
-        {
-            Line = _line,
-            Column = _column,
-            Index = _index
-        };
+        private Position CurrentPosition => source.Position;
 
         private void ConsumeWhitespace()
         {
             var c = Peek();
-            while (!IsAtEnd() && char.IsWhiteSpace(c) && c != '\n')
+            while (!IsAtEnd && char.IsWhiteSpace(c) && c != '\n')
             {
                 Advance();
 
@@ -217,12 +192,11 @@ namespace QuixoticLang.Lexer
 
         private Token ReadIdentifierOrKeyword()
         {
-            var start = _index;
-            var position = CurrentPosition();
+            var position = CurrentPosition;
 
             string text = string.Empty;
             var next = Peek();
-            while (!IsAtEnd() && char.IsLetter(next))
+            while (!IsAtEnd && char.IsLetter(next))
             {
                 text += next;
                 Advance();
@@ -239,22 +213,20 @@ namespace QuixoticLang.Lexer
                 Span = new Span
                 {
                     Start = position,
-                    End = CurrentPosition(),
+                    End = CurrentPosition,
                 }
             };
         }
 
         private Token ReadNumber()
         {
-            var position = CurrentPosition();
-
-            int start = _index;
+            var position = CurrentPosition;
 
             bool hasDot = false;
             bool hasExponent = false;
 
             var number = string.Empty;
-            while (!IsAtEnd())
+            while (!IsAtEnd)
             {
                 char c = Peek();
 
@@ -280,7 +252,7 @@ namespace QuixoticLang.Lexer
                     Advance();
 
                     // Handle optional exponent sign
-                    if (!IsAtEnd() && (Peek() == '+' || Peek() == '-'))
+                    if (!IsAtEnd && (Peek() == '+' || Peek() == '-'))
                         Advance();
 
                     continue;
@@ -296,21 +268,19 @@ namespace QuixoticLang.Lexer
                 Span = new()
                 {
                     Start = position,
-                    End = CurrentPosition(),
+                    End = CurrentPosition,
                 }
             };
         }
 
         private Token ReadString()
         {
-            var position = CurrentPosition();
+            var position = CurrentPosition;
             Advance(); // skip opening quote (")
-
-            int start = _index;
 
             var stringValue = string.Empty;
 
-            while (!IsAtEnd() && Peek() != '"')
+            while (!IsAtEnd && Peek() != '"')
             {
                 if (Peek() == '\\')  // Handle escape quotes
                     stringValue += Advance();
@@ -329,14 +299,14 @@ namespace QuixoticLang.Lexer
                 Span = new()
                 {
                     Start = position,
-                    End = CurrentPosition(),
+                    End = CurrentPosition,
                 },
             };
         }
 
         private Token ReadAssignmentOperator()
         {
-            var position = CurrentPosition();
+            var position = CurrentPosition;
 
             Advance();
 
@@ -353,7 +323,7 @@ namespace QuixoticLang.Lexer
 
         private Token ReadGreaterThanOperator()
         {
-            var position = CurrentPosition();
+            var position = CurrentPosition;
 
             Advance();
 
@@ -370,7 +340,7 @@ namespace QuixoticLang.Lexer
 
         private Token ReadLessThanOperator()
         {
-            var position = CurrentPosition();
+            var position = CurrentPosition;
 
             Advance();
 
@@ -387,7 +357,7 @@ namespace QuixoticLang.Lexer
 
         private Token ReadExclamationPoint()
         {
-            var position = CurrentPosition();
+            var position = CurrentPosition;
 
             Advance();
 
@@ -425,7 +395,7 @@ namespace QuixoticLang.Lexer
 
         private Token Simple(TokenType type, string? value, Position? position = null, int length = 1)
         {
-            position ??= CurrentPosition();
+            position ??= CurrentPosition;
 
             return new()
             {
@@ -446,7 +416,7 @@ namespace QuixoticLang.Lexer
 
         private Token Eof()
         {
-            var position = CurrentPosition();
+            var position = CurrentPosition;
 
             return new()
             {

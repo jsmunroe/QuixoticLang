@@ -12,4 +12,8 @@
     <ProjectReference Include="..\Quixotic.Lexography\Quixotic.Lexography.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
+  </ItemGroup>
+
 </Project>

@@ -1,19 +1,17 @@
-﻿using Quixotic.Analysis;
-using Quixotic.Common.Exceptions.Parsing;
+﻿using Quixotic.Common.Exceptions.Parsing;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Tokens;
+using Quixotic.Parsing.Context;
 using QuixoticLang.Lexer;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Parsing
 {
-    public class Parser(IEnumerable<Token> tokens)
+    public class Parser(IEnumerable<Token> tokens, IParseContext? parseContext = null)
     {
         private readonly Stepper<Token> _tokens = new(tokens);
-
-        private readonly ParseContext _diagnostics = new();
 
         public Parser(string source)
             : this(new Lexer(source))
@@ -34,13 +32,14 @@ namespace Quixotic.Parsing
                 if (IsAtEnd || Peek().Type == TokenType.Eof)
                     yield break;
 
-                _diagnostics.BeginStatement();
+                parseContext?.BeginStatement();
 
-                var statement = ParseStatement();
+                var statement = CaptureStatement(ParseStatement);
 
+                parseContext?.AttachStatement(statement);
                 yield return statement;
 
-                _diagnostics.EndStatement(statement);
+                parseContext?.EndStatement();
 
                 ConsumeStatementTerminator();
             }
@@ -241,11 +240,13 @@ namespace Quixotic.Parsing
                 if (Match(TokenType.Eof))
                     throw new IncompleteSourceException("End of file encountered before if block terminates.");
 
-                _diagnostics.BeginStatement();
+                parseContext?.BeginStatement();
 
                 var statement = ParseStatement();
 
-                _diagnostics.EndStatement(statement);
+                parseContext?.AttachStatement(statement);
+
+                parseContext?.EndStatement();
 
                 return new QxIfStatement(condition) { ThenBlock = [statement] };
             }
@@ -372,7 +373,7 @@ namespace Quixotic.Parsing
 
         private QxExpression ParseExpression(int parentPrecedence = 0)
         {
-            _diagnostics.BeginExpression();
+            parseContext?.BeginExpression();
 
             var left = ParseUnary();
 
@@ -400,14 +401,15 @@ namespace Quixotic.Parsing
                 left = new QxBinaryExpression(operationMetadata.Operator, left, right);
             }
 
-            _diagnostics.EndExpression(left);
+            parseContext?.AttachExpression(left);
+            parseContext?.EndExpression();
 
             return left;
         }
 
         private QxExpression ParsePrimary()
         {
-            return _diagnostics.CatchExpression(() =>
+            return CaptureExpression(() =>
             {
                 var token = Pop();
 
@@ -440,9 +442,8 @@ namespace Quixotic.Parsing
 
         private QxExpression ParseIdentifierExpression(Token token)
         {
-            return _diagnostics.CatchExpression<QxExpression>(() =>
+            return CaptureExpression(() =>
             {
-
                 var name = token.Value;
 
                 if (Match(TokenType.OpenParen))
@@ -454,7 +455,7 @@ namespace Quixotic.Parsing
 
         private QxExpression ParseUnary()
         {
-            return _diagnostics.CatchExpression(() =>
+            return CaptureExpression(() =>
             {
                 if (Match(TokenType.Plus))
                     return new QxUnaryExpression(Operator.Add, ParseUnary());
@@ -502,10 +503,15 @@ namespace Quixotic.Parsing
                 if (isTerminated())
                     break;
 
-                _diagnostics.BeginStatement();
+                parseContext?.BeginStatement();
+
                 var statement = ParseStatement();
+
+                parseContext?.AttachStatement(statement);
+
                 block.Add(statement);
-                _diagnostics.EndStatement(statement);
+
+                parseContext?.EndStatement();
 
                 ConsumeStatementTerminator();
             }
@@ -521,6 +527,39 @@ namespace Quixotic.Parsing
             throw new TokenException("Invalid number literal", token);
         }
 
+        public QxExpression CaptureExpression(Func<QxExpression> expressionFactory)
+        {
+            if (parseContext is null)
+                return expressionFactory();
+
+            parseContext.BeginExpression();
+
+            var expression = expressionFactory();
+
+            parseContext.AttachExpression(expression);
+
+            parseContext.EndExpression();
+
+            return expression;
+        }
+
+        public TStatement CaptureStatement<TStatement>(Func<TStatement> statementFactory)
+            where TStatement : QxStatement
+        {
+            if (parseContext is null)
+                return statementFactory();
+
+            parseContext.BeginStatement();
+
+            var statement = statementFactory();
+
+            parseContext.AttachStatement(statement);
+
+            parseContext.EndStatement();
+
+            return statement;
+        }
+
         private bool IsAtEnd => _tokens.IsAtEnd;
 
         private Token Peek() => _tokens.Peek();
@@ -528,7 +567,7 @@ namespace Quixotic.Parsing
         private Token Pop()
         {
             var token = _tokens.Pop();
-            _diagnostics.ConsumeToken(token);
+            parseContext?.ConsumeToken(token);
 
             Current = IsAtEnd ? null : Peek();
 
@@ -537,7 +576,7 @@ namespace Quixotic.Parsing
 
         private bool Advance()
         {
-            _diagnostics.ConsumeToken(Peek());
+            parseContext?.ConsumeToken(Peek());
             var canAdvance = _tokens.Advance();
 
             Current = IsAtEnd ? null : Peek();
