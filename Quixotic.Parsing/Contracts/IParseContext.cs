@@ -1,4 +1,6 @@
-﻿using Quixotic.Common.Expressions;
+﻿using Quixotic.Common.Diagnostics;
+using Quixotic.Common.Diagnostics.Issues;
+using Quixotic.Common.Expressions;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Tokens;
 
@@ -6,7 +8,7 @@ namespace Quixotic.Parsing.Context
 {
     public interface IParseContext
     {
-        ExpressionContext? CurrentExpression { get; }
+        ActivityContext? CurrentActivity { get; }
         StatementContext? CurrentStatement { get; }
 
         void ConsumeToken(Token token);
@@ -14,8 +16,11 @@ namespace Quixotic.Parsing.Context
         void BeginStatement();
         void AttachStatement(QxStatement statement);
         void EndStatement();
-        void BeginExpression();
+        void BeginActivity(ActivityType expressionType);
         void AttachExpression(QxExpression expression);
-        void EndExpression();
+        void EndActivity();
+        void AssignStatementType(StatementType type);
+
+        Diagnostic GetDiagnostic(Issue issue);
     }
 }

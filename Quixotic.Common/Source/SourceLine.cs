@@ -16,6 +16,6 @@ namespace Quixotic.Common.Source
 
         public Position EndPosition => Document.GetPosition(End);
 
-        public string Text => Document.GetText(Start, Length);
+        public string? Text => Document.GetText(Start, Length);
     }
 }

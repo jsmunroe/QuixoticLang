@@ -27,7 +27,7 @@ namespace Quixotic.LexographyTests
             Assert.AreEqual("Hello, windmill!", result[1].Value);
 
             Assert.AreEqual(TokenType.Eof, result[2].Type);
-            Assert.AreEqual(string.Empty, result[2].Value);
+            Assert.AreEqual("<EOF>", result[2].Value);
         }
 
         [TestMethod]
@@ -50,7 +50,7 @@ namespace Quixotic.LexographyTests
             Assert.AreEqual(@"Hello, ""windmill!""", result[1].Value);
 
             Assert.AreEqual(TokenType.Eof, result[2].Type);
-            Assert.AreEqual(string.Empty, result[2].Value);
+            Assert.AreEqual("<EOF>", result[2].Value);
         }
 
         [TestMethod]

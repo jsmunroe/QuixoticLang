@@ -421,7 +421,7 @@ namespace QuixoticLang.Lexer
             return new()
             {
                 Type = TokenType.Eof,
-                Value = string.Empty,
+                Value = "<EOF>",
                 Span = new()
                 {
                     Start = position,

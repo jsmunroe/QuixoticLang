@@ -1,0 +1,29 @@
+﻿namespace Quixotic.Common.Diagnostics
+{
+    public enum ActivityType
+    {
+        None,
+        Print,
+        FromValue,
+        ReturnValue,
+        Argument,
+        ElseIfCondition,
+        ToValue,
+        StepValue,
+        DoPostcondition,
+        Identifier,
+        Parameter,
+        ConsumeStatementTerminator,
+        AssignedExpression,
+        IfCondition,
+        IfThenBlock,
+        ElseBlock,
+        ElseIfBlock,
+        DoPrecondition,
+        DoBlock,
+        Iterator,
+        ForBlock,
+        FunctionName,
+        FunctionBody,
+    }
+}

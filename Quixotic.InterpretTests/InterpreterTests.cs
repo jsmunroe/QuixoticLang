@@ -936,7 +936,11 @@ namespace Quixotic.InterpretTests
 
             var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestFiles", name);
 
-            return File.OpenRead(filePath);
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"Test file '{name}' not found at path '{filePath}'.");
+
+            var stream = File.OpenRead(filePath);
+            return stream;
         }
     }
 }

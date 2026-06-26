@@ -31,6 +31,11 @@ namespace Quixotic.Common.Source
             return SourceText.Substring(start, length);
         }
 
+        public string? GetText(Span span)
+        {
+            return GetText(span.Start.Index, span.End.Index);
+        }
+
         public SourceLine? GetLineFromIndex(int index)
         {
             int low = 0;

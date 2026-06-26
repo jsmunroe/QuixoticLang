@@ -44,7 +44,7 @@ namespace Quixotic.Common.Source
 
         public static ISource FromStream(Stream stream)
         {
-            if (stream.CanRead)
+            if (!stream.CanRead)
                 throw new SourceException("Cannot read source from stream.");
 
             var reader = new StreamReader(stream);

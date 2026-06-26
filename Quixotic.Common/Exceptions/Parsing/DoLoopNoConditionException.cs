@@ -1,4 +1,6 @@
-﻿namespace Quixotic.Common.Exceptions.Parsing
+﻿using Quixotic.Common.Diagnostics;
+
+namespace Quixotic.Common.Exceptions.Parsing
 {
-    public class DoLoopNoConditionException() : ParserException("Do loop lacks a condition.");
+    public class DoLoopNoConditionException(Diagnostic diagnostic) : ParserException("Do loop lacks a condition.", diagnostic);
 }

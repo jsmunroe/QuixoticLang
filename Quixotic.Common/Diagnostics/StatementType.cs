@@ -1,12 +1,13 @@
-﻿namespace Quixotic.Parsing.Context
+﻿namespace Quixotic.Common.Diagnostics
 {
     public enum StatementType
     {
         Unknown = 0,
         Print,
+        Identifier,
         Assignment,
-        IfThen,
-        DoWhile,
+        If,
+        Do,
         For,
         Break,
         Continue,
@@ -14,6 +15,5 @@
         FunctionDeclaration,
         FunctionCall,
         Return,
-
     }
 }

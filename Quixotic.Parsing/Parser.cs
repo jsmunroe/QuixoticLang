@@ -1,4 +1,6 @@
-﻿using Quixotic.Common.Exceptions.Parsing;
+﻿using Quixotic.Common.Diagnostics;
+using Quixotic.Common.Diagnostics.Issues;
+using Quixotic.Common.Exceptions.Parsing;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
 using Quixotic.Common.Statements;
@@ -9,9 +11,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Parsing
 {
-    public class Parser(IEnumerable<Token> tokens, IParseContext? parseContext = null)
+    public class Parser(IEnumerable<Token> tokens)
     {
         private readonly Stepper<Token> _tokens = new(tokens);
+
+        private readonly ParseContext _parseContext = new();
 
         public Parser(string source)
             : this(new Lexer(source))
@@ -27,21 +31,21 @@ namespace Quixotic.Parsing
         {
             while (!IsAtEnd && Peek().Type != TokenType.Eof)
             {
+                _parseContext.BeginStatement();
+
                 ConsumeNewLines();
 
                 if (IsAtEnd || Peek().Type == TokenType.Eof)
                     yield break;
 
-                parseContext?.BeginStatement();
+                var statement = ParseStatement();
 
-                var statement = CaptureStatement(ParseStatement);
-
-                parseContext?.AttachStatement(statement);
+                _parseContext.AttachStatement(statement);
                 yield return statement;
 
-                parseContext?.EndStatement();
-
                 ConsumeStatementTerminator();
+
+                _parseContext.EndStatement();
             }
         }
 
@@ -53,16 +57,19 @@ namespace Quixotic.Parsing
 
         private void ConsumeStatementTerminator()
         {
-            if (IsAtEnd)
-                return;
+            CaptureActivity(() =>
+            {
+                if (IsAtEnd)
+                    return;
 
-            if (Match(TokenType.NewLine))
-                return;
+                if (Match(TokenType.NewLine))
+                    return;
 
-            if (Match(TokenType.Eof))
-                return;
+                if (Match(TokenType.Eof))
+                    return;
 
-            throw new UnexpectedTokenException(_tokens.Peek());
+                throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
+            }, ActivityType.ConsumeStatementTerminator);
         }
 
         private QxStatement ParseStatement()
@@ -97,33 +104,47 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Continue))
                 return ParseContinue();
 
-            throw new UnexpectedTokenException(_tokens.Peek());
+            throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
         }
 
         private QxVariableDeclarationStatement ParseVariableDeclaration()
         {
-            var identifierToken = Expect(TokenType.Identifier);
+            _parseContext.AssignStatementType(StatementType.VariableDeclaration);
 
-            var name = identifierToken.Value;
+            var name = CaptureActivity(() =>
+            {
+                var identifierToken = Expect(TokenType.Identifier);
+                var name = identifierToken.Value;
+
+                return name;
+
+            }, ActivityType.Identifier);
 
             QxExpression? expression = null;
 
             if (Match(TokenType.Assignment))
-                expression = ParseExpression();
+                expression = CaptureExpression(() => ParseExpression(), ActivityType.AssignedExpression);
 
             return new(name, expression);
         }
 
         private QxFunctionDeclarationStatement ParseFunctionDeclaration()
         {
-            var identifierToken = Expect(TokenType.Identifier);
+            _parseContext.AssignStatementType(StatementType.FunctionDeclaration);
 
-            var name = identifierToken.Value;
+            var name = CaptureActivity(() =>
+            {
+                var identifierToken = Expect(TokenType.Identifier);
+                var name = identifierToken.Value;
+
+                return name;
+
+            }, ActivityType.FunctionName);
 
             // Parse parameters
             var parameters = ParseParameters();
 
-            var body = ParseBlock(BlockType.Function);
+            var body = CaptureActivity(() => ParseBlock(BlockType.Function), ActivityType.FunctionBody);
 
             Expect(TokenType.End);
             Expect(TokenType.Function);
@@ -133,20 +154,25 @@ namespace Quixotic.Parsing
 
         private QxReturnStatement ParseReturn()
         {
+            _parseContext.AssignStatementType(StatementType.Return);
+
             if (Match(TokenType.NewLine))
                 return new QxReturnStatement(null);
 
-            var expression = ParseExpression();
+            var expression = CaptureExpression(() => ParseExpression(), ActivityType.ReturnValue);
             return new QxReturnStatement(expression);
         }
 
         private QxBreakStatement ParseBreak()
         {
+            _parseContext.AssignStatementType(StatementType.Break);
+
             return new();
         }
 
         private QxContinueStatement ParseContinue()
         {
+            _parseContext.AssignStatementType(StatementType.Continue);
             return new();
         }
 
@@ -154,14 +180,32 @@ namespace Quixotic.Parsing
         {
             List<QxParameter> parameters = [];
 
-            while (Match(TokenType.Identifier, out var token))
+            var keepGoing = true;
+            var afterComma = false;
+
+            while (keepGoing)
             {
-                parameters.Add(new QxParameter(token.Value));
+                keepGoing = CaptureActivity(() =>
+                {
+                    if (!Match(TokenType.Identifier, out var token))
+                    {
+                        if (!afterComma)
+                            return false;
 
-                if (Match(TokenType.NewLine))
-                    break;
+                        throw new UnexpectedTokenException(Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
+                    }
 
-                Expect(TokenType.Comma);
+                    parameters.Add(new QxParameter(token.Value));
+
+                    if (Match(TokenType.NewLine))
+                        return false;
+
+                    Expect(TokenType.Comma);
+                    afterComma = true;
+
+                    return true;
+
+                }, ActivityType.Parameter);
             }
 
             return parameters;
@@ -189,7 +233,7 @@ namespace Quixotic.Parsing
             List<QxExpression> parameters = [];
             while (!Match(TokenType.CloseParen))
             {
-                var expression = ParseExpression();
+                var expression = CaptureExpression(() => ParseExpression(), ActivityType.Argument);
                 parameters.Add(expression);
 
                 if (Match(TokenType.CloseParen))
@@ -203,7 +247,9 @@ namespace Quixotic.Parsing
 
         private QxPrintStatement ParsePrint()
         {
-            var expression = ParseExpression();
+            _parseContext.AssignStatementType(StatementType.Print);
+
+            var expression = CaptureExpression(() => ParseExpression(), ActivityType.Print);
 
             return new QxPrintStatement(expression);
         }
@@ -216,42 +262,50 @@ namespace Quixotic.Parsing
 
             if (next.Type == TokenType.Assignment)
             {
-                var expression = ParseExpression();
+                _parseContext.AssignStatementType(StatementType.Assignment);
+
+                var expression = CaptureExpression(() => ParseExpression(), ActivityType.AssignedExpression);
 
                 return new QxAssignmentStatement(identifier, expression);
             }
 
             if (next.Type == TokenType.OpenParen)
             {
+                _parseContext.AssignStatementType(StatementType.FunctionCall);
+
                 return ParseFunctionCall(token);
             }
 
-            throw new UnexpectedTokenException(next);
+            _parseContext.AssignStatementType(StatementType.Identifier);
+
+            throw new UnexpectedTokenException(next, GetDiagnostic(Issue.UnexpectedToken(next)));
         }
 
         private QxIfStatement ParseIf()
         {
-            var condition = ParseExpression();
+            _parseContext.AssignStatementType(StatementType.If);
+
+            var condition = CaptureExpression(() => ParseExpression(), ActivityType.IfCondition);
 
             Allow(TokenType.Then); // Allowed as syntactic sugar, but not necessary
 
             if (!Match(TokenType.NewLine))
             {
                 if (Match(TokenType.Eof))
-                    throw new IncompleteSourceException("End of file encountered before if block terminates.");
+                    throw new IncompleteSourceException("End of file encountered before if block terminates.", GetDiagnostic(Issue.IncompleteSource()));
 
-                parseContext?.BeginStatement();
+                _parseContext.BeginStatement();
 
                 var statement = ParseStatement();
 
-                parseContext?.AttachStatement(statement);
+                _parseContext.AttachStatement(statement);
 
-                parseContext?.EndStatement();
+                _parseContext.EndStatement();
 
                 return new QxIfStatement(condition) { ThenBlock = [statement] };
             }
 
-            var thenBlock = ParseBlock(BlockType.If);
+            var thenBlock = CaptureActivity(() => ParseBlock(BlockType.If), ActivityType.IfThenBlock);
 
             List<QxElseIfClause> elseIfClauses = [];
 
@@ -266,7 +320,7 @@ namespace Quixotic.Parsing
                 }
                 else
                 {
-                    elseBlock = ParseBlock(BlockType.Else);
+                    elseBlock = CaptureActivity(() => ParseBlock(BlockType.Else), ActivityType.ElseBlock);
                 }
             }
 
@@ -284,9 +338,9 @@ namespace Quixotic.Parsing
 
         private QxElseIfClause ParseElseIfClause()
         {
-            var condition = ParseExpression();
+            var condition = CaptureExpression(() => ParseExpression(), ActivityType.ElseIfCondition);
 
-            var block = ParseBlock(BlockType.ElseIf);
+            var block = CaptureActivity(() => ParseBlock(BlockType.ElseIf), ActivityType.ElseIfBlock);
 
             return new QxElseIfClause(condition)
             {
@@ -296,24 +350,45 @@ namespace Quixotic.Parsing
 
         private QxForStatement ParseFor()
         {
-            var identifierToken = Expect(TokenType.Identifier);
-            var identifier = new QxIdentifierExpression(identifierToken.Value);
+            _parseContext.AssignStatementType(StatementType.For);
 
-            Expect(TokenType.Assignment);
+            var identifier = CaptureActivity(() =>
+            {
+                var identifierToken = Expect(TokenType.Identifier);
+                return new QxIdentifierExpression(identifierToken.Value);
 
-            var from = ParseExpression();
+            }, ActivityType.Iterator);
 
-            Expect(TokenType.To);
 
-            var to = ParseExpression();
+            // From value
+            var from = CaptureExpression(() =>
+            {
+                Expect(TokenType.Assignment);
 
-            QxExpression step;
-            if (Match(TokenType.Step))
-                step = ParseExpression();
-            else
-                step = new QxNumberLiteralExpression(1);
+                return ParseExpression();
 
-            var block = ParseBlock(BlockType.For);
+            }, ActivityType.FromValue);
+
+
+            // To value
+            var to = CaptureExpression(() =>
+            {
+                Expect(TokenType.To);
+
+                return ParseExpression();
+            }, ActivityType.ToValue);
+
+            // Step value if present.
+            var step = CaptureExpression(() =>
+            {
+                if (Match(TokenType.Step))
+                    return ParseExpression();
+                else
+                    return new QxNumberLiteralExpression(1);
+
+            }, ActivityType.StepValue);
+
+            var block = CaptureActivity(() => ParseBlock(BlockType.For), ActivityType.ForBlock);
 
             Expect(TokenType.Next);
 
@@ -326,44 +401,46 @@ namespace Quixotic.Parsing
 
         private QxDoStatement ParseDo()
         {
+            _parseContext.AssignStatementType(StatementType.Do);
+
             var isEntryControlled = false;
             QxExpression? condition = null;
             if (Match(TokenType.While))
             {
                 isEntryControlled = true;
-                condition = ParseExpression();
+                condition = CaptureExpression(() => ParseExpression(), ActivityType.DoPrecondition);
             }
             else if (Match(TokenType.Until))
             {
                 isEntryControlled = true;
-                condition = ParseExpression();
+                condition = CaptureExpression(() => ParseExpression(), ActivityType.DoPrecondition);
                 condition = new QxUnaryExpression(Operator.Not, condition);
             }
 
-            var block = ParseBlock(BlockType.Do);
+            var block = CaptureActivity(() => ParseBlock(BlockType.Do), ActivityType.DoBlock);
 
             Expect(TokenType.Loop);
 
             if (Match(TokenType.While))
             {
                 if (condition is not null)
-                    throw new DoLoopDualConditionException();
+                    throw new DoLoopDualConditionException(GetDiagnostic(Issue.DoLoopDualCondition()));
 
                 isEntryControlled = false;
-                condition = ParseExpression();
+                condition = CaptureExpression(() => ParseExpression(), ActivityType.DoPostcondition);
             }
             else if (Match(TokenType.Until))
             {
                 if (condition is not null)
-                    throw new DoLoopDualConditionException();
+                    throw new DoLoopDualConditionException(GetDiagnostic(Issue.DoLoopDualCondition()));
 
                 isEntryControlled = false;
-                condition = ParseExpression();
+                condition = CaptureExpression(() => ParseExpression(), ActivityType.DoPostcondition);
                 condition = new QxUnaryExpression(Operator.Not, condition);
             }
 
             if (condition is null)
-                throw new DoLoopNoConditionException();
+                throw new DoLoopNoConditionException(GetDiagnostic(Issue.DoLoopNoCondition()));
 
             return new(condition, isEntryControlled)
             {
@@ -373,8 +450,6 @@ namespace Quixotic.Parsing
 
         private QxExpression ParseExpression(int parentPrecedence = 0)
         {
-            parseContext?.BeginExpression();
-
             var left = ParseUnary();
 
             while (true)
@@ -401,73 +476,61 @@ namespace Quixotic.Parsing
                 left = new QxBinaryExpression(operationMetadata.Operator, left, right);
             }
 
-            parseContext?.AttachExpression(left);
-            parseContext?.EndExpression();
-
             return left;
         }
 
         private QxExpression ParsePrimary()
         {
-            return CaptureExpression(() =>
+            var token = Pop();
+
+            if (token.Type == TokenType.OpenParen)
             {
-                var token = Pop();
+                var expression = ParseExpression();
 
-                if (token.Type == TokenType.OpenParen)
-                {
-                    var expression = ParseExpression();
+                var nextToken = Pop();
+                if (nextToken.Type != TokenType.CloseParen)
+                    throw new ExpectedTokenException(new TokenHead(TokenType.CloseParen, ")"), nextToken, GetDiagnostic(Issue.ExpectedToken(TokenType.CloseParen)));
 
-                    var nextToken = Pop();
-                    if (nextToken.Type != TokenType.CloseParen)
-                        throw new ExpectedTokenException(new TokenHead(TokenType.CloseParen, ")"), nextToken);
+                return expression;
+            }
 
-                    return expression;
-                }
+            if (token.Type == TokenType.StringLiteral)
+                return new QxStringLiteralExpression(token.Value);
 
-                if (token.Type == TokenType.StringLiteral)
-                    return new QxStringLiteralExpression(token.Value);
+            if (token.Type == TokenType.NumberLiteral)
+                return ParseNumber(token);
 
-                if (token.Type == TokenType.NumberLiteral)
-                    return ParseNumber(token);
+            if (token.Type == TokenType.BooleanLiteral)
+                return new QxBooleanLiteralExpression(string.Equals(token.Value, "true", StringComparison.OrdinalIgnoreCase));
 
-                if (token.Type == TokenType.BooleanLiteral)
-                    return new QxBooleanLiteralExpression(string.Equals(token.Value, "true", StringComparison.OrdinalIgnoreCase));
+            if (token.Type == TokenType.Identifier)
+                return ParseIdentifierExpression(token);
 
-                if (token.Type == TokenType.Identifier)
-                    return ParseIdentifierExpression(token);
-
-                throw new UnexpectedTokenException(token);
-            });
+            throw new UnexpectedTokenException(token, GetDiagnostic(Issue.UnexpectedToken(token)));
         }
 
         private QxExpression ParseIdentifierExpression(Token token)
         {
-            return CaptureExpression(() =>
-            {
-                var name = token.Value;
+            var name = token.Value;
 
-                if (Match(TokenType.OpenParen))
-                    return ParseFunctionCallExpression(name);
+            if (Match(TokenType.OpenParen))
+                return ParseFunctionCallExpression(name);
 
-                return new QxIdentifierExpression(name);
-            });
+            return new QxIdentifierExpression(name);
         }
 
         private QxExpression ParseUnary()
         {
-            return CaptureExpression(() =>
-            {
-                if (Match(TokenType.Plus))
-                    return new QxUnaryExpression(Operator.Add, ParseUnary());
+            if (Match(TokenType.Plus))
+                return new QxUnaryExpression(Operator.Add, ParseUnary());
 
-                if (Match(TokenType.Subtract))
-                    return new QxUnaryExpression(Operator.Subtract, ParseUnary());
+            if (Match(TokenType.Subtract))
+                return new QxUnaryExpression(Operator.Subtract, ParseUnary());
 
-                if (Match(TokenType.Not))
-                    return new QxUnaryExpression(Operator.Not, ParseUnary());
+            if (Match(TokenType.Not))
+                return new QxUnaryExpression(Operator.Not, ParseUnary());
 
-                return ParsePrimary();
-            });
+            return ParsePrimary();
         }
 
         private Block ParseBlock(BlockType blockType)
@@ -488,7 +551,7 @@ namespace Quixotic.Parsing
             bool isTerminated()
             {
                 if (IsAtEnd || Match(TokenType.Eof))
-                    throw new IncompleteSourceException("Encountered end of file before block is terminated.");
+                    throw new IncompleteSourceException("Encountered end of file before block is terminated.", GetDiagnostic(Issue.IncompleteSource()));
 
                 return terminatingTypes.Any(t => Peek().Type == t);
             }
@@ -498,20 +561,20 @@ namespace Quixotic.Parsing
                 ConsumeNewLines();
 
                 if (IsAtEnd || Match(TokenType.Eof))
-                    throw new IncompleteSourceException("Encountered end of file before block is terminated.");
+                    throw new IncompleteSourceException("Encountered end of file before block is terminated.", GetDiagnostic(Issue.IncompleteSource()));
 
                 if (isTerminated())
                     break;
 
-                parseContext?.BeginStatement();
+                _parseContext.BeginStatement();
 
                 var statement = ParseStatement();
 
-                parseContext?.AttachStatement(statement);
+                _parseContext.AttachStatement(statement);
 
                 block.Add(statement);
 
-                parseContext?.EndStatement();
+                _parseContext.EndStatement();
 
                 ConsumeStatementTerminator();
             }
@@ -519,46 +582,48 @@ namespace Quixotic.Parsing
             return block;
         }
 
-        private static QxNumberLiteralExpression ParseNumber(Token token)
+        private QxNumberLiteralExpression ParseNumber(Token token)
         {
             if (double.TryParse(token.Value, out var number))
                 return new QxNumberLiteralExpression(number);
 
-            throw new TokenException("Invalid number literal", token);
+            throw new TokenException("Invalid number literal", token, GetDiagnostic(Issue.InvalidNumber()));
         }
 
-        public QxExpression CaptureExpression(Func<QxExpression> expressionFactory)
+        private TValue CaptureActivity<TValue>(Func<TValue> activity, ActivityType expressionType)
         {
-            if (parseContext is null)
-                return expressionFactory();
+            _parseContext.BeginActivity(expressionType);
 
-            parseContext.BeginExpression();
+            var value = activity();
+
+            _parseContext.EndActivity();
+
+            return value;
+        }
+
+        private void CaptureActivity(Action activity, ActivityType expressionType)
+        {
+            _parseContext.BeginActivity(expressionType);
+
+            activity();
+
+            _parseContext.EndActivity();
+        }
+
+        private QxExpression CaptureExpression(Func<QxExpression> expressionFactory, ActivityType expressionType)
+        {
+            _parseContext.BeginActivity(expressionType);
 
             var expression = expressionFactory();
 
-            parseContext.AttachExpression(expression);
+            _parseContext.AttachExpression(expression);
 
-            parseContext.EndExpression();
+            _parseContext.EndActivity();
 
             return expression;
         }
 
-        public TStatement CaptureStatement<TStatement>(Func<TStatement> statementFactory)
-            where TStatement : QxStatement
-        {
-            if (parseContext is null)
-                return statementFactory();
-
-            parseContext.BeginStatement();
-
-            var statement = statementFactory();
-
-            parseContext.AttachStatement(statement);
-
-            parseContext.EndStatement();
-
-            return statement;
-        }
+        private Diagnostic GetDiagnostic(Issue issue) => _parseContext.GetDiagnostic(issue);
 
         private bool IsAtEnd => _tokens.IsAtEnd;
 
@@ -567,7 +632,7 @@ namespace Quixotic.Parsing
         private Token Pop()
         {
             var token = _tokens.Pop();
-            parseContext?.ConsumeToken(token);
+            _parseContext.ConsumeToken(token);
 
             Current = IsAtEnd ? null : Peek();
 
@@ -576,7 +641,7 @@ namespace Quixotic.Parsing
 
         private bool Advance()
         {
-            parseContext?.ConsumeToken(Peek());
+            _parseContext.ConsumeToken(Peek());
             var canAdvance = _tokens.Advance();
 
             Current = IsAtEnd ? null : Peek();
@@ -598,9 +663,9 @@ namespace Quixotic.Parsing
                 return token;
 
             if (Match(TokenType.Eof))
-                throw new IncompleteSourceException($"Encountered end of file before expected {type}.");
+                throw new IncompleteSourceException($"Encountered end of file before expected {type}.", GetDiagnostic(Issue.IncompleteSource()));
 
-            throw new ExpectedTokenException(new TokenHead(type, type.ToString()), Peek());
+            throw new ExpectedTokenException(new TokenHead(type, type.ToString()), Peek(), GetDiagnostic(Issue.ExpectedToken(type)));
         }
 
         private bool Match(TokenType type)
@@ -640,6 +705,13 @@ namespace Quixotic.Parsing
             }
 
             return true;
+        }
+
+        public static IEnumerable<QxStatement> Parse(string source)
+        {
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            return parser.Parse();
         }
 
     }
