@@ -176,7 +176,7 @@ namespace Quixotic.ParsingTests
             var parser = new Parser(lexer);
 
             // Execute & Assert
-            var exception = Assert.Throws<ExpectedTokenException>(() => parser.Parse().ToList());
+            var exception = Assert.Throws<UnexpectedTokenException>(() => parser.Parse().ToList());
 
             Assert.AreEqual(TokenType.NewLine, exception.Token.Type);
         }

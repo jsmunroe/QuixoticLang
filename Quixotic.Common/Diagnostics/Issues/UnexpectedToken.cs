@@ -2,5 +2,5 @@
 
 namespace Quixotic.Common.Diagnostics.Issues
 {
-    public record UnexpectedToken(Token Token) : Issue { }
+    public record UnexpectedToken(Token Encountered, TokenType? Expected = null) : Issue { }
 }
