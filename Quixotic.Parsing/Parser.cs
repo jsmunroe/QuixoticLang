@@ -68,7 +68,7 @@ namespace Quixotic.Parsing
                 if (Match(TokenType.Eof))
                     return;
 
-                throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
+                throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek(), TokenType.NewLine)));
             }, ActivityType.ConsumeStatementTerminator);
         }
 
@@ -192,7 +192,7 @@ namespace Quixotic.Parsing
                         if (!afterComma)
                             return false;
 
-                        throw new UnexpectedTokenException(Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
+                        throw new UnexpectedTokenException(Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek(), TokenType.Identifier)));
                     }
 
                     parameters.Add(new QxParameter(token.Value));
@@ -489,7 +489,7 @@ namespace Quixotic.Parsing
 
                 var nextToken = Pop();
                 if (nextToken.Type != TokenType.CloseParen)
-                    throw new ExpectedTokenException(new TokenHead(TokenType.CloseParen, ")"), nextToken, GetDiagnostic(Issue.ExpectedToken(TokenType.CloseParen)));
+                    throw new UnexpectedTokenException(nextToken, TokenType.CloseParen, GetDiagnostic(Issue.UnexpectedToken(nextToken, TokenType.CloseParen)));
 
                 return expression;
             }
@@ -665,7 +665,8 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Eof))
                 throw new IncompleteSourceException($"Encountered end of file before expected {type}.", GetDiagnostic(Issue.IncompleteSource()));
 
-            throw new ExpectedTokenException(new TokenHead(type, type.ToString()), Peek(), GetDiagnostic(Issue.ExpectedToken(type)));
+            var nextToken = Peek();
+            throw new UnexpectedTokenException(nextToken, type, GetDiagnostic(Issue.UnexpectedToken(nextToken, type)));
         }
 
         private bool Match(TokenType type)
