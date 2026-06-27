@@ -48,14 +48,20 @@ namespace Quixotic.ParsingTests.Context
         }
 
         [TestMethod]
-        public void Parse_print_with_bad_expression()
+        [DataRow("print for", ActivityType.Print, TokenType.For, "for", null, false)]
+        [DataRow("print if", ActivityType.Print, TokenType.If, "if", null, false)]
+        [DataRow("print +", ActivityType.Print, TokenType.Eof, "<EOF>", null, true)]
+        [DataRow("print (", ActivityType.Print, TokenType.Eof, "<EOF>", null, true)]
+        [DataRow("print )", ActivityType.Print, TokenType.CloseParen, ")", null, false)]
+        [DataRow("print (5", ActivityType.Print, TokenType.Eof, "<EOF>", TokenType.CloseParen, true)]
+        [DataRow("print 5)", ActivityType.ConsumeStatementTerminator, TokenType.CloseParen, ")", TokenType.NewLine, false)]
+        [DataRow("print ((5)", ActivityType.Print, TokenType.Eof, "<EOF>", TokenType.CloseParen, true)]
+        [DataRow("print 5 +", ActivityType.Print, TokenType.Eof, "<EOF>", null, true)]
+        [DataRow("print * 5", ActivityType.Print, TokenType.Multiply, "*", null, false)]
+        [DataRow("print 5 + * 4", ActivityType.Print, TokenType.Multiply, "*", null, false)]
+        [DataRow("print 5 and or 4", ActivityType.Print, TokenType.Or, "or", null, false)]
+        public void Parse_print_with_bad_expression(string source, ActivityType activityType, TokenType encounteredType, string encounteredValue, TokenType? expected, bool isEndOfLine)
         {
-            // Setup
-            var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("print for");
-
-            var source = sourceBuilder.ToString();
-
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
@@ -63,16 +69,18 @@ namespace Quixotic.ParsingTests.Context
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
+            WriteDiagnostic(diagnostic);
+
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
             Assert.AreEqual(StatementType.Print, diagnostic.StatementType);
             Assert.IsNotNull(diagnostic.Statement);
             Assert.IsNotNull(diagnostic.Activity);
-            Assert.AreEqual(ActivityType.Print, diagnostic.Activity.ActivityType);
+            Assert.AreEqual(activityType, diagnostic.Activity.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
-            Assert.AreEqual(TokenType.For, issue.Encountered.Type);
-            Assert.AreEqual("for", issue.Encountered.Value);
-            Assert.IsNull(issue.Expected);
-            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.AreEqual(encounteredType, issue.Encountered.Type);
+            Assert.AreEqual(encounteredValue, issue.Encountered.Value);
+            Assert.AreEqual(expected, issue.Expected);
+            Assert.AreEqual(isEndOfLine, diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
@@ -88,7 +96,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -116,7 +124,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -144,7 +152,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -172,7 +180,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -201,7 +209,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -227,7 +235,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -254,7 +262,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -269,6 +277,32 @@ namespace Quixotic.ParsingTests.Context
         }
 
         [TestMethod]
+        public void Parse_assignment_with_no_identifier()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine(" := 5");
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.Unknown, diagnostic.StatementType); // No identifier exists to trigger creation of assignment statement.
+            Assert.AreEqual(ActivityType.None, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.Assignment, issue.Encountered.Type);
+            Assert.IsNull(issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsTrue(diagnostic.Span.IsEmpty); // No statement is created.
+        }
+
+        [TestMethod]
         public void Parse_assignment_with_bad_expression()
         {
             // Setup
@@ -280,7 +314,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -296,6 +330,33 @@ namespace Quixotic.ParsingTests.Context
         }
 
         [TestMethod]
+        public void Parse_assignment_with_bad_expression_2()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("i := +");
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.Assignment, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.AssignedExpression, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
+            Assert.AreEqual("\n", issue.Encountered.Value);
+            Assert.IsNull(issue.Expected);
+            Assert.IsTrue(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
         public void Parse_if_with_no_condition()
         {
             // Setup
@@ -307,7 +368,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -333,7 +394,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -360,7 +421,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<IncompleteSourceException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -384,7 +445,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<IncompleteSourceException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -409,7 +470,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<IncompleteSourceException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
@@ -435,7 +496,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -463,7 +524,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -491,7 +552,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -519,7 +580,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<IncompleteSourceException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -544,7 +605,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -572,7 +633,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -600,7 +661,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<IncompleteSourceException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -628,7 +689,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -658,7 +719,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -689,7 +750,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<DoLoopNoConditionException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -717,7 +778,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<DoLoopDualConditionException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -743,7 +804,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -771,7 +832,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -799,7 +860,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -827,7 +888,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -854,7 +915,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -882,7 +943,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -910,7 +971,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -938,7 +999,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -966,7 +1027,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -994,7 +1055,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -1022,7 +1083,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -1039,6 +1100,92 @@ namespace Quixotic.ParsingTests.Context
         }
 
         [TestMethod]
+        public void Parse_for_with_from_and_to_without_iterator()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("for := 7 to 15");
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            WriteDiagnostic(diagnostic);
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.For, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.Iterator, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.Assignment, issue.Encountered.Type);
+            Assert.AreEqual(TokenType.Identifier, issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
+        public void Parse_for_with_identifier_and_from_without_to()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("for i := 1 5");
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            WriteDiagnostic(diagnostic);
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.For, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.ToValue, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.NumberLiteral, issue.Encountered.Type);
+            Assert.AreEqual("5", issue.Encountered.Value);
+            Assert.AreEqual(TokenType.To, issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
+        public void Parse_for_with_identifier_and_from_without_to_expression()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("for i := 1 to");
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            WriteDiagnostic(diagnostic);
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.For, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.ToValue, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
+            Assert.AreEqual("\n", issue.Encountered.Value);
+            Assert.IsNull(issue.Expected);
+            Assert.IsTrue(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
         public void Parse_for_without_step_expression()
         {
             // Setup
@@ -1050,7 +1197,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -1078,7 +1225,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -1107,7 +1254,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<IncompleteSourceException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -1133,7 +1280,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -1161,7 +1308,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -1189,7 +1336,7 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
             WriteDiagnostic(diagnostic);
@@ -1218,12 +1365,12 @@ namespace Quixotic.ParsingTests.Context
             // Execute
             var exception = Assert.Throws<IncompleteSourceException>(() => Parser.Parse(source).ToList());
 
-            //// Assert
+            // Assert
             var diagnostic = exception.Diagnostic;
 
+            Assert.IsNotNull(diagnostic);
             WriteDiagnostic(diagnostic);
 
-            Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
             Assert.AreEqual(StatementType.FunctionDeclaration, diagnostic.StatementType);
             Assert.AreEqual(ActivityType.FunctionBody, diagnostic.ActivityType);
@@ -1232,7 +1379,212 @@ namespace Quixotic.ParsingTests.Context
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
+        [TestMethod]
+        public void Parse_function_declaration_missing_first_parameter_name()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("function foo ,bar,ro");
+            sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
+            sourceBuilder.AppendLine("end function");
 
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            WriteDiagnostic(diagnostic);
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.FunctionDeclaration, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.FunctionBody, diagnostic.ActivityType); // Parser believed function had no parameters because it didn't encounter an identifier
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.Comma, issue.Encountered.Type);
+            Assert.IsNull(issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
+        public void Parse_function_declaration_missing_middle_parameter_name()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("function foo bar,,ro");
+            sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
+            sourceBuilder.AppendLine("end function");
+
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            WriteDiagnostic(diagnostic);
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.FunctionDeclaration, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.Parameter, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.Comma, issue.Encountered.Type);
+            Assert.AreEqual(TokenType.Identifier, issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
+        public void Parse_function_declaration_missing_last_parameter_name()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("function foo bar,ro,");
+            sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
+            sourceBuilder.AppendLine("end function");
+
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            WriteDiagnostic(diagnostic);
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.FunctionDeclaration, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.Parameter, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
+            Assert.AreEqual(TokenType.Identifier, issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
+        public void Parse_function_call_without_close_paren()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("foo (bar,ro");
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            WriteDiagnostic(diagnostic);
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.FunctionCall, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.Argument, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
+            Assert.AreEqual(TokenType.Comma, issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
+        public void Parse_function_call_missing_argument()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("foo(a,)");
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            WriteDiagnostic(diagnostic);
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.FunctionCall, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.Argument, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.CloseParen, issue.Encountered.Type);
+            Assert.AreEqual(TokenType.Identifier, issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
+        public void Parse_function_call_missing_comma()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("foo(1 2)");
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            WriteDiagnostic(diagnostic);
+
+            Assert.IsNotNull(diagnostic);
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.FunctionCall, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.Argument, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.NumberLiteral, issue.Encountered.Type);
+            Assert.AreEqual("2", issue.Encountered.Value);
+            Assert.AreEqual(TokenType.Comma, issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+
+        [TestMethod]
+        [DataRow("end if", StatementType.Unknown, ActivityType.None, TokenType.End, "end", null, false, true)]
+        [DataRow("loop", StatementType.Unknown, ActivityType.None, TokenType.Loop, "loop", null, false, true)]
+        [DataRow("next", StatementType.Unknown, ActivityType.None, TokenType.Next, "next", null, false, true)]
+        [DataRow("else\r\nprint 5", StatementType.Unknown, ActivityType.None, TokenType.Else, "else", null, false, true)]
+        [DataRow("else if x", StatementType.Unknown, ActivityType.None, TokenType.Else, "else", null, false, true)]
+        [DataRow("if x then\r\nelse\r\nelse\r\nend if", StatementType.If, ActivityType.ElseBlock, TokenType.Else, "else", null, true, false)]
+        public void Parse_construct_closers_without_construct(string source, StatementType statementType, ActivityType activityType, TokenType encountered, string encounteredValue, TokenType? expected, bool isEndOfLine, bool isSpanEmpty)
+        {
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            Assert.IsNotNull(diagnostic);
+            WriteDiagnostic(diagnostic);
+
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(statementType, diagnostic.StatementType);
+            Assert.AreEqual(activityType, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(encountered, issue.Encountered.Type);
+            Assert.AreEqual(encounteredValue, issue.Encountered.Value);
+            Assert.AreEqual(expected, issue.Expected);
+            Assert.AreEqual(isEndOfLine, diagnostic.IsEndOfLine);
+            Assert.AreEqual(isSpanEmpty, diagnostic.Span.IsEmpty);
+        }
 
         public void WriteDiagnostic(Diagnostic diagnostic)
         {

@@ -230,16 +230,34 @@ namespace Quixotic.Parsing
 
         private List<QxExpression> ParseArguments()
         {
+            var keepGoing = true;
+            var afterComma = false;
+
             List<QxExpression> parameters = [];
-            while (!Match(TokenType.CloseParen))
+            while (keepGoing)
             {
-                var expression = CaptureExpression(() => ParseExpression(), ActivityType.Argument);
-                parameters.Add(expression);
+                keepGoing = CaptureActivity(() =>
+                {
+                    if (Match(TokenType.CloseParen, out var token))
+                    {
+                        if (!afterComma)
+                            return false;
 
-                if (Match(TokenType.CloseParen))
-                    break;
+                        throw new UnexpectedTokenException(token, GetDiagnostic(Issue.UnexpectedToken(token, TokenType.Identifier)));
+                    }
 
-                Expect(TokenType.Comma);
+                    var expression = CaptureExpression(() => ParseExpression(), ActivityType.Argument);
+                    parameters.Add(expression);
+
+                    if (Match(TokenType.CloseParen))
+                        return false;
+
+                    Expect(TokenType.Comma);
+                    afterComma = true;
+
+                    return true;
+
+                }, ActivityType.Argument);
             }
 
             return parameters;

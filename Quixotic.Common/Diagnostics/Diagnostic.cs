@@ -11,7 +11,7 @@ namespace Quixotic.Common.Diagnostics
         public ActivityType ActivityType => Activity?.ActivityType ?? ActivityType.None;
 
         [JsonIgnore]
-        public Span Span => Statement?.Span ?? Span.Empty;
+        public Span Span => Statement?.Span ?? LastConsumedToken?.Span ?? Span.Empty;
 
         public bool IsEndOfLine => LastConsumedToken?.Type == TokenType.NewLine || LastConsumedToken?.Type == TokenType.Eof;
 
