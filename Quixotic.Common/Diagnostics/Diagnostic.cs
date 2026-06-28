@@ -14,7 +14,24 @@ namespace Quixotic.Common.Diagnostics
         public Span Span => Statement?.Span ?? LastConsumedToken?.Span ?? Span.Empty;
 
         public bool IsEndOfLine => LastConsumedToken?.Type == TokenType.NewLine || LastConsumedToken?.Type == TokenType.Eof;
+        public bool IsRootActivity => Activity is not null && Activity.Parent is null;
+
 
         public Token? LastConsumedToken => Statement?.Tokens.LastOrDefault();
+
+        public ActivityContext? RootActivity
+        {
+            get
+            {
+                if (Activity is null)
+                    return null;
+
+                var activity = Activity;
+                while (activity.Parent is not null)
+                    activity = activity.Parent;
+
+                return activity;
+            }
+        }
     }
 }

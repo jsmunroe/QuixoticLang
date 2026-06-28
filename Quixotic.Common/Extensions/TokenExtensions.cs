@@ -31,5 +31,18 @@
             };
         }
 
+        public static string GetValue(this IEnumerable<Token> tokens)
+        {
+            return string.Join(' ', tokens.Where(t => !t.IsTerminator).Select(t => t.Value));
+        }
+
+        public static IEnumerable<string> FindValues(this IEnumerable<Token> tokens, TokenType type)
+        {
+            foreach (var token in tokens)
+            {
+                if (token.Type == type)
+                    yield return token.Value;
+            }
+        }
     }
 }

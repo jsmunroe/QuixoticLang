@@ -25,5 +25,14 @@
         ForBlock,
         FunctionName,
         FunctionBody,
+        ParenSet,
+        StringLiteral,
+        BooleanLiteral,
+        NumberLiteral,
+        UnaryPlus,
+        UnaryNegation,
+        UnaryNot,
+        RightOperand,
+        LeftOperand,
     }
 }

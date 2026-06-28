@@ -489,7 +489,7 @@ namespace Quixotic.Parsing
 
                 Advance(); // consume operator
 
-                var right = ParseExpression(operationMetadata.Precedence);
+                var right = CaptureExpression(() => ParseExpression(operationMetadata.Precedence), ActivityType.RightOperand);
 
                 left = new QxBinaryExpression(operationMetadata.Operator, left, right);
             }
@@ -499,54 +499,75 @@ namespace Quixotic.Parsing
 
         private QxExpression ParsePrimary()
         {
-            var token = Pop();
+            var token = Peek();
 
             if (token.Type == TokenType.OpenParen)
             {
-                var expression = ParseExpression();
+                return CaptureExpression(() =>
+                {
+                    Advance();
+                    var expression = ParseExpression();
 
-                var nextToken = Pop();
-                if (nextToken.Type != TokenType.CloseParen)
-                    throw new UnexpectedTokenException(nextToken, TokenType.CloseParen, GetDiagnostic(Issue.UnexpectedToken(nextToken, TokenType.CloseParen)));
+                    Expect(TokenType.CloseParen);
 
-                return expression;
+                    return expression;
+                }, ActivityType.ParenSet);
             }
 
             if (token.Type == TokenType.StringLiteral)
-                return new QxStringLiteralExpression(token.Value);
+            {
+                return CaptureExpression(() =>
+                {
+                    Advance();
+                    return new QxStringLiteralExpression(token.Value);
+                }, ActivityType.StringLiteral);
+            }
 
             if (token.Type == TokenType.NumberLiteral)
-                return ParseNumber(token);
+                return ParseNumber();
 
             if (token.Type == TokenType.BooleanLiteral)
-                return new QxBooleanLiteralExpression(string.Equals(token.Value, "true", StringComparison.OrdinalIgnoreCase));
+            {
+                return CaptureExpression(() =>
+                {
+                    Advance();
+                    return new QxBooleanLiteralExpression(string.Equals(token.Value, "true", StringComparison.OrdinalIgnoreCase));
+                }, ActivityType.BooleanLiteral);
+            }
 
             if (token.Type == TokenType.Identifier)
-                return ParseIdentifierExpression(token);
+                return ParseIdentifierExpression();
 
+            Advance(); // Consume current token
             throw new UnexpectedTokenException(token, GetDiagnostic(Issue.UnexpectedToken(token)));
         }
 
-        private QxExpression ParseIdentifierExpression(Token token)
+        private QxExpression ParseIdentifierExpression()
         {
-            var name = token.Value;
+            return CaptureExpression<QxExpression>(() =>
+            {
+                var token = Peek();
+                Advance();
 
-            if (Match(TokenType.OpenParen))
-                return ParseFunctionCallExpression(name);
+                var name = token.Value;
 
-            return new QxIdentifierExpression(name);
+                if (Match(TokenType.OpenParen))
+                    return ParseFunctionCallExpression(name);
+
+                return new QxIdentifierExpression(name);
+            }, ActivityType.Identifier);
         }
 
         private QxExpression ParseUnary()
         {
             if (Match(TokenType.Plus))
-                return new QxUnaryExpression(Operator.Add, ParseUnary());
+                return CaptureExpression(() => new QxUnaryExpression(Operator.Add, ParseUnary()), ActivityType.UnaryPlus);
 
             if (Match(TokenType.Subtract))
-                return new QxUnaryExpression(Operator.Subtract, ParseUnary());
+                return CaptureExpression(() => new QxUnaryExpression(Operator.Subtract, ParseUnary()), ActivityType.UnaryNegation);
 
             if (Match(TokenType.Not))
-                return new QxUnaryExpression(Operator.Not, ParseUnary());
+                return CaptureExpression(() => new QxUnaryExpression(Operator.Not, ParseUnary()), ActivityType.UnaryNot);
 
             return ParsePrimary();
         }
@@ -600,12 +621,17 @@ namespace Quixotic.Parsing
             return block;
         }
 
-        private QxNumberLiteralExpression ParseNumber(Token token)
+        private QxNumberLiteralExpression ParseNumber()
         {
-            if (double.TryParse(token.Value, out var number))
-                return new QxNumberLiteralExpression(number);
+            return CaptureExpression(() =>
+            {
+                var token = Peek();
+                Advance();
+                if (double.TryParse(token.Value, out var number))
+                    return new QxNumberLiteralExpression(number);
 
-            throw new TokenException("Invalid number literal", token, GetDiagnostic(Issue.InvalidNumber()));
+                throw new TokenException("Invalid number literal", token, GetDiagnostic(Issue.InvalidNumber()));
+            }, ActivityType.NumberLiteral);
         }
 
         private TValue CaptureActivity<TValue>(Func<TValue> activity, ActivityType expressionType)
@@ -628,7 +654,8 @@ namespace Quixotic.Parsing
             _parseContext.EndActivity();
         }
 
-        private QxExpression CaptureExpression(Func<QxExpression> expressionFactory, ActivityType expressionType)
+        private TExpression CaptureExpression<TExpression>(Func<TExpression> expressionFactory, ActivityType expressionType)
+            where TExpression : QxExpression
         {
             _parseContext.BeginActivity(expressionType);
 
@@ -680,10 +707,11 @@ namespace Quixotic.Parsing
             if (Match(type, out var token))
                 return token;
 
-            if (Match(TokenType.Eof))
-                throw new IncompleteSourceException($"Encountered end of file before expected {type}.", GetDiagnostic(Issue.IncompleteSource()));
+            //if (Match(TokenType.Eof))
+            //    throw new IncompleteSourceException($"Encountered end of file before expected {type}.", GetDiagnostic(Issue.IncompleteSource()));
 
             var nextToken = Peek();
+            Advance();
             throw new UnexpectedTokenException(nextToken, type, GetDiagnostic(Issue.UnexpectedToken(nextToken, type)));
         }
 

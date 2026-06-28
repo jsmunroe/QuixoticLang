@@ -68,7 +68,7 @@ namespace QuixoticLang.Lexer
 
                 if (c == '\n')
                 {
-                    yield return Simple(TokenType.NewLine, "\n");
+                    yield return Simple(TokenType.NewLine, "<NL>");
                     Advance();
                     continue;
                 }

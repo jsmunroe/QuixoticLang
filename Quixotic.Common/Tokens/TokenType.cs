@@ -1,4 +1,6 @@
-﻿namespace Quixotic.Common.Tokens
+﻿using System.ComponentModel;
+
+namespace Quixotic.Common.Tokens
 {
     public enum TokenType
     {
@@ -25,8 +27,13 @@
         LessThan,
         LessThanOrEqualTo,
         Assignment,
+
+        [Description("Open Parenthesis")]
         OpenParen,
+
+        [Description("Close Parenthesis")]
         CloseParen,
+
         Subtract,
         Plus,
         Multiply,

@@ -50,16 +50,16 @@ namespace Quixotic.ParsingTests.Context
         [TestMethod]
         [DataRow("print for", ActivityType.Print, TokenType.For, "for", null, false)]
         [DataRow("print if", ActivityType.Print, TokenType.If, "if", null, false)]
-        [DataRow("print +", ActivityType.Print, TokenType.Eof, "<EOF>", null, true)]
-        [DataRow("print (", ActivityType.Print, TokenType.Eof, "<EOF>", null, true)]
+        [DataRow("print +", ActivityType.UnaryPlus, TokenType.Eof, "<EOF>", null, true)]
+        [DataRow("print (", ActivityType.ParenSet, TokenType.Eof, "<EOF>", null, true)]
         [DataRow("print )", ActivityType.Print, TokenType.CloseParen, ")", null, false)]
-        [DataRow("print (5", ActivityType.Print, TokenType.Eof, "<EOF>", TokenType.CloseParen, true)]
+        [DataRow("print (5", ActivityType.ParenSet, TokenType.Eof, "<EOF>", TokenType.CloseParen, true)]
         [DataRow("print 5)", ActivityType.ConsumeStatementTerminator, TokenType.CloseParen, ")", TokenType.NewLine, false)]
-        [DataRow("print ((5)", ActivityType.Print, TokenType.Eof, "<EOF>", TokenType.CloseParen, true)]
-        [DataRow("print 5 +", ActivityType.Print, TokenType.Eof, "<EOF>", null, true)]
+        [DataRow("print ((5)", ActivityType.ParenSet, TokenType.Eof, "<EOF>", TokenType.CloseParen, true)]
+        [DataRow("print 5 +", ActivityType.RightOperand, TokenType.Eof, "<EOF>", null, true)]
         [DataRow("print * 5", ActivityType.Print, TokenType.Multiply, "*", null, false)]
-        [DataRow("print 5 + * 4", ActivityType.Print, TokenType.Multiply, "*", null, false)]
-        [DataRow("print 5 and or 4", ActivityType.Print, TokenType.Or, "or", null, false)]
+        [DataRow("print 5 + * 4", ActivityType.RightOperand, TokenType.Multiply, "*", null, false)]
+        [DataRow("print 5 and or 4", ActivityType.RightOperand, TokenType.Or, "or", null, false)]
         public void Parse_print_with_bad_expression(string source, ActivityType activityType, TokenType encounteredType, string encounteredValue, TokenType? expected, bool isEndOfLine)
         {
             // Execute
@@ -108,7 +108,7 @@ namespace Quixotic.ParsingTests.Context
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Identifier, issue.Expected);
-            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsTrue(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
@@ -347,10 +347,9 @@ namespace Quixotic.ParsingTests.Context
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
             Assert.AreEqual(StatementType.Assignment, diagnostic.StatementType);
-            Assert.AreEqual(ActivityType.AssignedExpression, diagnostic.ActivityType);
+            Assert.AreEqual(ActivityType.UnaryPlus, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
-            Assert.AreEqual("\n", issue.Encountered.Value);
             Assert.IsNull(issue.Expected);
             Assert.IsTrue(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
@@ -508,7 +507,7 @@ namespace Quixotic.ParsingTests.Context
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.AreEqual(TokenType.If, issue.Expected);
-            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsTrue(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
@@ -816,7 +815,7 @@ namespace Quixotic.ParsingTests.Context
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Identifier, issue.Expected);
-            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsTrue(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
@@ -872,7 +871,7 @@ namespace Quixotic.ParsingTests.Context
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Assignment, issue.Expected);
-            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsTrue(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
@@ -983,7 +982,7 @@ namespace Quixotic.ParsingTests.Context
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.AreEqual(TokenType.To, issue.Expected);
-            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsTrue(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
@@ -1179,7 +1178,6 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(ActivityType.ToValue, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
-            Assert.AreEqual("\n", issue.Encountered.Value);
             Assert.IsNull(issue.Expected);
             Assert.IsTrue(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
@@ -1292,7 +1290,7 @@ namespace Quixotic.ParsingTests.Context
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Identifier, issue.Expected);
-            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsTrue(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
@@ -1449,7 +1447,6 @@ namespace Quixotic.ParsingTests.Context
             sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
             sourceBuilder.AppendLine("end function");
 
-
             var source = sourceBuilder.ToString();
 
             // Execute
@@ -1495,7 +1492,7 @@ namespace Quixotic.ParsingTests.Context
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Comma, issue.Expected);
-            Assert.IsFalse(diagnostic.IsEndOfLine);
+            Assert.IsTrue(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 

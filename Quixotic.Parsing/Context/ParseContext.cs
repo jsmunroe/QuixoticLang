@@ -75,7 +75,22 @@ namespace Quixotic.Parsing.Context
         public void ConsumeToken(Token token)
         {
             CurrentStatement?.Tokens.Add(token);
+
+            var currentStatement = CurrentStatement?.Parent;
+            while (currentStatement is not null)
+            {
+                currentStatement.Tokens.Add(token);
+                currentStatement = currentStatement.Parent;
+            }
+
             CurrentActivity?.Tokens.Add(token);
+
+            var currentActivity = CurrentActivity?.Parent;
+            while (currentActivity is not null)
+            {
+                currentActivity.Tokens.Add(token);
+                currentActivity = currentActivity.Parent;
+            }
         }
 
         public Diagnostic GetDiagnostic(Issue issue)

@@ -4,19 +4,30 @@ namespace System
 {
     public static class StringExtensions
     {
-        public static string RemoveLeadingSpaces(this string value, int count = -1)
-        {
-            var matches = Regex.Matches(value, @"(^\s+)\S", RegexOptions.Multiline);
+        private static Regex _rexVowelSound = new(@"^(?:[aeiouAEIOU]|h(?:on|our|eir))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static Regex _rexConsonantSound = new(@"^(?:user|unique|uni[v|c|t|f]|one)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-            if (matches.Count == 0)
+        public static string Capitalize(this string value)
+        {
+            if (string.IsNullOrEmpty(value))
                 return value;
 
-            var minLength = matches.Cast<Match>().Where(m => !Regex.IsMatch(m.Value, @"^\s+$")).OrderBy(m => m.Length).First().Length;
+            return char.ToUpper(value[0]) + value[1..];
+        }
 
-            if (count > 0)
-                minLength = Math.Min(count, minLength);
+        public static string PrependIndefiniteArticle(this string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return value;
 
-            return Regex.Replace(value, @$"^\s{{{minLength}}}", string.Empty);
+            var trimmedWord = value.Trim();
+
+            // Regex for words that start with a vowel sound but a consonant letter (e.g., hour, honest)
+            // Or start with a vowel letter but a consonant sound (e.g., university, unique, one-way)
+            bool isVowelSound = _rexVowelSound.IsMatch(trimmedWord) && !_rexConsonantSound.IsMatch(trimmedWord);
+            var article = isVowelSound ? "an" : "a";
+
+            return $"{article} {trimmedWord}";
         }
     }
 }

@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Quixotic.Analysis/Quixotic.Analysis.csproj" Id="c8c0641b-2f25-4b8e-a7b1-d838eec5a486" />
+  <Project Path="Quixotic.AnalysisTests/Quixotic.AnalysisTests.csproj" Id="5fd66bd3-c904-4541-8cb5-1c7a872ca955" />
   <Project Path="Quixotic.Cli/Quixotic.Cli.csproj" Id="cd9acbae-0b21-40a9-a9fb-2bc81cb035df" />
   <Project Path="Quixotic.Common/Quixotic.Common.csproj" Id="ef509610-1188-4879-9488-ab6cc2176f3a" />
   <Project Path="Quixotic.CommonTests/Quixotic.CommonTests.csproj" Id="81876f88-71b4-46b6-b218-86d11fc87eed" />

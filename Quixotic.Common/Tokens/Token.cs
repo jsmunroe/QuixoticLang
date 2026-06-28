@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Quixotic.Common.Extensions;
+using System.Text.Json.Serialization;
 
 namespace Quixotic.Common.Tokens
 {
@@ -8,6 +9,6 @@ namespace Quixotic.Common.Tokens
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWriting)]
         public required Span Span { get; init; }
 
-        public override string ToString() => $"{Type}('{Value}') ({Span.Start.Line}:{Span.Start.Column})";
+        public override string ToString() => $"{Type.ToText().ToLower()} '{Value}'";
     }
 }
