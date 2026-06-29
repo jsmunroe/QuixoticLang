@@ -17,6 +17,13 @@ namespace Quixotic.Interpret.Environment
             _values[name] = new VariableSymbol(value);
         }
 
+        public void DefineVariable(string name, QxType type)
+        {
+            ExpectUndefined(name);
+
+            _values[name] = new VariableSymbol(type);
+        }
+
         public bool IsSymbolDeclared(string name)
         {
             return _values.ContainsKey(name);

@@ -349,9 +349,28 @@ namespace Quixotic.ParsingTests
             // Assert 
             Assert.HasCount(3, statements);
 
-            AssertVariableDeclaration(statements[0], "windmills", 5);
-            AssertVariableDeclaration(statements[1], "w", new TestIdentifierExpression("windmills"));
+            AssertVariableDeclaration(statements[0], "windmills", expression: 5);
+            AssertVariableDeclaration(statements[1], "w", expression: new TestIdentifierExpression("windmills"));
             AssertPrint(statements[2], new TestIdentifierExpression("w"));
+        }
+
+        [TestMethod]
+        public void Parse_variable_declaration_without_value()
+        {
+            // Setup
+            var source = @"
+                let windmills: number
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert 
+            Assert.HasCount(1, statements);
+
+            AssertVariableDeclaration(statements[0], "windmills", typeName: "number");
         }
 
         [TestMethod]
@@ -593,7 +612,7 @@ namespace Quixotic.ParsingTests
                 AssertReturn(body[0], "Hello, windmills!");
             });
 
-            AssertVariableDeclaration(statements[1], "hello", new TestFunctionCallExpression("sayHello"));
+            AssertVariableDeclaration(statements[1], "hello", expression: new TestFunctionCallExpression("sayHello"));
 
             AssertPrint(statements[2], new TestIdentifierExpression("hello"));
         }
@@ -620,7 +639,7 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(2, statements);
 
-            AssertVariableDeclaration(statements[0], "i", 0);
+            AssertVariableDeclaration(statements[0], "i", expression: 0);
 
             AssertDo(statements[1], ("[i]", "<", 10), isEntryControl: true,
                 block: block =>
@@ -652,7 +671,7 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(2, statements);
 
-            AssertVariableDeclaration(statements[0], "i", 0);
+            AssertVariableDeclaration(statements[0], "i", expression: 0);
 
             AssertDo(statements[1], new TestUnaryExpression(Common.Operations.Operator.Not, ("[i]", ">=", 10)), isEntryControl: true,
                 block: block =>
@@ -684,7 +703,7 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(2, statements);
 
-            AssertVariableDeclaration(statements[0], "i", 0);
+            AssertVariableDeclaration(statements[0], "i", expression: 0);
 
             AssertDo(statements[1], ("[i]", "<", 10), isEntryControl: false,
                 block: block =>
@@ -716,7 +735,7 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(2, statements);
 
-            AssertVariableDeclaration(statements[0], "i", 0);
+            AssertVariableDeclaration(statements[0], "i", expression: 0);
 
             AssertDo(statements[1], new TestUnaryExpression(Common.Operations.Operator.Not, ("[i]", ">=", 10)), isEntryControl: false,
                 block: block =>
@@ -731,7 +750,7 @@ namespace Quixotic.ParsingTests
         {
             // Setup
             var source = @"
-                let isAGiant := true
+                let isAGiant: boolean := true
 
                 if isAGiant then
                     print ""Attack!""
@@ -747,7 +766,7 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(2, statements);
 
-            AssertVariableDeclaration(statements[0], "isAGiant", true);
+            AssertVariableDeclaration(statements[0], "isAGiant", expression: true);
 
             AssertIf(statements[1], new TestIdentifierExpression("isAGiant"),
                 thenBlock: block =>
@@ -761,7 +780,7 @@ namespace Quixotic.ParsingTests
         {
             // Setup
             var source = @"
-                let isAWindmill := false
+                let isAWindmill: boolean := false
 
                 if not isAWindmill then
                     print ""Attack!""
@@ -777,7 +796,7 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(2, statements);
 
-            AssertVariableDeclaration(statements[0], "isAWindmill", false);
+            AssertVariableDeclaration(statements[0], "isAWindmill", expression: false);
 
             AssertIf(statements[1], new TestUnaryExpression(Operator.Not, new TestIdentifierExpression("isAWindmill")),
                 thenBlock: block =>
@@ -925,11 +944,16 @@ namespace Quixotic.ParsingTests
                 });
         }
 
-        private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression? expression = null)
+        private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, string? typeName = null, TestExpression? expression = null)
         {
             var variableDeclarationStatement = Assert.IsInstanceOfType<QxVariableDeclarationStatement>(statement);
 
             Assert.AreEqual(name, variableDeclarationStatement.Name);
+
+            if (typeName is not null)
+            {
+                Assert.AreEqual(typeName, variableDeclarationStatement.TypeName);
+            }
 
             if (expression is not null)
             {

@@ -209,7 +209,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                let windmills
+                let windmills: number
                 print windmills
             ";
             var lexer = new Lexer(source);
@@ -230,7 +230,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                let windmills
+                let windmills: number
                 print windmills
                 windmills := 8
                 print windmills

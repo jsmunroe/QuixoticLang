@@ -114,6 +114,18 @@ namespace Quixotic.LexographyTests
             Assert.AreEqual(TokenType.Assignment, tokens[1].Type);
             Assert.AreEqual(TokenType.NumberLiteral, tokens[2].Type);
         }
+
+        [TestMethod]
+        public void Lex_declaration_with_type()
+        {
+            var lexer = new Lexer("let x: number");
+
+            var tokens = lexer.Tokenize().ToList();
+
+            Assert.AreEqual(TokenType.Let, tokens[0].Type);
+            Assert.AreEqual(TokenType.Identifier, tokens[1].Type);
+            Assert.AreEqual(TokenType.Type, tokens[2].Type);
+        }
     }
 
 }

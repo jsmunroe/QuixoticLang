@@ -119,12 +119,37 @@ namespace Quixotic.Interpret
 
         public void Execute(QxVariableDeclarationStatement statement)
         {
-            Value value = NadaValue.Value;
-
+            Value value = Value.Nada;
             if (statement.Value is not null)
                 value = Evaluate(statement.Value);
 
-            runtime.Frame.Scope.DefineVariable(statement.Name, value);
+            QxType? type = null;
+            if (statement.TypeName is not null)
+            {
+                if (!QxType.TryParse(statement.TypeName, out type))
+                    throw new UnrecognizedTypeException(statement.TypeName);
+            }
+
+
+            if (!value.IsNada && type is not null)
+            {
+                if (!type.IsAssignableFrom(value.Type))
+                    throw new TypeMismatchException(type, value.Type);
+
+                runtime.Frame.Scope.DefineVariable(statement.Name, value);
+            }
+            else if (!value.IsNada)
+            {
+                runtime.Frame.Scope.DefineVariable(statement.Name, value);
+            }
+            else if (type is not null)
+            {
+                runtime.Frame.Scope.DefineVariable(statement.Name, type);
+            }
+            else
+            {
+                throw new UntypedVariableDeclarationException();
+            }
         }
 
         public void Execute(QxFunctionDeclarationStatement statement)
@@ -349,10 +374,7 @@ namespace Quixotic.Interpret
             where TValue : Value
         {
             if (value is not TValue expectedValue)
-            {
-                var expectedType = QxType.GetType<TValue>();
-                throw new UnexpectedTypeException(expectedType, value.Type);
-            }
+                throw new UnexpectedTypeException(typeof(TValue).Describe(), value.Type);
 
             return expectedValue;
         }

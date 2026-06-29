@@ -51,5 +51,6 @@ namespace Quixotic.Common.Tokens
         Next,
         Step,
         Comment,
+        Type,
     }
 }

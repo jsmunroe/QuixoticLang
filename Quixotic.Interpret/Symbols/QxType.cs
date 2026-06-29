@@ -1,4 +1,7 @@
-﻿namespace Quixotic.Interpret.Symbols
+﻿using Quixotic.Common.Exceptions.Interpret;
+using System.ComponentModel;
+
+namespace Quixotic.Interpret.Symbols
 {
     public class QxType
     {
@@ -14,7 +17,6 @@
         public string Name { get; }
 
         public bool Is(object value) => _typeOfValue.IsInstanceOfType(value);
-
 
         public override bool Equals(object? obj)
         {
@@ -34,17 +36,35 @@
             return false;
         }
 
-        public static QxType GetType<TValue>()
-            where TValue : Value
+        public virtual bool IsAssignableFrom(QxType subtype)
         {
-            return typeof(TValue) switch
+            if (subtype.GetType() != GetType())
+                return false;
+
+            return true;
+        }
+
+        public static QxType Parse(string typeName)
+        {
+            return typeName?.ToLower() switch
             {
-                var t when t == typeof(NumberValue) => Number,
-                var t when t == typeof(StringType) => String,
-                var t when t == typeof(BooleanType) => Boolean,
-                var t when t == typeof(NadaType) => Nada,
-                _ => throw new NotImplementedException($"Type {typeof(TValue).Name} is not implemented.")
+                "number" => Number,
+                "string" => String,
+                "boolean" => Boolean,
+                _ => throw new UnrecognizedTypeException(typeName)
             };
+        }
+
+        public static bool TryParse(string? typeName, out QxType? type)
+        {
+            type = typeName?.ToLower() switch
+            {
+                "number" => Number,
+                "string" => String,
+                "boolean" => Boolean,
+                _ => null
+            };
+            return type is not null;
         }
 
         public static QxType Number { get; } = NumberType.Instance;
@@ -53,6 +73,7 @@
         public static QxType Nada { get; } = NadaType.Instance;
     }
 
+    [Description("number")]
     public class NumberType : QxType
     {
         public static NumberType Instance { get; } = new();
@@ -70,6 +91,7 @@
         }
     }
 
+    [Description("string")]
     public class StringType : QxType
     {
         public static StringType Instance { get; } = new();
@@ -87,6 +109,7 @@
         }
     }
 
+    [Description("boolean")]
     public class BooleanType : QxType
     {
         public static BooleanType Instance { get; } = new();
@@ -104,6 +127,7 @@
         }
     }
 
+    [Description("number")]
     public class NadaType : QxType
     {
         public static NadaType Instance { get; } = new();

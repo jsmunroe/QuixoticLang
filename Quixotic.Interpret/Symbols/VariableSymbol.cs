@@ -2,11 +2,23 @@
 
 namespace Quixotic.Interpret.Symbols
 {
-    public class VariableSymbol(Value value) : Symbol
+    public class VariableSymbol : Symbol
     {
-        public Value Value { get; private set; } = value;
+        public Value? Value { get; private set; }
 
-        public QxType Type { get; } = value.Type;
+        public QxType Type { get; }
+
+        public VariableSymbol(Value value)
+        {
+            Value = value;
+            Type = value.Type;
+        }
+
+        public VariableSymbol(QxType valueType)
+        {
+            Value = NadaValue.Value;
+            Type = valueType;
+        }
 
         public void Assign(Value value)
         {

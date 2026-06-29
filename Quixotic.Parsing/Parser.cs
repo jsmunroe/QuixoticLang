@@ -111,12 +111,15 @@ namespace Quixotic.Parsing
         {
             _parseContext.AssignStatementType(StatementType.VariableDeclaration);
 
-            var name = CaptureActivity(() =>
+            var (name, typeName) = CaptureActivity(() =>
             {
                 var identifierToken = Expect(TokenType.Identifier);
                 var name = identifierToken.Value;
 
-                return name;
+                var typeToken = Allow(TokenType.Type);
+                var typeName = typeToken?.Value;
+
+                return (name, typeName);
 
             }, ActivityType.Identifier);
 
@@ -125,7 +128,7 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Assignment))
                 expression = CaptureExpression(() => ParseExpression(), ActivityType.AssignedExpression);
 
-            return new(name, expression);
+            return new(name, typeName, expression);
         }
 
         private QxFunctionDeclarationStatement ParseFunctionDeclaration()

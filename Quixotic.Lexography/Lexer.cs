@@ -218,6 +218,31 @@ namespace QuixoticLang.Lexer
             };
         }
 
+        private Token ReadType()
+        {
+            var position = CurrentPosition;
+
+            string text = string.Empty;
+            var next = Peek();
+            while (!IsAtEnd && char.IsLetter(next))
+            {
+                text += next;
+                Advance();
+                next = Peek();
+            }
+
+            return new Token
+            {
+                Type = TokenType.Type,
+                Value = text,
+                Span = new Span
+                {
+                    Start = position,
+                    End = CurrentPosition,
+                }
+            };
+        }
+
         private Token ReadNumber()
         {
             var position = CurrentPosition;
@@ -316,6 +341,15 @@ namespace QuixoticLang.Lexer
             {
                 Advance();
                 return Simple(TokenType.Assignment, ":=", position);
+            }
+
+            ConsumeWhitespace();
+
+            c = Peek();
+
+            if (char.IsLetter(c))
+            {
+                return ReadType();
             }
 
             throw new LexerUnexpectedCharacterException(c, position);
