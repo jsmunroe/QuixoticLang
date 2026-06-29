@@ -1,5 +1,6 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
-namespace Quixotic.Interpret.Symbols
+using Quixotic.Interpret.Symbols.Types;
+namespace Quixotic.Interpret.Symbols.Values
 {
     public record StringValue(string value) : Value(QxType.String, value)
     {

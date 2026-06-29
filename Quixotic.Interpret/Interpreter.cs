@@ -6,6 +6,8 @@ using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Environment;
 using Quixotic.Interpret.FlowControl;
 using Quixotic.Interpret.Symbols;
+using Quixotic.Interpret.Symbols.Types;
+using Quixotic.Interpret.Symbols.Values;
 using Quixotic.Parsing;
 using QuixoticLang.Lexer;
 using System.Diagnostics.CodeAnalysis;
@@ -154,7 +156,14 @@ namespace Quixotic.Interpret
 
         public void Execute(QxFunctionDeclarationStatement statement)
         {
-            List<Parameter> parameters = [.. statement.Parameters.Select(p => new Parameter(p.Name))];
+            List<Parameter> parameters = [];
+            foreach (var parameter in statement.Parameters)
+            {
+                if (!QxType.TryParse(parameter.TypeName, out var type))
+                    throw new UnrecognizedTypeException(parameter.TypeName);
+
+                parameters.Add(new(parameter.Name, type));
+            }
 
             var function = new Function(statement.Body) { Parameters = [.. parameters] };
             runtime.Frame.Scope.DefineFunction(statement.Name, function);
@@ -496,6 +505,10 @@ namespace Quixotic.Interpret
             foreach (var (parameter, expression) in parameters.Zip(expressions))
             {
                 var value = Evaluate(expression);
+
+                if (!parameter.Type.IsAssignableFrom(value.Type))
+                    throw new TypeMismatchException(value.Type, parameter.Type);
+
                 arguments.Add(new Argument(parameter.Name, value));
             }
 

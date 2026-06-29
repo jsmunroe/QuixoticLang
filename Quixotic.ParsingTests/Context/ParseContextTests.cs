@@ -1327,7 +1327,7 @@ namespace Quixotic.ParsingTests.Context
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo bar, 2");
+            sourceBuilder.AppendLine("function foo(bar: number, 2)");
 
             var source = sourceBuilder.ToString();
 
@@ -1355,7 +1355,7 @@ namespace Quixotic.ParsingTests.Context
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo bar");
+            sourceBuilder.AppendLine("function foo(bar: number)");
             sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
 
             var source = sourceBuilder.ToString();
@@ -1374,6 +1374,36 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(ActivityType.FunctionBody, diagnostic.ActivityType);
             Assert.IsInstanceOfType<IncompleteSource>(diagnostic.Issue);
             Assert.IsTrue(diagnostic.IsEndOfLine);
+            Assert.IsFalse(diagnostic.Span.IsEmpty);
+        }
+
+        [TestMethod]
+        public void Parse_function_declaration_without_without_parameter_type()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("function foo(bar)");
+            sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
+            sourceBuilder.AppendLine("end function");
+
+            var source = sourceBuilder.ToString();
+
+            // Execute
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            // Assert
+            var diagnostic = exception.Diagnostic;
+
+            Assert.IsNotNull(diagnostic);
+            WriteDiagnostic(diagnostic);
+
+            Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
+            Assert.AreEqual(StatementType.FunctionDeclaration, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.Parameter, diagnostic.ActivityType);
+            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
+            Assert.AreEqual(TokenType.CloseParen, issue.Encountered.Type);
+            Assert.AreEqual(TokenType.Type, issue.Expected);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
@@ -1412,7 +1442,7 @@ namespace Quixotic.ParsingTests.Context
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo bar,,ro");
+            sourceBuilder.AppendLine("function foo(bar: number,,ro: number)");
             sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
             sourceBuilder.AppendLine("end function");
 
@@ -1443,7 +1473,7 @@ namespace Quixotic.ParsingTests.Context
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo bar,ro,");
+            sourceBuilder.AppendLine("function foo(bar: number, ro: number, )");
             sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
             sourceBuilder.AppendLine("end function");
 
@@ -1462,7 +1492,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(StatementType.FunctionDeclaration, diagnostic.StatementType);
             Assert.AreEqual(ActivityType.Parameter, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
-            Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
+            Assert.AreEqual(TokenType.CloseParen, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Identifier, issue.Expected);
             Assert.IsFalse(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);

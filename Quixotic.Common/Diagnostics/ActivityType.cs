@@ -34,5 +34,6 @@
         UnaryNot,
         RightOperand,
         LeftOperand,
+        FunctionReturnType,
     }
 }

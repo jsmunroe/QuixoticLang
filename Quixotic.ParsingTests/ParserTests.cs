@@ -535,7 +535,7 @@ namespace Quixotic.ParsingTests
         {
             // Setup
             var source = @"
-                function sayHello
+                function sayHello: string
                     print ""Hello, windmills!""
                 end function
             ";
@@ -549,7 +549,7 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            AssertFunctionDeclaration(statements[0], "sayHello",
+            AssertFunctionDeclaration(statements[0], "sayHello", "string",
                 body: block =>
                 {
                     AssertPrint(block[0], "Hello, windmills!");
@@ -561,7 +561,7 @@ namespace Quixotic.ParsingTests
         {
             // Setup
             var source = @"
-                function sayHello
+                function sayHello: string
                     print ""Hello, windmills!""
                 end function
 
@@ -576,12 +576,36 @@ namespace Quixotic.ParsingTests
 
             // Assert
             Assert.HasCount(2, statements);
-            AssertFunctionDeclaration(statements[0], "sayHello", body =>
+            AssertFunctionDeclaration(statements[0], "sayHello", "string", body =>
             {
                 AssertPrint(body[0], "Hello, windmills!");
             });
 
             AssertFunctionCall(statements[1], "sayHello");
+        }
+
+        [TestMethod]
+        public void Parse_function_declaration_with_arguments_statement_with_call()
+        {
+            // Setup
+            var source = @"
+                function sayHello(num: number): string
+                    print ""Hello, windmills!"" + num
+                end function
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+            AssertFunctionDeclaration(statements[0], "sayHello", "string", body =>
+            {
+                AssertPrint(body[0], ("Hello, windmills!", "+", "[num]"));
+            });
         }
 
 
@@ -590,7 +614,7 @@ namespace Quixotic.ParsingTests
         {
             // Setup
             var source = @"
-                function sayHello
+                function sayHello: string
                     return ""Hello, windmills!""
                 end function
 
@@ -607,7 +631,7 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(3, statements);
 
-            AssertFunctionDeclaration(statements[0], "sayHello", body =>
+            AssertFunctionDeclaration(statements[0], "sayHello", "string", body =>
             {
                 AssertReturn(body[0], "Hello, windmills!");
             });
@@ -964,11 +988,12 @@ namespace Quixotic.ParsingTests
             return variableDeclarationStatement;
         }
 
-        private QxFunctionDeclarationStatement AssertFunctionDeclaration(QxStatement statement, string name, Action<Block>? body = null)
+        private QxFunctionDeclarationStatement AssertFunctionDeclaration(QxStatement statement, string name, string returnType, Action<Block>? body = null)
         {
             var functionStatement = Assert.IsInstanceOfType<QxFunctionDeclarationStatement>(statement);
 
             Assert.AreEqual(name, functionStatement.Name);
+            Assert.AreEqual(returnType, functionStatement.ReturnType);
 
             if (body is not null)
                 body(functionStatement.Body);

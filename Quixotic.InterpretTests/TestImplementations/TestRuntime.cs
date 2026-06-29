@@ -1,6 +1,6 @@
 ﻿using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Environment;
-using Quixotic.Interpret.Symbols;
+using Quixotic.Interpret.Symbols.Values;
 
 namespace Quixotic.InterpretTests.TestImplementations
 {

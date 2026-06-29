@@ -1148,7 +1148,7 @@ namespace Quixotic.AnalysisTests.Errors
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo bar, 2");
+            sourceBuilder.AppendLine("function foo(bar: number, 2)");
 
             var source = sourceBuilder.ToString();
 
@@ -1171,7 +1171,7 @@ namespace Quixotic.AnalysisTests.Errors
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo bar");
+            sourceBuilder.AppendLine("function foo(bar: number)");
             sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
 
             var source = sourceBuilder.ToString();
@@ -1188,6 +1188,32 @@ namespace Quixotic.AnalysisTests.Errors
             WriteDiagnostic(exception.Diagnostic);
 
             Assert.AreEqual("Encountered end of file before function declaration has been properly terminated (end function).", result);
+        }
+
+
+        [TestMethod]
+        public void Parse_function_declaration_without_without_parameter_type()
+        {
+            // Setup
+            var sourceBuilder = new StringBuilder();
+            sourceBuilder.AppendLine("function foo(bar)");
+            sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
+            sourceBuilder.AppendLine("end function");
+
+            var source = sourceBuilder.ToString();
+
+            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+
+            var errorMessageFormatter = new ErrorMessageFormatter();
+
+            // Execute
+            var result = errorMessageFormatter.Describe(exception);
+
+            // Assert
+            Console.WriteLine(result);
+            WriteDiagnostic(exception.Diagnostic);
+
+            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the parameter list of the function declaration statement. Parser expected a type definition for parameter 'bar'.", result);
         }
 
         [TestMethod]
@@ -1220,7 +1246,7 @@ namespace Quixotic.AnalysisTests.Errors
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo bar,,ro");
+            sourceBuilder.AppendLine("function foo(bar: number,,ro: number)");
             sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
             sourceBuilder.AppendLine("end function");
 
@@ -1246,7 +1272,7 @@ namespace Quixotic.AnalysisTests.Errors
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo bar,ro,");
+            sourceBuilder.AppendLine("function foo(bar: number, ro: number, )");
             sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
             sourceBuilder.AppendLine("end function");
 
@@ -1263,7 +1289,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the parameter list of the function declaration statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the parameter list of the function declaration statement. The parser expected an identifier.", result);
         }
 
         [TestMethod]

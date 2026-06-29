@@ -145,14 +145,25 @@ namespace Quixotic.Parsing
             }, ActivityType.FunctionName);
 
             // Parse parameters
-            var parameters = ParseParameters();
+            List<QxParameter> parameters = [];
+            if (Match(TokenType.OpenParen))
+                parameters = ParseParameters();
+
+            var returnType = CaptureActivity(() =>
+            {
+                var identifierToken = Allow(TokenType.Type);
+                var returnType = identifierToken?.Value ?? "void";
+
+                return returnType;
+
+            }, ActivityType.FunctionReturnType);
 
             var body = CaptureActivity(() => ParseBlock(BlockType.Function), ActivityType.FunctionBody);
 
             Expect(TokenType.End);
             Expect(TokenType.Function);
 
-            return new(name) { Parameters = [.. parameters], Body = body };
+            return new(name, returnType) { Parameters = [.. parameters], Body = body };
         }
 
         private QxReturnStatement ParseReturn()
@@ -184,27 +195,26 @@ namespace Quixotic.Parsing
             List<QxParameter> parameters = [];
 
             var keepGoing = true;
-            var afterComma = false;
 
             while (keepGoing)
             {
                 keepGoing = CaptureActivity(() =>
                 {
-                    if (!Match(TokenType.Identifier, out var token))
+                    if (Match(TokenType.Identifier, out var token))
                     {
-                        if (!afterComma)
-                            return false;
+                        var parameterTypeToken = Expect(TokenType.Type);
 
+                        parameters.Add(new QxParameter(token.Value, parameterTypeToken.Value));
+                    }
+                    else
+                    {
                         throw new UnexpectedTokenException(Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek(), TokenType.Identifier)));
                     }
 
-                    parameters.Add(new QxParameter(token.Value));
-
-                    if (Match(TokenType.NewLine))
+                    if (Match(TokenType.CloseParen))
                         return false;
 
                     Expect(TokenType.Comma);
-                    afterComma = true;
 
                     return true;
 

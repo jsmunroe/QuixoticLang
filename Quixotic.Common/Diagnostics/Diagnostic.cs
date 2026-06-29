@@ -16,7 +16,7 @@ namespace Quixotic.Common.Diagnostics
         public bool IsEndOfLine => LastConsumedToken?.Type == TokenType.NewLine || LastConsumedToken?.Type == TokenType.Eof;
         public bool IsRootActivity => Activity is not null && Activity.Parent is null;
 
-
+        public string? LastIdentifier => Statement?.Tokens.FindValues(TokenType.Identifier).LastOrDefault();
         public Token? LastConsumedToken => Statement?.Tokens.LastOrDefault();
 
         public ActivityContext? RootActivity

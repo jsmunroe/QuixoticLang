@@ -1,6 +1,7 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Interpret.Symbols.Types;
 
-namespace Quixotic.Interpret.Symbols
+namespace Quixotic.Interpret.Symbols.Values
 {
 
     public record BooleanValue(bool value) : Value(QxType.Boolean, value)

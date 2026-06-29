@@ -326,7 +326,9 @@ namespace Quixotic.Analysis.Errors
 
             DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
 
-            if (issue.Expected is not null)
+            if ((issue.Encountered.Type == TokenType.CloseParen || issue.Encountered.Type == TokenType.Comma) && issue.Expected == TokenType.Type)
+                description.Append($"Parser expected a type definition for parameter '{diagnostic.LastIdentifier}'. ");
+            else if (issue.Expected is not null)
                 description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
         }
 

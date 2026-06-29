@@ -1,4 +1,6 @@
-﻿namespace Quixotic.Interpret.Symbols
+﻿using Quixotic.Interpret.Symbols.Values;
+
+namespace Quixotic.Interpret.Symbols
 {
     public class Argument(string name, Value value)
     {

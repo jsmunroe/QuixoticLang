@@ -1,4 +1,6 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Interpret.Symbols.Types;
+using Quixotic.Interpret.Symbols.Values;
 
 namespace Quixotic.Interpret.Symbols
 {
@@ -23,7 +25,7 @@ namespace Quixotic.Interpret.Symbols
         public void Assign(Value value)
         {
             if (Type != QxType.Nada && !value.Type.Equals(Type))
-                throw new TypeMismatchException(Type, value.Type);
+                throw new TypeMismatchException(value.Type.Name, Type.Name);
 
             Value = value;
         }

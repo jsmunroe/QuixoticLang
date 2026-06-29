@@ -1,5 +1,7 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Interpret.Symbols;
+using Quixotic.Interpret.Symbols.Types;
+using Quixotic.Interpret.Symbols.Values;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Interpret.Environment

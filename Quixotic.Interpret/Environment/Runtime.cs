@@ -1,6 +1,6 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Interpret.Contracts;
-using Quixotic.Interpret.Symbols;
+using Quixotic.Interpret.Symbols.Values;
 
 namespace Quixotic.Interpret.Environment
 {

@@ -1,4 +1,5 @@
-﻿using Quixotic.InterpretTests.TestImplementations;
+﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.InterpretTests.TestImplementations;
 using Quixotic.Parsing;
 using QuixoticLang.Lexer;
 
@@ -463,7 +464,7 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
-                function sayHello first, second, third
+                function sayHello(first: number, second: number, third: number): void
                     print first + second + third
                 end function
 
@@ -481,6 +482,106 @@ namespace Quixotic.InterpretTests
             // Assert
             runtime.AssertFunctionDeclared("sayHello");
             runtime.AssertHasPrinted("6");
+        }
+
+        [TestMethod]
+        public void Execute_function_declaration_statement_with_call_with_parameters_that_returns_value()
+        {
+            // Setup
+            var source = @"
+                function sayHello(first: number, second: number, third: number): number
+                    return first + second + third
+                end function
+
+                print sayHello(1, 2, 3)
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertFunctionDeclared("sayHello");
+            runtime.AssertHasPrinted("6");
+        }
+
+        [TestMethod]
+        public void Execute_function_declaration_statement_with_call_with_parameters_that_returns_value_with_call_in_assignment()
+        {
+            // Setup
+            var source = @"
+                function sayHello(first: number, second: number, third: number): number
+                    return first * second * third
+                end function
+
+                let value: number
+
+                value := sayHello(1, 2, 3)
+
+                print value
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute & Assert
+            interpreter.Execute(parser.Parse());
+
+            runtime.AssertFunctionDeclared("sayHello");
+            runtime.AssertHasPrinted("6");
+
+        }
+
+        [TestMethod]
+        public void Execute_function_declaration_statement_with_call_with_parameters_that_returns_value_with_call_in_type_missmatched_assignment()
+        {
+            // Setup
+            var source = @"
+                function sayHello(first: number, second: number, third: number): number
+                    return first + second + third
+                end function
+
+                let value: string
+
+                value := sayHello(1, 2, 3)
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute & Assert
+            Assert.Throws<TypeMismatchException>(() => interpreter.Execute(parser.Parse()));
+        }
+
+        [TestMethod]
+        public void Execute_function_declaration_statement_with_call_with_parameters_that_returns_value_with_call_with_wrong_typed_arguments()
+        {
+            // Setup
+            var source = @"
+                function sayHello(first: number, second: number, third: number): number
+                    return first + second + third
+                end function
+
+                let value: string
+
+                value := sayHello(""1"", 2, 3)
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute & Assert
+            Assert.Throws<TypeMismatchException>(() => interpreter.Execute(parser.Parse()));
         }
 
 
