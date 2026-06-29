@@ -39,7 +39,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(StatementType.Print, diagnostic.StatementType);
             Assert.IsNotNull(diagnostic.Statement);
             Assert.IsNotNull(diagnostic.Activity);
-            Assert.AreEqual(ActivityType.Print, diagnostic.Activity.ActivityType);
+            Assert.AreEqual(ActivityType.Print, diagnostic.Activity.Type);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.IsNull(issue.Expected);
@@ -75,7 +75,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(StatementType.Print, diagnostic.StatementType);
             Assert.IsNotNull(diagnostic.Statement);
             Assert.IsNotNull(diagnostic.Activity);
-            Assert.AreEqual(activityType, diagnostic.Activity.ActivityType);
+            Assert.AreEqual(activityType, diagnostic.Activity.Type);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(encounteredType, issue.Encountered.Type);
             Assert.AreEqual(encounteredValue, issue.Encountered.Value);
@@ -104,7 +104,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(StatementType.VariableDeclaration, diagnostic.StatementType);
             Assert.IsNotNull(diagnostic.Statement);
             Assert.IsNotNull(diagnostic.Activity);
-            Assert.AreEqual(ActivityType.Identifier, diagnostic.Activity.ActivityType);
+            Assert.AreEqual(ActivityType.Identifier, diagnostic.Activity.Type);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Identifier, issue.Expected);
@@ -132,7 +132,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(StatementType.VariableDeclaration, diagnostic.StatementType);
             Assert.IsNotNull(diagnostic.Statement);
             Assert.IsNotNull(diagnostic.Activity);
-            Assert.AreEqual(ActivityType.Identifier, diagnostic.Activity.ActivityType);
+            Assert.AreEqual(ActivityType.Identifier, diagnostic.Activity.Type);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.While, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Identifier, issue.Expected);
@@ -160,7 +160,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(StatementType.VariableDeclaration, diagnostic.StatementType);
             Assert.IsNotNull(diagnostic.Statement);
             Assert.IsNotNull(diagnostic.Activity);
-            Assert.AreEqual(ActivityType.ConsumeStatementTerminator, diagnostic.Activity.ActivityType);
+            Assert.AreEqual(ActivityType.ConsumeStatementTerminator, diagnostic.Activity.Type);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NumberLiteral, issue.Encountered.Type);
             Assert.AreEqual(TokenType.NewLine, issue.Expected); // Parser is expecting statement to end with just a declaration.
@@ -188,7 +188,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(StatementType.VariableDeclaration, diagnostic.StatementType);
             Assert.IsNotNull(diagnostic.Statement);
             Assert.IsNotNull(diagnostic.Activity);
-            Assert.AreEqual(ActivityType.AssignedExpression, diagnostic.Activity.ActivityType);
+            Assert.AreEqual(ActivityType.AssignedExpression, diagnostic.Activity.Type);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.To, issue.Encountered.Type);
             Assert.AreEqual("to", issue.Encountered.Value);

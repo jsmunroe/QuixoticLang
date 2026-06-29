@@ -6,7 +6,7 @@ namespace Quixotic.Common.Diagnostics
 {
     public class ActivityContext(ActivityType expressionType)
     {
-        public ActivityType ActivityType { get; } = expressionType;
+        public ActivityType Type { get; } = expressionType;
 
         [JsonIgnore]
         public List<Token> Tokens { get; } = [];

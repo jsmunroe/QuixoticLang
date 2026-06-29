@@ -102,7 +102,7 @@ namespace Quixotic.Parsing.Context
             currentStatement ??= CurrentStatement;
 
             var currentActivity = CurrentActivity;
-            while (currentActivity?.ActivityType == ActivityType.None)
+            while (currentActivity?.Type == ActivityType.None)
                 currentActivity = currentActivity.Parent;
 
             currentActivity ??= CurrentActivity;

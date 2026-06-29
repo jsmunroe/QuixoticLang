@@ -47,13 +47,13 @@ namespace Quixotic.AnalysisTests.Errors
         [DataRow("print +", "An unexpected end of line was encountered while parsing the print statement. An unary plus operator (+n) was encountered without an operand.")]
         [DataRow("print (", "An unexpected end of line was encountered while parsing the print statement. An open parenthesis has been left without a matching close parenthesis.")]
         [DataRow("print )", "An unexpected close parenthesis ')' was encountered while parsing the print statement.")]
-        [DataRow("print (5", "An unexpected end of line was encountered while parsing the print statement. An open parenthesis has been left without a matching close parenthesis. The parser expected close parenthesis.")]
-        [DataRow("print 5)", "An unexpected close parenthesis ')' was encountered while parsing the print statement. The parser expected new line.")]
-        [DataRow("print ((5)", "An unexpected end of line was encountered while parsing the print statement. An open parenthesis has been left without a matching close parenthesis. The parser expected close parenthesis.")]
+        [DataRow("print (5", "An unexpected end of line was encountered while parsing the print statement. An open parenthesis has been left without a matching close parenthesis. The parser expected a close parenthesis.")]
+        [DataRow("print 5)", "An unexpected close parenthesis ')' was encountered while parsing the statement terminator. The parser expected an end of the line.")]
+        [DataRow("print ((5)", "An unexpected end of line was encountered while parsing the print statement. An open parenthesis has been left without a matching close parenthesis. The parser expected a close parenthesis.")]
         [DataRow("print 5 +", "An unexpected end of line was encountered while parsing the print statement. The expression '5 +' may not be finished.")]
         [DataRow("print * 5", "An unexpected operator '*' was encountered while parsing the print statement.")]
-        [DataRow("print 5 + * 4", "Operator '*' is an invalid operand in the expresssion '5 + *'.")]
-        [DataRow("print 5 and or 4", "Keyword 'or' is an invalid operand in the expresssion '5 and or'.")]
+        [DataRow("print 5 + * 4", "An unexpected operator '*' was encountered while parsing the print statement. Operator '*' is an invalid operand in the expresssion '5 + *'.")]
+        [DataRow("print 5 and or 4", "An unexpected keyword 'or' was encountered while parsing the print statement. Keyword 'or' is an invalid operand in the expresssion '5 and or'.")]
         public void Parse_print_with_bad_expression(string source, string expectedMessage)
         {
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
@@ -112,7 +112,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'while' was encountered while parsing the variable declaration (let) statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected keyword 'while' was encountered while parsing the identifier. The parser expected an identifier.", result);
 
         }
 
@@ -136,7 +136,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the variable declaration (let) statement. The parser expected a new line.", result);
+            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the statement terminator. The parser expected an end of the line.", result);
         }
 
         [TestMethod]
@@ -159,7 +159,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'to' was encountered while parsing the variable declaration (let) statement.", result);
+            Assert.AreEqual("An unexpected keyword 'to' was encountered while parsing the assignment of identifier 'i'.", result);
         }
 
         [TestMethod]
@@ -251,7 +251,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected operator ':=' was encountered while parsing the unknown statement.", result);
+            Assert.AreEqual("An unexpected operator ':=' was encountered while parsing the statement.", result);
         }
 
         [TestMethod]
@@ -320,7 +320,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the condition of the if statement. The if condition expression may not be finished.", result);
+            Assert.AreEqual("An unexpected end of line was encountered while parsing the if condition. The if condition expression may not be finished.", result);
         }
 
         [TestMethod]
@@ -343,7 +343,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'return' was encountered while parsing the condition of the if statement.", result);
+            Assert.AreEqual("An unexpected keyword 'return' was encountered while parsing the if condition.", result);
         }
 
         [TestMethod]
@@ -487,7 +487,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the condition of the do statement.", result);
+            Assert.AreEqual("An unexpected end of line was encountered while parsing the precondition of the do statement.", result);
         }
 
         [TestMethod]
@@ -510,7 +510,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'if' was encountered while parsing the condition of the do statement.", result);
+            Assert.AreEqual("An unexpected keyword 'if' was encountered while parsing the precondition of the do statement.", result);
         }
 
         [TestMethod]
@@ -556,7 +556,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the condition of the do statement.", result);
+            Assert.AreEqual("An unexpected end of line was encountered while parsing the precondition of the do statement.", result);
         }
 
         [TestMethod]
@@ -579,7 +579,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'if' was encountered while parsing the condition of the do statement.", result);
+            Assert.AreEqual("An unexpected keyword 'if' was encountered while parsing the precondition of the do statement.", result);
         }
 
         [TestMethod]
@@ -627,7 +627,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the condition of the do statement.", result);
+            Assert.AreEqual("An unexpected end of line was encountered while parsing the postcondition of the do statement.", result);
         }
 
         [TestMethod]
@@ -652,7 +652,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'print' was encountered while parsing the condition of the do statement.", result);
+            Assert.AreEqual("An unexpected keyword 'print' was encountered while parsing the postcondition of the do statement.", result);
         }
 
         [TestMethod]
@@ -955,7 +955,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the for statement.", result);
+            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the for block.", result);
         }
 
         [TestMethod]
@@ -1117,7 +1117,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the function declaration statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected end of line was encountered while parsing the function name. The parser expected an identifier.", result);
         }
 
         [TestMethod]
@@ -1140,7 +1140,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the function declaration statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the function name. The parser expected an identifier.", result);
         }
 
         [TestMethod]
@@ -1163,7 +1163,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the parameter list of the function declaration statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the parameter expression. The parser expected an identifier.", result);
         }
 
         [TestMethod]
@@ -1213,7 +1213,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the parameter list of the function declaration statement. Parser expected a type definition for parameter 'bar'.", result);
+            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the parameter expression. The parser expected a type.", result);
         }
 
         [TestMethod]
@@ -1221,7 +1221,7 @@ namespace Quixotic.AnalysisTests.Errors
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo ,bar,ro");
+            sourceBuilder.AppendLine("function foo( ,bar: number, ro: number)");
             sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
             sourceBuilder.AppendLine("end function");
 
@@ -1238,7 +1238,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected comma ',' was encountered while parsing the function declaration statement.", result);
+            Assert.AreEqual("An unexpected comma ',' was encountered while parsing the parameter expression. The parser expected an identifier.", result);
         }
 
         [TestMethod]
@@ -1264,7 +1264,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected comma ',' was encountered while parsing the parameter list of the function declaration statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected comma ',' was encountered while parsing the parameter expression. The parser expected an identifier.", result);
         }
 
         [TestMethod]
@@ -1289,7 +1289,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the parameter list of the function declaration statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the parameter expression. The parser expected an identifier.", result);
         }
 
         [TestMethod]
@@ -1312,7 +1312,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the argument list of the function call statement. The parser expected a comma.", result);
+            Assert.AreEqual("An unexpected end of line was encountered while parsing the argument expression. The parser expected a comma.", result);
         }
 
         [TestMethod]
@@ -1335,7 +1335,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the argument list of the function call statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the argument expression. The parser expected an identifier.", result);
         }
 
         [TestMethod]
@@ -1358,17 +1358,17 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the argument list of the function call statement. The parser expected a comma.", result);
+            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the argument expression. The parser expected a comma.", result);
         }
 
 
         [TestMethod]
-        [DataRow("end if", "An unexpected keyword 'end' was encountered while parsing the unknown statement.")]
-        [DataRow("loop", "An unexpected keyword 'loop' was encountered while parsing the unknown statement.")]
-        [DataRow("next", "An unexpected keyword 'next' was encountered while parsing the unknown statement.")]
-        [DataRow("else\r\nprint 5", "An unexpected keyword 'else' was encountered while parsing the unknown statement.")]
-        [DataRow("else if x", "An unexpected keyword 'else' was encountered while parsing the unknown statement.")]
-        [DataRow("if x then\r\nelse\r\nelse\r\nend if", "An unexpected end of line was encountered while parsing the if statement.")]
+        [DataRow("end if", "An unexpected keyword 'end' was encountered while parsing the statement.")]
+        [DataRow("loop", "An unexpected keyword 'loop' was encountered while parsing the statement.")]
+        [DataRow("next", "An unexpected keyword 'next' was encountered while parsing the statement.")]
+        [DataRow("else\r\nprint 5", "An unexpected keyword 'else' was encountered while parsing the statement.")]
+        [DataRow("else if x", "An unexpected keyword 'else' was encountered while parsing the statement.")]
+        [DataRow("if x then\r\nelse\r\nelse\r\nend if", "An unexpected end of line was encountered while parsing the else block.")]
         public void Parse_construct_closers_without_construct(string source, string expectedMessage)
         {
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());

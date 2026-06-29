@@ -3,6 +3,7 @@ using Quixotic.Common.Diagnostics;
 using Quixotic.Common.Diagnostics.Issues;
 using Quixotic.Common.Extensions;
 using Quixotic.Common.Operations;
+using Quixotic.Common.Syntax;
 using Quixotic.Common.Tokens;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -82,290 +83,40 @@ namespace Quixotic.Analysis.Errors
 
         private void DescribeParsingUnexpectedToken(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
         {
-            switch (diagnostic.StatementType)
-            {
-                case StatementType.Print:
-                    DescribeParsingUnexpectedTokenInPrint(description, exception, issue, diagnostic);
-                    break;
+            var activity = diagnostic.Activity;
 
-                case StatementType.Assignment:
-                    DescribeParsingUnexpectedTokenInAssignment(description, exception, issue, diagnostic);
-                    break;
+            List<ActivityType> secondaryActivityTypes = [
+                ActivityType.UnaryNegation,
+                ActivityType.UnaryNot,
+                ActivityType.UnaryPlus,
+                ActivityType.FunctionBody,
+                ActivityType.ParenSet,
+                ActivityType.RightOperand,
+            ];
+            while (activity is not null && secondaryActivityTypes.Contains(activity.Type))
+                activity = activity.Parent;
 
-                case StatementType.If:
-                    DescribeParsingUnexpectedTokenInIf(description, exception, issue, diagnostic);
-                    break;
+            var activityType = activity?.Type;
 
-                case StatementType.Do:
-                    DescribeParsingUnexpectedTokenInDo(description, exception, issue, diagnostic);
-                    break;
-
-                case StatementType.For:
-                    DescribeParsingUnexpectedTokenInFor(description, exception, issue, diagnostic);
-                    break;
-
-                case StatementType.Break:
-                    throw new NotImplementedException();
-                case StatementType.Continue:
-                    throw new NotImplementedException();
-
-                case StatementType.VariableDeclaration:
-                    DescribeParsingUnexpectedTokenInVariableDeclaration(description, exception, issue, diagnostic);
-                    break;
-
-                case StatementType.FunctionDeclaration:
-                    DescribeParsingUnexpectedTokenInFunctionDeclaration(description, exception, issue, diagnostic);
-                    break;
-
-                case StatementType.FunctionCall:
-                    DescribeParsingUnexpectedTokenInFunctionCall(description, exception, issue, diagnostic);
-                    break;
-
-                case StatementType.Return:
-                    throw new NotImplementedException();
-                case StatementType.Identifier:
-                    DescribeParsingUnexpectedTokenInIdentifier(description, exception, issue, diagnostic);
-                    break;
-                case StatementType.Unknown:
-                    DescribeParsingUnexpectedTokenInUnknown(description, exception, issue, diagnostic);
-                    break;
-                default:
-                    description.Append(exception.Message);
-                    break;
-            }
-        }
-
-        private void DescribeParsingUnexpectedTokenInPrint(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-            if (diagnostic.IsEndOfLine)
-                description.Append($"An unexpected end of line was encountered while parsing the print statement. ");
-            else if (diagnostic.IsRootActivity)
-                description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the print statement. ");
-
-            DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-
-            if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value)}. ");
-
-            return;
-        }
-
-        private void DescribeParsingUnexpectedTokenInAssignment(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-            var identifiers = diagnostic.Statement?.Tokens.FindValues(TokenType.Identifier) ?? [];
-            var identifier = identifiers.LastOrDefault();
-
-            if (identifier is not null)
-                identifier = $" '{identifier}'";
-
-            if (diagnostic.IsEndOfLine)
-                description.Append($"An unexpected end of line was encountered while parsing the assignment of identifier{identifier}. ");
-            else
-                description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the assignment of identifier{identifier}. ");
-
-            DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-
-            if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
-        }
-
-        private void DescribeParsingUnexpectedTokenInIf(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-
-            if (diagnostic.ActivityType == ActivityType.IfCondition)
+            if (activityType is not null && activityType != ActivityType.None)
             {
                 if (diagnostic.IsEndOfLine)
-                {
-                    description.Append($"An unexpected end of line was encountered while parsing the condition of the if statement. ");
-                    DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-
-                    var expression = diagnostic.RootActivity?.Tokens.Any(t => !t.IsTerminator) == true ? diagnostic.RootActivity.Tokens.GetValue() : null;
-
-                    if (expression is not null)
-                        expression = $" '{expression}'";
-
-                    description.Append($"The if condition expression{expression} may not be finished. ");
-                }
+                    description.Append($"An unexpected end of line was encountered while parsing {DescribeActivityType(activityType.Value, diagnostic)}. ");
                 else
-                {
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the condition of the if statement. ");
-                }
+                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing {DescribeActivityType(activityType.Value, diagnostic)}. ");
             }
             else
             {
                 if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the if statement. ");
+                    description.Append($"An unexpected end of line was encountered while parsing {DescribeStatementType(diagnostic.StatementType, diagnostic)}. ");
                 else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the if statement. ");
-            }
-
-
-            if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
-        }
-
-        private void DescribeParsingUnexpectedTokenInDo(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-            if (diagnostic.ActivityType == ActivityType.DoPrecondition || diagnostic.ActivityType == ActivityType.DoPostcondition)
-            {
-                if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the condition of the do statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the condition of the do statement. ");
-
-                DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-            }
-            else
-            {
-                if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the do statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the do statement. ");
-            }
-
-            if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
-        }
-
-        private void DescribeParsingUnexpectedTokenInFor(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-            if (diagnostic.ActivityType == ActivityType.Iterator)
-            {
-                if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the iterator of the for statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the iterator of the for statement. ");
-
-                DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-            }
-            else if (diagnostic.ActivityType == ActivityType.FromValue)
-            {
-                if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the from value of the for statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the from value of the for statement. ");
-
-                DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-            }
-            else if (diagnostic.ActivityType == ActivityType.ToValue)
-            {
-                if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the to value of the for statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the to value of the for statement. ");
-
-                DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-            }
-            else if (diagnostic.ActivityType == ActivityType.StepValue)
-            {
-                if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the step value of the for statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the step value of the for statement. ");
-
-                DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-            }
-            else
-            {
-                if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the for statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the for statement. ");
-            }
-
-            if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
-        }
-
-        private void DescribeParsingUnexpectedTokenInIdentifier(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-            var identifiers = diagnostic.Statement?.Tokens.FindValues(TokenType.Identifier) ?? [];
-            var identifier = identifiers.LastOrDefault();
-
-            if (identifier is not null)
-                identifier = $" '{identifier}'";
-
-            if (diagnostic.IsEndOfLine)
-                description.Append($"An unexpected end of line was encountered while parsing the identifier{identifier}. ");
-            else
-                description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the identifier{identifier}. ");
-
-            if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
-        }
-
-        private void DescribeParsingUnexpectedTokenInVariableDeclaration(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-            if (diagnostic.IsEndOfLine)
-                description.Append($"An unexpected end of line was encountered while parsing the variable declaration (let) statement. ");
-            else
-                description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the variable declaration (let) statement. ");
-
-            DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-
-            if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
-        }
-
-        private void DescribeParsingUnexpectedTokenInFunctionDeclaration(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-            if (diagnostic.ActivityType == ActivityType.Parameter)
-            {
-                if (diagnostic.IsEndOfLine || issue.Encountered.IsTerminator)
-                    description.Append($"An unexpected end of line was encountered while parsing the parameter list of the function declaration statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the parameter list of the function declaration statement. ");
-            }
-            else
-            {
-                if (diagnostic.IsEndOfLine || issue.Encountered.IsTerminator)
-                    description.Append($"An unexpected end of line was encountered while parsing the function declaration statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the function declaration statement. ");
-            }
-
-            DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
-
-            if ((issue.Encountered.Type == TokenType.CloseParen || issue.Encountered.Type == TokenType.Comma) && issue.Expected == TokenType.Type)
-                description.Append($"Parser expected a type definition for parameter '{diagnostic.LastIdentifier}'. ");
-            else if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
-        }
-
-        private void DescribeParsingUnexpectedTokenInFunctionCall(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-            if (diagnostic.ActivityType == ActivityType.Argument)
-            {
-                if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the argument list of the function call statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the argument list of the function call statement. ");
-            }
-            else
-            {
-                if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing the function call statement. ");
-                else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the function call statement. ");
+                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing {DescribeStatementType(diagnostic.StatementType, diagnostic)}. ");
             }
 
             DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
 
             if (issue.Expected is not null)
                 description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
-        }
-
-        private void DescribeParsingUnexpectedTokenInUnknown(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
-        {
-            if (diagnostic.IsEndOfLine)
-                description.Append($"An unexpected end of line was encountered while parsing the unknown statement.");
-            else
-                description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing the unknown statement.");
-
-            if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
-
-            return;
         }
 
         private void DescribeParsingIncompleteSource(StringBuilder description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
@@ -385,17 +136,10 @@ namespace Quixotic.Analysis.Errors
                     DescribeParsingIncompleteSourceInFor(description, exception, issue, diagnostic);
                     break;
 
-                case StatementType.Break:
-                    throw new NotImplementedException();
-                case StatementType.Continue:
-                    throw new NotImplementedException();
-
                 case StatementType.FunctionDeclaration:
                     DescribeParsingIncompleteSourceInFunctionDeclaration(description, exception, issue, diagnostic);
                     break;
 
-                case StatementType.Return:
-                    throw new NotImplementedException();
                 default:
                     description.Append(exception.Message);
                     break;
@@ -432,6 +176,85 @@ namespace Quixotic.Analysis.Errors
             description.Append("A do statement cannot have both a precondition and postcondition expression.");
         }
 
+        private string DescribeStatementType(StatementType statementType, Diagnostic diagnostic)
+        {
+            string identifier()
+            {
+                var identifier = diagnostic.LastIdentifier;
+
+                if (identifier is not null)
+                    identifier = $" '{identifier}'";
+
+                return identifier ?? string.Empty;
+            }
+
+            return statementType switch
+            {
+                StatementType.Print => "the print statement",
+                StatementType.Identifier => $"the identifier{identifier()}",
+                StatementType.Assignment => $"the assignment of identifier{identifier()}",
+                StatementType.If => "the if statement",
+                StatementType.Do => "the do statement",
+                StatementType.For => "the for statement",
+                StatementType.Break => "the break statement",
+                StatementType.Continue => "the continue statement",
+                StatementType.VariableDeclaration => "the variable declaration statement",
+                StatementType.FunctionDeclaration => "the function declaration statement",
+                StatementType.FunctionCall => "the function call statement",
+                StatementType.Return => "the return statement",
+                _ => "the statement",
+            };
+        }
+
+        private string DescribeActivityType(ActivityType activityType, Diagnostic diagnostic)
+        {
+            string identifier()
+            {
+                var identifier = diagnostic.LastIdentifier;
+
+                if (identifier is not null)
+                    identifier = $" '{identifier}'";
+
+                return identifier ?? string.Empty;
+            }
+
+            return activityType switch
+            {
+                ActivityType.Print => "the print statement",
+                ActivityType.FromValue => "the from value of the for statement",
+                ActivityType.ReturnValue => "the return value expression",
+                ActivityType.Argument => "the argument expression",
+                ActivityType.ElseIfCondition => "the else if condition",
+                ActivityType.ToValue => "the to value of the for statement",
+                ActivityType.StepValue => "the step value of the for statement",
+                ActivityType.DoPostcondition => "the postcondition of the do statement",
+                ActivityType.Identifier => $"the identifier{identifier()}",
+                ActivityType.Parameter => "the parameter expression",
+                ActivityType.ConsumeStatementTerminator => "the statement terminator",
+                ActivityType.AssignedExpression => $"the assignment of identifier{identifier()}",
+                ActivityType.IfCondition => "the if condition",
+                ActivityType.IfThenBlock => "the then block",
+                ActivityType.ElseBlock => "the else block",
+                ActivityType.ElseIfBlock => "the else if block",
+                ActivityType.DoPrecondition => "the precondition of the do statement",
+                ActivityType.DoBlock => "the do block",
+                ActivityType.Iterator => "the iterator of the for statement",
+                ActivityType.ForBlock => "the for block",
+                ActivityType.FunctionName => "the function name",
+                ActivityType.FunctionBody => "the function body",
+                ActivityType.ParenSet => "the set of parentheses",
+                ActivityType.StringLiteral => "the string literal",
+                ActivityType.BooleanLiteral => "the Boolean literal",
+                ActivityType.NumberLiteral => "the number literal",
+                ActivityType.UnaryPlus => "the unary plus expression",
+                ActivityType.UnaryNegation => "the unary negation expression",
+                ActivityType.UnaryNot => "the unary not expression",
+                ActivityType.RightOperand => "the right operand",
+                ActivityType.LeftOperand => "the left operand",
+                ActivityType.FunctionReturnType => "the function return type",
+                _ => "the expression",
+            };
+        }
 
         private void DescribeActivity(StringBuilder description, ActivityType activityType)
         {
@@ -460,6 +283,16 @@ namespace Quixotic.Analysis.Errors
                     description.Append($"The expression '{diagnostic.RootActivity?.Tokens.GetValue()}' may not be finished. ");
             }
 
+            if (activityType == ActivityType.IfCondition && diagnostic.IsEndOfLine)
+            {
+                var expression = diagnostic.RootActivity?.Tokens.Any(t => !t.IsTerminator) == true ? diagnostic.RootActivity.Tokens.GetValue() : null;
+
+                if (expression is not null)
+                    expression = $" '{expression}'";
+
+                description.Append($"The if condition expression{expression} may not be finished. ");
+            }
+
         }
 
         private string DescribeToken(Token token)
@@ -469,6 +302,9 @@ namespace Quixotic.Analysis.Errors
 
             if (IsOperator(token.Type))
                 return $"operator '{token.Value}'";
+
+            if (token.Type == TokenType.NewLine)
+                return "end of line";
 
             return TokenToString(token);
         }
@@ -481,39 +317,15 @@ namespace Quixotic.Analysis.Errors
             if (TryGetOperatorValue(tokenType, out var value))
                 return $"operator '{value}'";
 
+            if (tokenType == TokenType.NewLine)
+                return "end of the line";
+
             return TokenToString(tokenType);
         }
 
         private static bool IsKeyword(TokenType tokenType)
         {
-            // TODO: Find a more robust way to determine if the token is a keyword. This is a placeholder implementation.
-
-            TokenType[] keywordTypes = [
-                TokenType.Print,
-                TokenType.Let,
-                TokenType.If,
-                TokenType.Then,
-                TokenType.Else,
-                TokenType.For,
-                TokenType.To,
-                TokenType.Step,
-                TokenType.Next,
-                TokenType.Do,
-                TokenType.While,
-                TokenType.Until,
-                TokenType.Loop,
-                TokenType.Continue,
-                TokenType.Break,
-                TokenType.End,
-                TokenType.BooleanLiteral,
-                TokenType.And,
-                TokenType.Or,
-                TokenType.Not,
-                TokenType.Function,
-                TokenType.Return,
-            ];
-
-            if (keywordTypes.Contains(tokenType))
+            if (Keyword.Contains(tokenType))
                 return true;
 
             return false;
@@ -521,8 +333,6 @@ namespace Quixotic.Analysis.Errors
 
         private static bool IsOperator(TokenType tokenType)
         {
-            // TODO: Find a more robust way to determine if the token is an operator. This is a placeholder implementation.
-
             var operationMetadata = OperationMetadata.Get(tokenType);
 
             return operationMetadata.Operator != Operator.None;

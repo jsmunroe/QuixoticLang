@@ -8,7 +8,7 @@ namespace Quixotic.Common.Diagnostics
     {
         public StatementType StatementType => Statement?.Type ?? StatementType.Unknown;
 
-        public ActivityType ActivityType => Activity?.ActivityType ?? ActivityType.None;
+        public ActivityType ActivityType => Activity?.Type ?? ActivityType.None;
 
         [JsonIgnore]
         public Span Span => Statement?.Span ?? LastConsumedToken?.Span ?? Span.Empty;
