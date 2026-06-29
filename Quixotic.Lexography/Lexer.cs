@@ -1,6 +1,7 @@
 ﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.Exceptions.Lexography;
 using Quixotic.Common.Source;
+using Quixotic.Common.Syntax;
 using Quixotic.Common.Tokens;
 
 namespace QuixoticLang.Lexer
@@ -19,32 +20,6 @@ namespace QuixoticLang.Lexer
 
         public ISource Source => source;
 
-        private static Dictionary<string, TokenType> Keywords { get; } = new(StringComparer.OrdinalIgnoreCase)
-        {
-            { "print", TokenType.Print },
-            { "let", TokenType.Let },
-            { "if", TokenType.If },
-            { "then", TokenType.Then },
-            { "else", TokenType.Else },
-            { "for", TokenType.For },
-            { "to", TokenType.To },
-            { "step", TokenType.Step },
-            { "next", TokenType.Next },
-            { "do", TokenType.Do },
-            { "while", TokenType.While },
-            { "until", TokenType.Until },
-            { "loop", TokenType.Loop },
-            { "continue", TokenType.Continue },
-            { "break", TokenType.Break },
-            { "end", TokenType.End },
-            { "true", TokenType.BooleanLiteral },
-            { "false", TokenType.BooleanLiteral },
-            { "and", TokenType.And },
-            { "or", TokenType.Or },
-            { "not", TokenType.Not },
-            { "function", TokenType.Function },
-            { "return", TokenType.Return },
-        };
 
         public IEnumerable<Token> Tokenize()
         {
@@ -203,8 +178,7 @@ namespace QuixoticLang.Lexer
                 next = Peek();
             }
 
-            if (!Keywords.TryGetValue(text, out var tokenType))
-                tokenType = TokenType.Identifier;
+            var tokenType = Keyword.FromValue(text)?.TokenType ?? TokenType.Identifier;
 
             return new Token
             {

@@ -6,7 +6,8 @@ namespace Quixotic.Common.Tokens
     {
         StringLiteral,
         NumberLiteral,
-        BooleanLiteral,
+        True,
+        False,
         Identifier,
         Print,
         Let,

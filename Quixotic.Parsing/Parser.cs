@@ -539,7 +539,7 @@ namespace Quixotic.Parsing
             if (token.Type == TokenType.NumberLiteral)
                 return ParseNumber();
 
-            if (token.Type == TokenType.BooleanLiteral)
+            if (token.Type == TokenType.True || token.Type == TokenType.False)
             {
                 return CaptureExpression(() =>
                 {
