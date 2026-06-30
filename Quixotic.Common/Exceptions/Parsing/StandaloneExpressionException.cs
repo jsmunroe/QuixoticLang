@@ -2,5 +2,5 @@
 
 namespace Quixotic.Common.Exceptions.Parsing
 {
-    public class StandaloneExpressionException(Diagnostic diagnostic) : ParserException("Standalone expressions are not allowed.", diagnostic);
+    public class StandaloneExpressionException(Diagnostic diagnostic) : ParserException("The expression cannot stand alone as a statement", diagnostic);
 }

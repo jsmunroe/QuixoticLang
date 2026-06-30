@@ -70,6 +70,10 @@ namespace Quixotic.Analysis.Errors
                     DescribeParsingDoLoopDualCondition(description, exception, doLoopDualCondition, diagnostic);
                     break;
 
+                case StandaloneExpression standaloneExpression:
+                    DescribeParsingStandaloneExpression(description, exception, standaloneExpression, diagnostic);
+                    break;
+
                 default:
                     description.Append(exception.Message);
                     break;
@@ -176,6 +180,11 @@ namespace Quixotic.Analysis.Errors
             description.Append("A do statement cannot have both a precondition and postcondition expression.");
         }
 
+        private void DescribeParsingStandaloneExpression(StringBuilder description, Exception exception, StandaloneExpression standaloneExpression, Diagnostic diagnostic)
+        {
+            description.Append($"The expression '{diagnostic.Statement?.Tokens.GetValue()}' cannot stand alone as a statement.");
+        }
+
         private string DescribeStatementType(StatementType statementType, Diagnostic diagnostic)
         {
             string identifier()
@@ -278,14 +287,14 @@ namespace Quixotic.Analysis.Errors
             if (activityType == ActivityType.RightOperand)
             {
                 if (!diagnostic.IsEndOfLine)
-                    description.Append($"{DescribeToken(issue.Encountered).Capitalize()} is an invalid operand in the expresssion '{diagnostic.RootActivity?.Tokens.GetValue()}'. ");
+                    description.Append($"{DescribeToken(issue.Encountered).Capitalize()} is an invalid operand in the expresssion '{GetExpressionValue(diagnostic)}'. ");
                 else
-                    description.Append($"The expression '{diagnostic.RootActivity?.Tokens.GetValue()}' may not be finished. ");
+                    description.Append($"The expression '{GetExpressionValue(diagnostic)}' may not be finished. ");
             }
 
             if (activityType == ActivityType.IfCondition && diagnostic.IsEndOfLine)
             {
-                var expression = diagnostic.RootActivity?.Tokens.Any(t => !t.IsTerminator) == true ? diagnostic.RootActivity.Tokens.GetValue() : null;
+                var expression = diagnostic.RootActivity?.Tokens.Any(t => !t.IsTerminator) == true ? GetExpressionValue(diagnostic) : null;
 
                 if (expression is not null)
                     expression = $" '{expression}'";
@@ -293,6 +302,11 @@ namespace Quixotic.Analysis.Errors
                 description.Append($"The if condition expression{expression} may not be finished. ");
             }
 
+        }
+
+        private string? GetExpressionValue(Diagnostic diagnostic)
+        {
+            return diagnostic.RootActivity?.Tokens.GetValue();
         }
 
         private string DescribeToken(Token token)

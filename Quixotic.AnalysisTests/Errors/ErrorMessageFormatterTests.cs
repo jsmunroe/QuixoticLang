@@ -182,7 +182,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("Standalone expressions are not allowed.", result);
+            Assert.AreEqual("The expression 'i' cannot stand alone as a statement.", result);
         }
 
         [TestMethod]
@@ -205,7 +205,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("Standalone expressions are not allowed.", result);
+            Assert.AreEqual("The expression 'i' cannot stand alone as a statement.", result); // Without an operator the expression 'i' is a standalone expression that is invalid.
         }
 
         [TestMethod]
@@ -957,7 +957,7 @@ namespace Quixotic.AnalysisTests.Errors
 
             // TODO: Enable the parser to be more tuned to new lines so as not to cut the 2 here of as it's own standalone expression
 
-            Assert.AreEqual("Standalone expressions are not allowed.", result);
+            Assert.AreEqual("The expression '2' cannot stand alone as a statement.", result);
         }
 
         [TestMethod]
