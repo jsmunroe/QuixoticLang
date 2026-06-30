@@ -44,7 +44,7 @@ namespace Quixotic.AnalysisTests.Errors
         [TestMethod]
         [DataRow("print for", "An unexpected keyword 'for' was encountered while parsing the print statement.")]
         [DataRow("print if", "An unexpected keyword 'if' was encountered while parsing the print statement.")]
-        [DataRow("print +", "An unexpected end of line was encountered while parsing the print statement. An unary plus operator (+n) was encountered without an operand.")]
+        [DataRow("print +", "An unexpected end of line was encountered while parsing the print statement. A unary plus operator (+n) was encountered without an operand.")]
         [DataRow("print (", "An unexpected end of line was encountered while parsing the print statement. An open parenthesis has been left without a matching close parenthesis.")]
         [DataRow("print )", "An unexpected close parenthesis ')' was encountered while parsing the print statement.")]
         [DataRow("print (5", "An unexpected end of line was encountered while parsing the print statement. An open parenthesis has been left without a matching close parenthesis. The parser expected a close parenthesis.")]
@@ -171,7 +171,7 @@ namespace Quixotic.AnalysisTests.Errors
 
             var source = sourceBuilder.ToString();
 
-            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+            var exception = Assert.Throws<StandaloneExpressionException>(() => Parser.Parse(source).ToList());
 
             var errorMessageFormatter = new ErrorMessageFormatter();
 
@@ -182,7 +182,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the identifier 'i'.", result);
+            Assert.AreEqual("Standalone expressions are not allowed.", result);
         }
 
         [TestMethod]
@@ -194,7 +194,7 @@ namespace Quixotic.AnalysisTests.Errors
 
             var source = sourceBuilder.ToString();
 
-            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+            var exception = Assert.Throws<StandaloneExpressionException>(() => Parser.Parse(source).ToList());
 
             var errorMessageFormatter = new ErrorMessageFormatter();
 
@@ -205,7 +205,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'while' was encountered while parsing the identifier 'i'.", result);
+            Assert.AreEqual("Standalone expressions are not allowed.", result);
         }
 
         [TestMethod]
@@ -228,7 +228,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the assignment of identifier 'i'.", result);
+            Assert.AreEqual("An unexpected end of line was encountered while parsing the expression. The expression 'i :=' may not be finished.", result);
         }
 
         [TestMethod]
@@ -251,7 +251,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected operator ':=' was encountered while parsing the statement.", result);
+            Assert.AreEqual("An unexpected operator ':=' was encountered while parsing the expression.", result);
         }
 
         [TestMethod]
@@ -274,7 +274,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'next' was encountered while parsing the assignment of identifier 'i'.", result);
+            Assert.AreEqual("An unexpected keyword 'next' was encountered while parsing the expression. Keyword 'next' is an invalid operand in the expresssion 'i := next'.", result);
         }
 
         [TestMethod]
@@ -297,7 +297,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the assignment of identifier 'i'. An unary plus operator (+n) was encountered without an operand.", result);
+            Assert.AreEqual("An unexpected end of line was encountered while parsing the expression. A unary plus operator (+n) was encountered without an operand.", result);
         }
 
         [TestMethod]
@@ -944,7 +944,7 @@ namespace Quixotic.AnalysisTests.Errors
 
             var source = sourceBuilder.ToString();
 
-            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+            var exception = Assert.Throws<StandaloneExpressionException>(() => Parser.Parse(source).ToList());
 
             var errorMessageFormatter = new ErrorMessageFormatter();
 
@@ -955,7 +955,9 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected number literal '2' was encountered while parsing the for block.", result);
+            // TODO: Enable the parser to be more tuned to new lines so as not to cut the 2 here of as it's own standalone expression
+
+            Assert.AreEqual("Standalone expressions are not allowed.", result);
         }
 
         [TestMethod]
@@ -1363,12 +1365,12 @@ namespace Quixotic.AnalysisTests.Errors
 
 
         [TestMethod]
-        [DataRow("end if", "An unexpected keyword 'end' was encountered while parsing the statement.")]
-        [DataRow("loop", "An unexpected keyword 'loop' was encountered while parsing the statement.")]
-        [DataRow("next", "An unexpected keyword 'next' was encountered while parsing the statement.")]
-        [DataRow("else\r\nprint 5", "An unexpected keyword 'else' was encountered while parsing the statement.")]
-        [DataRow("else if x", "An unexpected keyword 'else' was encountered while parsing the statement.")]
-        [DataRow("if x then\r\nelse\r\nelse\r\nend if", "An unexpected end of line was encountered while parsing the else block.")]
+        [DataRow("end if", "An unexpected keyword 'end' was encountered while parsing the expression.")]
+        [DataRow("loop", "An unexpected keyword 'loop' was encountered while parsing the expression.")]
+        [DataRow("next", "An unexpected keyword 'next' was encountered while parsing the expression.")]
+        [DataRow("else\r\nprint 5", "An unexpected keyword 'else' was encountered while parsing the expression.")]
+        [DataRow("else if x", "An unexpected keyword 'else' was encountered while parsing the expression.")]
+        [DataRow("if x then\r\nelse\r\nelse\r\nend if", "An unexpected keyword 'else' was encountered while parsing the if statement. The parser expected a keyword 'end'.")]
         public void Parse_construct_closers_without_construct(string source, string expectedMessage)
         {
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());

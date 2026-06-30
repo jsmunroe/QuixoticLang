@@ -207,19 +207,17 @@ namespace Quixotic.ParsingTests.Context
             var source = sourceBuilder.ToString();
 
             // Execute
-            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+            var exception = Assert.Throws<StandaloneExpressionException>(() => Parser.Parse(source).ToList());
 
             // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.Identifier, diagnostic.StatementType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType);
             Assert.AreEqual(ActivityType.None, diagnostic.ActivityType);
-            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
-            Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
-            Assert.IsNull(issue.Expected);
-            Assert.IsTrue(diagnostic.IsEndOfLine);
+            Assert.IsInstanceOfType<StandaloneExpression>(diagnostic.Issue);
+            Assert.IsFalse(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
 
@@ -233,19 +231,16 @@ namespace Quixotic.ParsingTests.Context
             var source = sourceBuilder.ToString();
 
             // Execute
-            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+            var exception = Assert.Throws<StandaloneExpressionException>(() => Parser.Parse(source).ToList());
 
             // Assert
             var diagnostic = exception.Diagnostic;
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.Identifier, diagnostic.StatementType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType);
             Assert.AreEqual(ActivityType.None, diagnostic.ActivityType);
-            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
-            Assert.AreEqual(TokenType.While, issue.Encountered.Type);
-            Assert.AreEqual("while", issue.Encountered.Value);
-            Assert.IsNull(issue.Expected);
+            Assert.IsInstanceOfType<StandaloneExpression>(diagnostic.Issue);
             Assert.IsFalse(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
@@ -267,8 +262,8 @@ namespace Quixotic.ParsingTests.Context
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.Assignment, diagnostic.StatementType);
-            Assert.AreEqual(ActivityType.AssignedExpression, diagnostic.ActivityType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.RightOperand, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.IsNull(issue.Expected);
@@ -293,13 +288,13 @@ namespace Quixotic.ParsingTests.Context
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.Unknown, diagnostic.StatementType); // No identifier exists to trigger creation of assignment statement.
-            Assert.AreEqual(ActivityType.None, diagnostic.ActivityType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType); // No identifier exists to trigger creation of assignment statement.
+            Assert.AreEqual(ActivityType.StandaloneExpression, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.Assignment, issue.Encountered.Type);
             Assert.IsNull(issue.Expected);
             Assert.IsFalse(diagnostic.IsEndOfLine);
-            Assert.IsTrue(diagnostic.Span.IsEmpty); // No statement is created.
+            Assert.IsFalse(diagnostic.Span.IsEmpty); // No statement is created.
         }
 
         [TestMethod]
@@ -319,8 +314,8 @@ namespace Quixotic.ParsingTests.Context
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.Assignment, diagnostic.StatementType);
-            Assert.AreEqual(ActivityType.AssignedExpression, diagnostic.ActivityType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType);
+            Assert.AreEqual(ActivityType.RightOperand, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.Next, issue.Encountered.Type);
             Assert.AreEqual("next", issue.Encountered.Value);
@@ -346,7 +341,7 @@ namespace Quixotic.ParsingTests.Context
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.Assignment, diagnostic.StatementType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType);
             Assert.AreEqual(ActivityType.UnaryPlus, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
@@ -1080,7 +1075,7 @@ namespace Quixotic.ParsingTests.Context
             var source = sourceBuilder.ToString();
 
             // Execute
-            var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
+            var exception = Assert.Throws<StandaloneExpressionException>(() => Parser.Parse(source).ToList());
 
             // Assert
             var diagnostic = exception.Diagnostic;
@@ -1089,11 +1084,9 @@ namespace Quixotic.ParsingTests.Context
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.For, diagnostic.StatementType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType);
             Assert.AreEqual(ActivityType.ForBlock, diagnostic.ActivityType); // Parser assumes that the "loop" token is part of a new statement in the for's block.
-            var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
-            Assert.AreEqual(TokenType.NumberLiteral, issue.Encountered.Type);
-            Assert.IsNull(issue.Expected);
+            Assert.IsInstanceOfType<StandaloneExpression>(diagnostic.Issue);
             Assert.IsFalse(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
@@ -1412,7 +1405,7 @@ namespace Quixotic.ParsingTests.Context
         {
             // Setup
             var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine("function foo ,bar,ro");
+            sourceBuilder.AppendLine("function foo(, bar:number ,ro: number)");
             sourceBuilder.AppendLine("    print \"Are rice crispies just freeze-dried rice grains?\"");
             sourceBuilder.AppendLine("end function");
 
@@ -1429,10 +1422,10 @@ namespace Quixotic.ParsingTests.Context
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
             Assert.AreEqual(StatementType.FunctionDeclaration, diagnostic.StatementType);
-            Assert.AreEqual(ActivityType.FunctionBody, diagnostic.ActivityType); // Parser believed function had no parameters because it didn't encounter an identifier
+            Assert.AreEqual(ActivityType.Parameter, diagnostic.ActivityType); // Parser believed function had no parameters because it didn't encounter an identifier
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.Comma, issue.Encountered.Type);
-            Assert.IsNull(issue.Expected);
+            Assert.AreEqual(TokenType.Identifier, issue.Expected);
             Assert.IsFalse(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }
@@ -1517,7 +1510,7 @@ namespace Quixotic.ParsingTests.Context
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.FunctionCall, diagnostic.StatementType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType);
             Assert.AreEqual(ActivityType.Argument, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
@@ -1545,7 +1538,7 @@ namespace Quixotic.ParsingTests.Context
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.FunctionCall, diagnostic.StatementType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType);
             Assert.AreEqual(ActivityType.Argument, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.CloseParen, issue.Encountered.Type);
@@ -1573,7 +1566,7 @@ namespace Quixotic.ParsingTests.Context
 
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
-            Assert.AreEqual(StatementType.FunctionCall, diagnostic.StatementType);
+            Assert.AreEqual(StatementType.StandaloneExpression, diagnostic.StatementType);
             Assert.AreEqual(ActivityType.Argument, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NumberLiteral, issue.Encountered.Type);
@@ -1585,12 +1578,12 @@ namespace Quixotic.ParsingTests.Context
 
 
         [TestMethod]
-        [DataRow("end if", StatementType.Unknown, ActivityType.None, TokenType.End, "end", null, false, true)]
-        [DataRow("loop", StatementType.Unknown, ActivityType.None, TokenType.Loop, "loop", null, false, true)]
-        [DataRow("next", StatementType.Unknown, ActivityType.None, TokenType.Next, "next", null, false, true)]
-        [DataRow("else\r\nprint 5", StatementType.Unknown, ActivityType.None, TokenType.Else, "else", null, false, true)]
-        [DataRow("else if x", StatementType.Unknown, ActivityType.None, TokenType.Else, "else", null, false, true)]
-        [DataRow("if x then\r\nelse\r\nelse\r\nend if", StatementType.If, ActivityType.ElseBlock, TokenType.Else, "else", null, true, false)]
+        [DataRow("end if", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.End, "end", null, false, false)]
+        [DataRow("loop", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.Loop, "loop", null, false, false)]
+        [DataRow("next", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.Next, "next", null, false, false)]
+        [DataRow("else\r\nprint 5", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.Else, "else", null, false, false)]
+        [DataRow("else if x", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.Else, "else", null, false, false)]
+        [DataRow("if x then\r\nelse\r\nelse\r\nend if", StatementType.If, ActivityType.None, TokenType.Else, "else", TokenType.End, false, false)]
         public void Parse_construct_closers_without_construct(string source, StatementType statementType, ActivityType activityType, TokenType encountered, string encounteredValue, TokenType? expected, bool isEndOfLine, bool isSpanEmpty)
         {
             // Execute

@@ -56,6 +56,8 @@ namespace Quixotic.Common.Statements
             _statements.RemoveAt(index);
         }
 
+        public static Block Empty => [];
+
         #region IEnumerable members
         public IEnumerator<QxStatement> GetEnumerator()
         {

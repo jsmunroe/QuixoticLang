@@ -171,11 +171,13 @@ namespace Quixotic.Interpret
 
         public void Execute(QxFunctionCallStatement statement)
         {
-            var name = statement.Name;
+            var call = statement.Call;
+
+            var name = call.Name;
 
             var function = runtime.Frame.Scope.GetFunction(name);
 
-            var arguments = BindArguments(name, function, statement.Arguments);
+            var arguments = BindArguments(name, function, call.Arguments);
 
             try
             {
@@ -206,10 +208,26 @@ namespace Quixotic.Interpret
         public void Execute(QxAssignmentStatement statement)
         {
             var value = Evaluate(statement.Value);
-            var name = statement.Target.Name;
 
-            runtime.Frame.Scope.AssignVariable(name, value);
+            var target = Evaluate(statement.Target);
 
+            if (statement.Target is QxIdentifierExpression identifierExpression)
+            {
+                var name = identifierExpression.Name;
+
+                runtime.Frame.Scope.AssignVariable(name, value);
+            }
+            else if (statement.Target is QxIndexerExpression indexerExpression)
+            {
+                var targetValue = Evaluate(indexerExpression.Target);
+                var indexValue = Evaluate(indexerExpression.Index);
+
+                // TODO: Execute indexer assignment
+            }
+            else
+            {
+                throw new InvalidAssignmentTargetException(target.Type.Name);
+            }
         }
 
         public void Execute(QxIfStatement statement)

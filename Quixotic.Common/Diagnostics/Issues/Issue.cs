@@ -9,6 +9,7 @@ namespace Quixotic.Common.Diagnostics.Issues
         public static IncompleteSource IncompleteSource() => new();
         public static InvalidNumber InvalidNumber() => new();
         public static UnexpectedToken UnexpectedToken(Token token, TokenType? expectedToken = null) => new(token, expectedToken);
+        public static StandaloneExpression StandaloneExpression() => new();
 
 
     }

@@ -1057,7 +1057,7 @@ namespace Quixotic.ParsingTests
 
             AssertVariableDeclaration(statements[0], "array", expression: [1, 2, 3, 4, 5]);
 
-            AssertVariableDeclaration(statements[1], "element", expression: ("[array]", "[", 2));
+            AssertAssignment(statements[1], "array", index: 2, expression: 10);
         }
 
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression[] expression)
@@ -1169,7 +1169,9 @@ namespace Quixotic.ParsingTests
         {
             var functionCallStatement = Assert.IsInstanceOfType<QxFunctionCallStatement>(statement);
 
-            Assert.AreEqual(name, functionCallStatement.Name);
+            var functionCallExpression = Assert.IsInstanceOfType<QxFunctionCallExpression>(functionCallStatement.Call);
+
+            Assert.AreEqual(name, functionCallExpression.Name);
 
             return functionCallStatement;
         }
@@ -1182,8 +1184,24 @@ namespace Quixotic.ParsingTests
 
             Assert.AreEqual(name, identifierExpression.Name);
 
-            if (expression is not null)
-                expression.Assert(assignmentStatement.Value);
+            expression?.Assert(assignmentStatement.Value);
+
+            return assignmentStatement;
+        }
+
+        private QxAssignmentStatement AssertAssignment(QxStatement statement, string name, TestExpression index, TestExpression expression)
+        {
+            var assignmentStatement = Assert.IsInstanceOfType<QxAssignmentStatement>(statement);
+
+            var indexExpression = Assert.IsInstanceOfType<QxIndexerExpression>(assignmentStatement.Target);
+
+            var identifierExpression = Assert.IsInstanceOfType<QxIdentifierExpression>(indexExpression.Target);
+
+            Assert.AreEqual(name, identifierExpression.Name);
+
+            index.Assert(indexExpression.Index);
+
+            expression?.Assert(assignmentStatement.Value);
 
             return assignmentStatement;
         }

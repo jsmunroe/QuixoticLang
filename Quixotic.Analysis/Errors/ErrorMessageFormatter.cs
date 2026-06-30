@@ -262,13 +262,13 @@ namespace Quixotic.Analysis.Errors
                 description.Append($"An open parenthesis has been left without a matching close parenthesis. ");
 
             if (activityType == ActivityType.UnaryPlus)
-                description.Append($"An unary plus operator (+n) was encountered without an operand. ");
+                description.Append($"A unary plus operator (+n) was encountered without an operand. ");
 
             if (activityType == ActivityType.UnaryNegation)
-                description.Append($"An unary negation operator (-n) was encountered without an operand. ");
+                description.Append($"A unary negation operator (-n) was encountered without an operand. ");
 
             if (activityType == ActivityType.UnaryNot)
-                description.Append($"An unary not operator (not n) was encountered without an operand. ");
+                description.Append($"A unary not operator (not n) was encountered without an operand. ");
         }
 
         private void DescribeActivity(StringBuilder description, ActivityType activityType, Diagnostic diagnostic, UnexpectedToken issue)

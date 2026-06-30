@@ -15,5 +15,6 @@
         FunctionDeclaration,
         FunctionCall,
         Return,
+        StandaloneExpression,
     }
 }

@@ -2,9 +2,9 @@
 
 namespace Quixotic.Common.Statements
 {
-    public class QxAssignmentStatement(QxIdentifierExpression target, QxExpression value) : QxStatement
+    public class QxAssignmentStatement(QxAssignableExpression target, QxExpression value) : QxStatement
     {
-        public QxIdentifierExpression Target { get; } = target;
+        public QxAssignableExpression Target { get; } = target;
         public QxExpression Value { get; } = value;
     }
 }

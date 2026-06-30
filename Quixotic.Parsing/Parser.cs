@@ -77,9 +77,6 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Print))
                 return ParsePrint();
 
-            else if (Match(TokenType.Identifier, out var identifier))
-                return ParseIdentifier(identifier);
-
             if (Match(TokenType.If))
                 return ParseIf();
 
@@ -104,7 +101,34 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Continue))
                 return ParseContinue();
 
+            return ParseStandalonExpression();
+
             throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
+        }
+
+        private QxStatement ParseStandalonExpression()
+        {
+            _parseContext.AssignStatementType(StatementType.StandaloneExpression);
+
+            var expression = CaptureExpression(() => ParseExpression(), ActivityType.StandaloneExpression);
+
+            if (expression is QxFunctionCallExpression functionCallExpression)
+            {
+                _parseContext.AssignStatementType(StatementType.FunctionCall);
+
+                return new QxFunctionCallStatement(functionCallExpression);
+            }
+
+            if (expression is QxBinaryExpression binaryExpression &&
+                binaryExpression.Operator == Operator.Assignment &&
+                binaryExpression.Left is QxAssignableExpression assignableExpression)
+            {
+                _parseContext.AssignStatementType(StatementType.Assignment);
+
+                return new QxAssignmentStatement(assignableExpression, binaryExpression.Right);
+            }
+
+            throw new StandaloneExpressionException(GetDiagnostic(Issue.StandaloneExpression()));
         }
 
         private QxVariableDeclarationStatement ParseVariableDeclaration()
@@ -224,15 +248,6 @@ namespace Quixotic.Parsing
             return parameters;
         }
 
-        private QxFunctionCallStatement ParseFunctionCall(Token token)
-        {
-            var name = token.Value;
-
-            // Parse arguments
-            var arguments = ParseArguments();
-
-            return new(name) { Arguments = [.. arguments] };
-        }
         private QxFunctionCallExpression ParseFunctionCallExpression(string name)
         {
             // Parse arguments
@@ -307,33 +322,6 @@ namespace Quixotic.Parsing
             return new QxPrintStatement(expression);
         }
 
-        private QxStatement ParseIdentifier(Token token)
-        {
-            var identifier = new QxIdentifierExpression(token.Value);
-
-            var next = Pop();
-
-            if (next.Type == TokenType.Assignment)
-            {
-                _parseContext.AssignStatementType(StatementType.Assignment);
-
-                var expression = CaptureExpression(() => ParseExpression(), ActivityType.AssignedExpression);
-
-                return new QxAssignmentStatement(identifier, expression);
-            }
-
-            if (next.Type == TokenType.OpenParen)
-            {
-                _parseContext.AssignStatementType(StatementType.FunctionCall);
-
-                return ParseFunctionCall(token);
-            }
-
-            _parseContext.AssignStatementType(StatementType.Identifier);
-
-            throw new UnexpectedTokenException(next, GetDiagnostic(Issue.UnexpectedToken(next)));
-        }
-
         private QxIfStatement ParseIf()
         {
             _parseContext.AssignStatementType(StatementType.If);
@@ -362,10 +350,13 @@ namespace Quixotic.Parsing
 
             List<QxElseIfClause> elseIfClauses = [];
 
-            Block elseBlock = [];
+            Block? elseBlock = null;
 
-            while (Match(TokenType.Else))
+            while (Match(TokenType.Else, out var token))
             {
+                if (elseBlock is not null)
+                    throw new UnexpectedTokenException(token, TokenType.End, GetDiagnostic(Issue.UnexpectedToken(token, TokenType.End)));
+
                 if (Match(TokenType.If))
                 {
                     var elseIfClasue = ParseElseIfClause();
@@ -385,7 +376,7 @@ namespace Quixotic.Parsing
             {
                 ThenBlock = thenBlock,
                 ElseIfClauses = elseIfClauses,
-                ElseBlock = elseBlock,
+                ElseBlock = elseBlock ?? Block.Empty,
             };
         }
 
@@ -637,7 +628,7 @@ namespace Quixotic.Parsing
             {
                 BlockType.If => [TokenType.Else, TokenType.End],
                 BlockType.ElseIf => [TokenType.Else, TokenType.End],
-                BlockType.Else => [TokenType.End],
+                BlockType.Else => [TokenType.Else, TokenType.End],
                 BlockType.Do => [TokenType.Loop],
                 BlockType.For => [TokenType.Next],
                 BlockType.Function => [TokenType.End],
