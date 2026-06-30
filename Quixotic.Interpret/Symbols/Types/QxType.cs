@@ -64,5 +64,7 @@ namespace Quixotic.Interpret.Symbols.Types
         public static QxType Boolean { get; } = BooleanType.Instance;
         public static QxType Nada { get; } = NadaType.Instance;
         public static QxType Void { get; } = VoidType.Instance;
+
+        public static QxType Array(QxType ElementType) => ArrayType.WithElement(ElementType);
     }
 }

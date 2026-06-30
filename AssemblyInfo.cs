@@ -1,3 +1,4 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "SYSLIB1045:Convert to 'GeneratedRegexAttribute'.", Justification = "I do not like GeneratedRegexAttributes!")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0130:Namespace does not match folder structure", Justification = "I like to place extension method classes in their target namespace.")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1873:In many situations, logging is disabled or set to a log level that results in an unnecessary evaluation for this argument.", Justification = "I prefer cleaner code to minor performance issues caused by logging.")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static.", Justification = "Ocasionally, I don't want to make things static. The difference in performance is minute. Come on!")]

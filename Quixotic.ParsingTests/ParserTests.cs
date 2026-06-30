@@ -968,6 +968,103 @@ namespace Quixotic.ParsingTests
                 });
         }
 
+        [TestMethod]
+        public void Parse_array_assignment()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            AssertVariableDeclaration(statements[0], "array", expression: [1, 2, 3, 4, 5]);
+        }
+
+        [TestMethod]
+        public void Parse_array_assignment_add_element()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+
+                array := array + 6
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "array", expression: [1, 2, 3, 4, 5]);
+
+            AssertAssignment(statements[1], "array", ("[array]", "+", 6));
+        }
+
+        [TestMethod]
+        public void Parse_array_indexing()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+
+                let element := array[2]
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "array", expression: [1, 2, 3, 4, 5]);
+
+            AssertVariableDeclaration(statements[1], "element", expression: ("[array]", "[", 2));
+        }
+
+        [TestMethod]
+        public void Parse_array_index_assignment()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+
+                array[2] := 10
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "array", expression: [1, 2, 3, 4, 5]);
+
+            AssertVariableDeclaration(statements[1], "element", expression: ("[array]", "[", 2));
+        }
+
+        private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression[] expression)
+        {
+            return AssertVariableDeclaration(statement, name, expression: new TestArrayExpression(expression));
+        }
+
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, string? typeName = null, TestExpression? expression = null)
         {
             var variableDeclarationStatement = Assert.IsInstanceOfType<QxVariableDeclarationStatement>(statement);

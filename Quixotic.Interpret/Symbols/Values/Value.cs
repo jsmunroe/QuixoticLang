@@ -3,21 +3,14 @@ using Quixotic.Interpret.Symbols.Types;
 
 namespace Quixotic.Interpret.Symbols.Values
 {
-
-    public abstract record Value
+    public abstract record Value : Reference
     {
         private readonly object? _value;
 
-        protected Value(QxType type, object? value)
+        protected Value(QxType type, object? value) : base(type)
         {
-            Type = type;
             _value = value;
         }
-
-        public QxType Type { get; }
-
-        public bool IsNada => this is NadaValue;
-
 
         public virtual bool IsTruthy()
         {

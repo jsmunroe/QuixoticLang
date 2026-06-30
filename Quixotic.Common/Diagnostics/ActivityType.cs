@@ -35,5 +35,7 @@
         RightOperand,
         LeftOperand,
         FunctionReturnType,
+        BracketSet,
+        ArrayElement,
     }
 }

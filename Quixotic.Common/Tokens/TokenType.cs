@@ -53,5 +53,7 @@ namespace Quixotic.Common.Tokens
         Step,
         Comment,
         Type,
+        OpenBracket,
+        CloseBracket,
     }
 }

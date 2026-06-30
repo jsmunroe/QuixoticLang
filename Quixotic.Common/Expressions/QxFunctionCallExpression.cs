@@ -5,7 +5,5 @@
         public string Name { get; } = name;
 
         public List<QxExpression> Arguments { get; init; } = [];
-
-        public override ExpressionKind Kind => ExpressionKind.Unknown;
     }
 }

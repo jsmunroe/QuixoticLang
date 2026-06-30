@@ -6,9 +6,15 @@ namespace Quixotic.ParsingTests.TestModels
 {
     public abstract record TestExpression
     {
-        public TestBinaryExpression? Parent { get; set; }
+        public TestExpression? Parent { get; set; }
 
-        public abstract string GetPositionDescription(TestExpression expression);
+        public string GetPositionDescription(TestExpression expression)
+        {
+            if (Parent is null)
+                return ToString(expression);
+
+            return Parent.GetPositionDescription(expression);
+        }
 
         public abstract string ToString(TestExpression expression);
 
@@ -44,9 +50,23 @@ namespace Quixotic.ParsingTests.TestModels
             return new TestStringExpression(value);
         }
 
+
+        private static TestExpression BuildBinary(TestExpression left, string op, TestExpression right)
+        {
+            return op == "["
+                ? new TestIndexerExpression(left, right)
+                : new TestBinaryExpression(left, op, right);
+
+        }
+
         public static implicit operator TestExpression(bool value)
         {
             return new TestBooleanExpression(value);
+        }
+
+        public static implicit operator TestExpression(double[] elements)
+        {
+            return new TestArrayExpression([.. elements.Select(e => new TestNumberExpression(e))]);
         }
 
         public static implicit operator TestExpression((double left, string op, double right) tuple)
@@ -56,46 +76,51 @@ namespace Quixotic.ParsingTests.TestModels
 
         public static implicit operator TestExpression((TestBinaryExpression left, string op, double right) tuple)
         {
-            return new TestBinaryExpression(tuple.left, tuple.op, (TestExpression)tuple.right);
+            return BuildBinary(tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
         public static implicit operator TestExpression((double left, string op, TestBinaryExpression right) tuple)
         {
-            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, tuple.right);
+            return BuildBinary((TestExpression)tuple.left, tuple.op, tuple.right);
         }
 
         public static implicit operator TestExpression((string left, string op, double right) tuple)
         {
-            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
+            return BuildBinary((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
         public static implicit operator TestExpression((double left, string op, string right) tuple)
         {
-            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
+            return BuildBinary((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
         public static implicit operator TestExpression((string left, string op, string right) tuple)
         {
-            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
+            return BuildBinary((TestExpression)tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
         public static implicit operator TestExpression((TestBinaryExpression left, string op, string right) tuple)
         {
-            return new TestBinaryExpression(tuple.left, tuple.op, (TestExpression)tuple.right);
+            return BuildBinary(tuple.left, tuple.op, (TestExpression)tuple.right);
         }
 
         public static implicit operator TestExpression((string left, string op, TestBinaryExpression right) tuple)
         {
-            return new TestBinaryExpression((TestExpression)tuple.left, tuple.op, tuple.right);
+            return BuildBinary((TestExpression)tuple.left, tuple.op, tuple.right);
         }
 
         public static implicit operator TestExpression((TestExpression left, string op, TestExpression right) tuple)
         {
-            return new TestBinaryExpression(tuple.left, tuple.op, tuple.right);
+            return BuildBinary(tuple.left, tuple.op, tuple.right);
         }
     }
 
-    public record TestBinaryExpression : TestExpression
+    public interface IParentExpression
+    {
+        void AssignParent();
+    }
+
+    public record TestBinaryExpression : TestExpression, IParentExpression
     {
         public TestBinaryExpression(TestExpression left, string op, TestExpression right)
         {
@@ -117,10 +142,10 @@ namespace Quixotic.ParsingTests.TestModels
             Left.Parent = this;
             Right.Parent = this;
 
-            if (Left is TestBinaryExpression left)
+            if (Left is IParentExpression left)
                 left.AssignParent();
 
-            if (Right is TestBinaryExpression right)
+            if (Right is IParentExpression right)
                 right.AssignParent();
         }
 
@@ -139,14 +164,6 @@ namespace Quixotic.ParsingTests.TestModels
             Right.Assert(binaryExpression.Right);
         }
 
-        public override string GetPositionDescription(TestExpression expression)
-        {
-            if (Parent is null)
-                return ToString(expression);
-
-            return Parent.GetPositionDescription(expression);
-        }
-
         public override string ToString(TestExpression expression)
         {
             var left = ReferenceEquals(Left, expression) ? "X" : Left.ToString(expression);
@@ -159,14 +176,6 @@ namespace Quixotic.ParsingTests.TestModels
     public record TestNumberExpression(double Value) : TestExpression
     {
         public double Value { get; } = Value;
-
-        public override string GetPositionDescription(TestExpression expression)
-        {
-            if (Parent is null)
-                return "X";
-
-            return Parent.GetPositionDescription(expression);
-        }
 
         public override string ToString(TestExpression expression)
         {
@@ -186,14 +195,6 @@ namespace Quixotic.ParsingTests.TestModels
     public record TestStringExpression(string Value) : TestExpression
     {
         public string Value { get; } = Value;
-
-        public override string GetPositionDescription(TestExpression expression)
-        {
-            if (Parent is null)
-                return "X";
-
-            return Parent.GetPositionDescription(expression);
-        }
 
         public override string ToString(TestExpression expression)
         {
@@ -215,14 +216,6 @@ namespace Quixotic.ParsingTests.TestModels
     {
         public bool Value { get; } = Value;
 
-        public override string GetPositionDescription(TestExpression expression)
-        {
-            if (Parent is null)
-                return "X";
-
-            return Parent.GetPositionDescription(expression);
-        }
-
         public override string ToString(TestExpression expression)
         {
             return ReferenceEquals(expression, this) ? "'X'" : "''";
@@ -238,16 +231,17 @@ namespace Quixotic.ParsingTests.TestModels
         }
     }
 
-    public record TestUnaryExpression(Operator Operator, TestExpression Operand) : TestExpression
+    public record TestUnaryExpression(Operator Operator, TestExpression Operand) : TestExpression, IParentExpression
     {
         public Operator Operator { get; } = Operator;
         public TestExpression Operand { get; } = Operand;
-        public override string GetPositionDescription(TestExpression expression)
-        {
-            if (Parent is null)
-                return "X";
 
-            return Parent.GetPositionDescription(expression);
+        public void AssignParent()
+        {
+            Operand.Parent = this;
+
+            if (Operand is IParentExpression operand)
+                operand.AssignParent();
         }
 
         public override string ToString(TestExpression expression)
@@ -270,14 +264,6 @@ namespace Quixotic.ParsingTests.TestModels
     {
         public string Name { get; } = name;
 
-        public override string GetPositionDescription(TestExpression expression)
-        {
-            if (Parent is null)
-                return "X";
-
-            return Parent.GetPositionDescription(expression);
-        }
-
         public override string ToString(TestExpression expression)
         {
             return ReferenceEquals(expression, this) ? "X" : "[#]";
@@ -293,21 +279,24 @@ namespace Quixotic.ParsingTests.TestModels
         }
     }
 
-    public record TestFunctionCallExpression(string name, params TestExpression[] arguments) : TestExpression
+    public record TestFunctionCallExpression(string name, params TestExpression[] arguments) : TestExpression, IParentExpression
     {
         public string Name { get; } = name;
-
-        public override string GetPositionDescription(TestExpression expression)
-        {
-            if (Parent is null)
-                return "X";
-
-            return Parent.GetPositionDescription(expression);
-        }
 
         public override string ToString(TestExpression expression)
         {
             return ReferenceEquals(expression, this) ? "X" : $"#({string.Join(", ", arguments.Select(s => s.ToString(expression)))})";
+        }
+
+        public void AssignParent()
+        {
+            foreach (var argument in arguments)
+            {
+                argument.Parent = this;
+
+                if (argument is IParentExpression parentExpression)
+                    parentExpression.AssignParent();
+            }
         }
 
         public override void Assert(QxExpression expression)
@@ -321,6 +310,66 @@ namespace Quixotic.ParsingTests.TestModels
 
             foreach (var (argument, argumentExpression) in arguments.Zip(functionCallExpression.Arguments))
                 argument.Assert(argumentExpression);
+        }
+    }
+
+    public record TestArrayExpression(TestExpression[] Elements) : TestExpression
+    {
+        public override string ToString(TestExpression expression)
+        {
+            if (ReferenceEquals(this, expression))
+                return "X";
+
+            return $"[{string.Join(",", Elements.Select(e => e.GetPositionDescription(expression)))}]";
+        }
+
+        public override void Assert(QxExpression expression)
+        {
+            var positionDescription = GetPositionDescription(this);
+
+            var arrayExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxArrayExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not an array expression.");
+
+            var actual = arrayExpression.Elements;
+            List<TestExpression> expected = [.. Elements];
+
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.HasCount(actual.Count, expected, $"\r\n{positionDescription}\r\nActual array had {(actual.Count > expected.Count ? "more than" : "less than")} expected number of elements.");
+
+            foreach (var (expectedElement, actualElement) in expected.Zip(actual))
+                expectedElement.Assert(actualElement);
+        }
+
+    }
+
+    public record TestIndexerExpression(TestExpression target, TestExpression index) : TestExpression, IParentExpression
+    {
+        public void AssignParent()
+        {
+            target.Parent = this;
+            index.Parent = this;
+
+            if (target is IParentExpression targetParent)
+                targetParent.AssignParent();
+
+            if (index is IParentExpression indexParent)
+                indexParent.AssignParent();
+        }
+
+        public override string ToString(TestExpression expression)
+        {
+            if (ReferenceEquals(this, expression))
+                return "X";
+
+            return $"{target.ToString(expression)}[{index.ToString(expression)}]";
+        }
+
+        public override void Assert(QxExpression expression)
+        {
+            var positionDescription = GetPositionDescription(this);
+
+            var indexerExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxIndexerExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not an indexer expression.");
+
+            target.Assert(indexerExpression.Target);
+            index.Assert(indexerExpression.Index);
         }
     }
 }

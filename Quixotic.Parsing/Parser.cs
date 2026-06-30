@@ -276,6 +276,28 @@ namespace Quixotic.Parsing
             return parameters;
         }
 
+        private QxArrayExpression ParseArray()
+        {
+            if (IsToken(TokenType.CloseBracket))
+                return new QxArrayExpression(); // Empty array
+
+            List<QxExpression> elements = [];
+
+            while (!IsToken(TokenType.CloseBracket))
+            {
+                var element = CaptureExpression(() => ParseExpression(), ActivityType.ArrayElement);
+
+                elements.Add(element);
+
+                Allow(TokenType.Comma);
+            }
+
+            return new QxArrayExpression
+            {
+                Elements = [.. elements],
+            };
+        }
+
         private QxPrintStatement ParsePrint()
         {
             _parseContext.AssignStatementType(StatementType.Print);
@@ -504,7 +526,17 @@ namespace Quixotic.Parsing
 
                 var right = CaptureExpression(() => ParseExpression(operationMetadata.Precedence), ActivityType.RightOperand);
 
-                left = new QxBinaryExpression(operationMetadata.Operator, left, right);
+                switch (operationMetadata.Operator)
+                {
+                    case Operator.Indexer:
+                        Expect(TokenType.CloseBracket);
+                        left = new QxIndexerExpression(left, right);
+                        break;
+
+                    default:
+                        left = new QxBinaryExpression(operationMetadata.Operator, left, right);
+                        break;
+                }
             }
 
             return left;
@@ -525,6 +557,18 @@ namespace Quixotic.Parsing
 
                     return expression;
                 }, ActivityType.ParenSet);
+            }
+
+            if (token.Type == TokenType.OpenBracket)
+            {
+                return CaptureExpression(() =>
+                {
+                    Advance();
+                    var expression = ParseArray();
+                    Expect(TokenType.CloseBracket);
+                    return expression;
+
+                }, ActivityType.BracketSet);
             }
 
             if (token.Type == TokenType.StringLiteral)
@@ -750,6 +794,17 @@ namespace Quixotic.Parsing
 
             token = null;
             return false;
+        }
+
+        /// <summary>
+        /// Match next token without advancing.
+        /// </summary>
+        private bool IsToken(TokenType type)
+        {
+            if (IsAtEnd)
+                return false;
+
+            return Peek().Type == type;
         }
 
         public static bool IsSourceComplete(string source)

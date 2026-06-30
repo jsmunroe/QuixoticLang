@@ -349,7 +349,7 @@ namespace Quixotic.Interpret
                 Operator.And => And(left, right),
                 Operator.Or => Or(left, right),
 
-                _ => throw new BinaryOperatorException(left.Kind, operatorValue, right.Kind),
+                _ => throw new BinaryOperatorException(left, operatorValue, right),
             };
         }
 

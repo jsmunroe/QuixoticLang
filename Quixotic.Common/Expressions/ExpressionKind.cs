@@ -7,5 +7,6 @@
         Number,
         Boolean,
         Unknown,
+        Array,
     }
 }

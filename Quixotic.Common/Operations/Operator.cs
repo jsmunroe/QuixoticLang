@@ -17,5 +17,6 @@
         NotEqualTo,
         LessThanOrEqualTo,
         GreaterThanOrEqualTo,
+        Indexer,
     }
 }

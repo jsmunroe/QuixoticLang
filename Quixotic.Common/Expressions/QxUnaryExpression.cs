@@ -6,7 +6,5 @@ namespace Quixotic.Common.Expressions
     {
         public Operator Operator { get; } = @operator;
         public QxExpression Operand { get; } = operand;
-
-        public override ExpressionKind Kind => Operand.Kind;
     }
 }
