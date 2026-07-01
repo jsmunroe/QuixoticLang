@@ -52,8 +52,8 @@ namespace Quixotic.AnalysisTests.Errors
         [DataRow("print ((5)", "An unexpected end of line was encountered while parsing the print statement. An open parenthesis has been left without a matching close parenthesis. The parser expected a close parenthesis.")]
         [DataRow("print 5 +", "An unexpected end of line was encountered while parsing the print statement. The expression '5 +' may not be finished.")]
         [DataRow("print * 5", "An unexpected operator '*' was encountered while parsing the print statement.")]
-        [DataRow("print 5 + * 4", "An unexpected operator '*' was encountered while parsing the print statement. Operator '*' is an invalid operand in the expresssion '5 + *'.")]
-        [DataRow("print 5 and or 4", "An unexpected keyword 'or' was encountered while parsing the print statement. Keyword 'or' is an invalid operand in the expresssion '5 and or'.")]
+        [DataRow("print 5 + * 4", "An unexpected operator '*' was encountered while parsing the print statement. Operator '*' is an invalid operand in the expression '5 + *'.")]
+        [DataRow("print 5 and or 4", "An unexpected keyword 'or' was encountered while parsing the print statement. Keyword 'or' is an invalid operand in the expression '5 and or'.")]
         public void Parse_print_with_bad_expression(string source, string expectedMessage)
         {
             var exception = Assert.Throws<UnexpectedTokenException>(() => Parser.Parse(source).ToList());
@@ -274,7 +274,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'next' was encountered while parsing the expression. Keyword 'next' is an invalid operand in the expresssion 'i := next'.", result);
+            Assert.AreEqual("An unexpected keyword 'next' was encountered while parsing the expression. Keyword 'next' is an invalid operand in the expression 'i := next'.", result);
         }
 
         [TestMethod]

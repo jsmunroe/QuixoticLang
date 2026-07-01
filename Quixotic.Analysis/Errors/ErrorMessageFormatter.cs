@@ -287,7 +287,7 @@ namespace Quixotic.Analysis.Errors
             if (activityType == ActivityType.RightOperand)
             {
                 if (!diagnostic.IsEndOfLine)
-                    description.Append($"{DescribeToken(issue.Encountered).Capitalize()} is an invalid operand in the expresssion '{GetExpressionValue(diagnostic)}'. ");
+                    description.Append($"{DescribeToken(issue.Encountered).Capitalize()} is an invalid operand in the expression '{GetExpressionValue(diagnostic)}'. ");
                 else
                     description.Append($"The expression '{GetExpressionValue(diagnostic)}' may not be finished. ");
             }
