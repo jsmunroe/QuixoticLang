@@ -11,13 +11,5 @@ namespace Quixotic.Interpret.Symbols.Types
         protected StringType()
             : base("string", typeof(StringValue))
         { }
-
-        public override bool IsTruthy(Value value)
-        {
-            if (value is not StringValue stringValue)
-                return false;
-
-            return stringValue.Value != string.Empty;
-        }
     }
 }

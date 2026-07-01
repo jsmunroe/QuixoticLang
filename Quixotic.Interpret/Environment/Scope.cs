@@ -1,7 +1,7 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Interpret.Symbols;
+using Quixotic.Interpret.Symbols.Instances;
 using Quixotic.Interpret.Symbols.Types;
-using Quixotic.Interpret.Symbols.Values;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Interpret.Environment
@@ -12,11 +12,11 @@ namespace Quixotic.Interpret.Environment
     {
         private readonly Dictionary<string, Symbol> _values = [];
 
-        public void DefineVariable(string name, Value value)
+        public void DefineVariable(string name, Instance instance)
         {
             ExpectUndefined(name);
 
-            _values[name] = new VariableSymbol(value);
+            _values[name] = new VariableSymbol(instance);
         }
 
         public void DefineVariable(string name, QxType type)
@@ -59,20 +59,20 @@ namespace Quixotic.Interpret.Environment
             return false;
         }
 
-        public void AssignVariable(string name, Value value)
+        public void AssignVariable(string name, Instance instance)
         {
             if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
                 throw new UndefinedSymbolException(name);
 
-            variableSymbol.Assign(value); // Throws TypeConversionException if type of value is not type of set identifer.
+            variableSymbol.Assign(instance); // Throws TypeConversionException if type of value is not type of set identifer.
         }
 
-        public Value GetValue(string name)
+        public Instance GetInstance(string name)
         {
             if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
                 throw new UndefinedSymbolException(name);
 
-            return variableSymbol.Value;
+            return variableSymbol.Instance;
         }
 
         public void DefineFunction(string name, Function function)

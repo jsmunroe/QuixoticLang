@@ -11,10 +11,5 @@ namespace Quixotic.Interpret.Symbols.Types
         protected NadaType()
             : base("nada", typeof(NadaValue))
         { }
-
-        public override bool IsTruthy(Value value)
-        {
-            return false;
-        }
     }
 }

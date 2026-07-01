@@ -6,6 +6,7 @@ using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Environment;
 using Quixotic.Interpret.FlowControl;
 using Quixotic.Interpret.Symbols;
+using Quixotic.Interpret.Symbols.Instances;
 using Quixotic.Interpret.Symbols.Types;
 using Quixotic.Interpret.Symbols.Values;
 using Quixotic.Parsing;
@@ -19,7 +20,7 @@ namespace Quixotic.Interpret
     {
         private readonly static Dictionary<Type, Action<Interpreter, QxStatement>> _executeMap = [];
 
-        private readonly static Dictionary<Type, Func<Interpreter, QxExpression, Value>> _evaluateMap = [];
+        private readonly static Dictionary<Type, Func<Interpreter, QxExpression, Instance>> _evaluateMap = [];
 
         static Interpreter() => LoadMapEntries();
 
@@ -103,7 +104,7 @@ namespace Quixotic.Interpret
             action(this, statement);
         }
 
-        private Value Evaluate(QxExpression expression)
+        private Instance Evaluate(QxExpression expression)
         {
             var expressionType = expression.GetType();
             if (!_evaluateMap.TryGetValue(expressionType, out var function))
@@ -121,7 +122,7 @@ namespace Quixotic.Interpret
 
         public void Execute(QxVariableDeclarationStatement statement)
         {
-            Value value = Value.Nada;
+            Instance value = Instance.Nada;
             if (statement.Value is not null)
                 value = Evaluate(statement.Value);
 
@@ -132,11 +133,10 @@ namespace Quixotic.Interpret
                     throw new UnrecognizedTypeException(statement.TypeName);
             }
 
-
             if (!value.IsNada && type is not null)
             {
                 if (!type.IsAssignableFrom(value.Type))
-                    throw new TypeMismatchException(type, value.Type);
+                    throw new TypeMismatchException(value.Type, type);
 
                 runtime.Frame.Scope.DefineVariable(statement.Name, value);
             }
@@ -188,11 +188,11 @@ namespace Quixotic.Interpret
 
         public void Execute(QxReturnStatement statement)
         {
-            Value? value = null;
+            Instance? instance = null;
             if (statement.Expression is not null)
-                value = Evaluate(statement.Expression);
+                instance = Evaluate(statement.Expression);
 
-            throw new ReturnException(value);
+            throw new ReturnException(instance);
         }
 
         public static void Execute(QxContinueStatement statement)
@@ -209,8 +209,6 @@ namespace Quixotic.Interpret
         {
             var value = Evaluate(statement.Value);
 
-            var target = Evaluate(statement.Target);
-
             if (statement.Target is QxIdentifierExpression identifierExpression)
             {
                 var name = identifierExpression.Name;
@@ -222,10 +220,14 @@ namespace Quixotic.Interpret
                 var targetValue = Evaluate(indexerExpression.Target);
                 var indexValue = Evaluate(indexerExpression.Index);
 
-                // TODO: Execute indexer assignment
+                if (targetValue is ArrayInstance array && indexValue is NumberValue indexNumber)
+                    array.Set(indexNumber, value);
+                else
+                    throw new IndexerTargetException(targetValue.Type);
             }
             else
             {
+                var target = Evaluate(statement.Target);
                 throw new InvalidAssignmentTargetException(target.Type.Name);
             }
         }
@@ -305,30 +307,56 @@ namespace Quixotic.Interpret
             }
         }
 
-        protected static Value Evaluate(QxNumberLiteralExpression expression)
+        protected static Instance Evaluate(QxNumberLiteralExpression expression)
         {
             return new NumberValue(expression.Value);
         }
 
-        protected static Value Evaluate(QxStringLiteralExpression expression)
+        protected static Instance Evaluate(QxStringLiteralExpression expression)
         {
             return new StringValue(expression.Value);
         }
 
-        protected static Value Evaluate(QxBooleanLiteralExpression expression)
+        protected static Instance Evaluate(QxBooleanLiteralExpression expression)
         {
             return new BooleanValue(expression.Value);
         }
 
-        protected Value Evaluate(QxIdentifierExpression expression)
+        protected Instance Evaluate(QxArrayExpression expression)
+        {
+            List<Instance> elements = [.. expression.Elements.Select(Evaluate)];
+
+            var baseType = QxType.GetCommonBase(elements);
+
+            return new ArrayInstance(baseType, elements);
+        }
+
+        protected Instance Evaluate(QxIdentifierExpression expression)
         {
             var name = expression.Name;
-            var value = runtime.Frame.Scope.GetValue(name);
+            var value = runtime.Frame.Scope.GetInstance(name);
 
             return value;
         }
 
-        protected Value Evaluate(QxUnaryExpression expression)
+        protected Instance Evaluate(QxIndexerExpression expression)
+        {
+            var target = Evaluate(expression.Target);
+
+            var index = Evaluate(expression.Index);
+
+            if (target is ArrayInstance array)
+            {
+                if (index is not NumberValue number)
+                    throw new IndexTypeException(array.Type, index.Type);
+
+                return array.Get(number);
+            }
+
+            throw new IndexerTargetException(target.Type);
+        }
+
+        protected Instance Evaluate(QxUnaryExpression expression)
         {
             var operand = Evaluate(expression.Operand);
 
@@ -343,7 +371,7 @@ namespace Quixotic.Interpret
             };
         }
 
-        protected Value Evaluate(QxBinaryExpression expression)
+        protected Instance Evaluate(QxBinaryExpression expression)
         {
             var left = expression.Left;
             var right = expression.Right;
@@ -371,7 +399,7 @@ namespace Quixotic.Interpret
             };
         }
 
-        protected Value Evaluate(QxFunctionCallExpression expression)
+        protected Instance Evaluate(QxFunctionCallExpression expression)
         {
             var name = expression.Name;
 
@@ -392,21 +420,21 @@ namespace Quixotic.Interpret
             throw new ExpectedReturnValueException(name);
         }
 
-        private static bool IsTruthy(Value value)
+        private static bool IsTruthy(Instance instance)
         {
-            return value.IsTruthy();
+            return instance.IsTruthy();
         }
 
-        private TValue ExpectType<TValue>(Value value)
-            where TValue : Value
+        private TValue ExpectType<TValue>(Instance instance)
+            where TValue : Instance
         {
-            if (value is not TValue expectedValue)
-                throw new UnexpectedTypeException(typeof(TValue).Describe(), value.Type);
+            if (instance is not TValue expectedValue)
+                throw new UnexpectedTypeException(typeof(TValue).Describe(), instance.Type);
 
             return expectedValue;
         }
 
-        private Value Add(QxExpression left, QxExpression right)
+        private Instance Add(QxExpression left, QxExpression right)
         {
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
@@ -414,7 +442,7 @@ namespace Quixotic.Interpret
             return leftValue.Add(rightValue);
         }
 
-        private Value Subtract(QxExpression left, QxExpression right)
+        private Instance Subtract(QxExpression left, QxExpression right)
         {
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
@@ -422,7 +450,7 @@ namespace Quixotic.Interpret
             return leftValue.Subtract(rightValue);
         }
 
-        private Value Multiply(QxExpression left, QxExpression right)
+        private Instance Multiply(QxExpression left, QxExpression right)
         {
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
@@ -430,7 +458,7 @@ namespace Quixotic.Interpret
             return leftValue.Multiply(rightValue);
         }
 
-        private Value Divide(QxExpression left, QxExpression right)
+        private Instance Divide(QxExpression left, QxExpression right)
         {
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
@@ -522,12 +550,12 @@ namespace Quixotic.Interpret
             // Push function parameters into 
             foreach (var (parameter, expression) in parameters.Zip(expressions))
             {
-                var value = Evaluate(expression);
+                var instance = Evaluate(expression);
 
-                if (!parameter.Type.IsAssignableFrom(value.Type))
-                    throw new TypeMismatchException(value.Type, parameter.Type);
+                if (!parameter.Type.IsAssignableFrom(instance.Type))
+                    throw new TypeMismatchException(instance.Type, parameter.Type);
 
-                arguments.Add(new Argument(parameter.Name, value));
+                arguments.Add(new Argument(parameter.Name, instance));
             }
 
             return arguments;
@@ -583,7 +611,7 @@ namespace Quixotic.Interpret
             return true;
         }
 
-        private static bool TryCreateEvaluateMapEntry(MethodInfo method, [NotNullWhen(true)] out Func<Interpreter, QxExpression, Value>? action)
+        private static bool TryCreateEvaluateMapEntry(MethodInfo method, [NotNullWhen(true)] out Func<Interpreter, QxExpression, Instance>? action)
         {
             action = null;
 
@@ -609,7 +637,7 @@ namespace Quixotic.Interpret
             var parameter = System.Linq.Expressions.Expression.Parameter(typeof(QxExpression), "expression");
             var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
             var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Func<Interpreter, QxExpression, Value>>(call, instance, parameter);
+            var lambda = System.Linq.Expressions.Expression.Lambda<Func<Interpreter, QxExpression, Instance>>(call, instance, parameter);
 
             action = lambda.Compile();
 

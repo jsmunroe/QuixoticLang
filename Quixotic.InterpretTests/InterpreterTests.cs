@@ -819,7 +819,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_assignment_with_boolean_literal_true()
+        public void Execute_assignment_with_boolean_literal_true()
         {
             // Setup
             var source = @"
@@ -843,7 +843,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Parse_assignment_with_boolean_literal_false()
+        public void Execute_assignment_with_boolean_literal_false()
         {
             // Setup
             var source = @"
@@ -1029,6 +1029,132 @@ namespace Quixotic.InterpretTests
             // Execute
             interpreter.Execute(parser.Parse());
         }
+
+        [TestMethod]
+        public void Execute_array_assignment()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertVariableHasValue("array", [1, 2, 3, 4, 5]);
+        }
+
+        [TestMethod]
+        public void Execute_array_assignment_add_element()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+
+                array := array + 6
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertVariableHasValue("array", [1, 2, 3, 4, 5, 6]);
+        }
+
+        [TestMethod]
+        public void Execute_array_indexing()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+
+                let element := array[2]
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertVariableHasValue("array", [1, 2, 3, 4, 5]);
+            runtime.AssertVariableHasValue("element", 3);
+        }
+
+        [TestMethod]
+        public void Execute_array_index_assignment()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+
+                array[2] := 10
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertVariableHasValue("array", [1, 2, 10, 4, 5]);
+        }
+
+        [TestMethod]
+        public void Execute_array_with_element_type_missmatch()
+        {
+            // Setup
+            var source = @"
+                let array: number[] := [""1"", ""2"", ""3""]
+
+                array[2] := 10
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute && Assert
+            Assert.Throws<TypeMismatchException>(() => interpreter.Execute(parser.Parse()));
+        }
+
+        [TestMethod]
+        public void Execute_array_index_assignment_with_element_type_mismatch()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+
+                array[2] := ""10""
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute && Assert
+            Assert.Throws<TypeMismatchException>(() => interpreter.Execute(parser.Parse()));
+        }
+
 
         private Stream GetTestFile(string name)
         {

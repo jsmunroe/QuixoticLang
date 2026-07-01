@@ -1,33 +1,33 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Interpret.Symbols.Instances;
 using Quixotic.Interpret.Symbols.Types;
-using Quixotic.Interpret.Symbols.Values;
 
 namespace Quixotic.Interpret.Symbols
 {
     public class VariableSymbol : Symbol
     {
-        public Value? Value { get; private set; }
+        public Instance Instance { get; private set; }
 
         public QxType Type { get; }
 
-        public VariableSymbol(Value value)
+        public VariableSymbol(Instance instance)
         {
-            Value = value;
-            Type = value.Type;
+            Instance = instance;
+            Type = instance.Type;
         }
 
         public VariableSymbol(QxType valueType)
         {
-            Value = NadaValue.Value;
+            Instance = Instance.Nada;
             Type = valueType;
         }
 
-        public void Assign(Value value)
+        public void Assign(Instance instance)
         {
-            if (Type != QxType.Nada && !value.Type.Equals(Type))
-                throw new TypeMismatchException(value.Type.Name, Type.Name);
+            if (Type != QxType.Nada && !instance.Type.Equals(Type))
+                throw new TypeMismatchException(instance.Type.Name, Type.Name);
 
-            Value = value;
+            Instance = instance;
         }
     }
 

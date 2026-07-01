@@ -1,19 +1,31 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿using Quixotic.Interpret.Symbols.Instances;
 using Quixotic.Interpret.Symbols.Types;
 
 namespace Quixotic.Interpret.Symbols.Values
 {
 
-    public record NadaValue() : Value(QxType.Nada, null)
+    public class NadaValue() : Instance(QxType.Nada)
     {
         public override string ToString() => "nada";
 
-        public override Value Add(Value right)
+        public override bool Equals(object? obj)
         {
-            if (right is StringValue stringValue)
-                return new StringValue("nada" + stringValue.Value);
+            return obj is NadaValue;
+        }
 
-            throw new BinaryOperatorException(Type, "+", right.Type);
+        public override int GetHashCode()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool Equals(Instance other)
+        {
+            return other is NadaValue;
+        }
+
+        public override bool IsTruthy()
+        {
+            return false;
         }
 
         public static NadaValue Value { get; } = new();

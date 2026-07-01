@@ -3,13 +3,9 @@
 namespace Quixotic.Interpret.Symbols.Types
 {
     [Description("array")]
-    public class ArrayType : QxType
+    public class ArrayType(QxType elementType) : QxType($"{elementType}[]")
     {
-        public static ArrayType WithElement(QxType elementType) => new(elementType);
-
-        protected ArrayType(QxType elementType) : base($"{elementType}[]")
-        { }
-
-
+        public QxType ElementType { get; } = elementType;
     }
+
 }

@@ -215,6 +215,31 @@ namespace QuixoticLang.Lexer
                 next = Peek();
             }
 
+            if (next == ' ')
+            {
+                ConsumeWhitespace();
+                next = Peek();
+            }
+
+            if (next == '[')
+            {
+                text += next;
+                Advance();
+                next = Peek();
+            }
+
+            if (next == ' ')
+            {
+                ConsumeWhitespace();
+                next = Peek();
+            }
+
+            if (next == ']')
+            {
+                text += next;
+                Advance();
+            }
+
             return new Token
             {
                 Type = TokenType.Type,

@@ -1,5 +1,7 @@
 ﻿using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Environment;
+using Quixotic.Interpret.Symbols.Instances;
+using Quixotic.Interpret.Symbols.Types;
 using Quixotic.Interpret.Symbols.Values;
 
 namespace Quixotic.InterpretTests.TestImplementations
@@ -29,11 +31,11 @@ namespace Quixotic.InterpretTests.TestImplementations
             return frame;
         }
 
-        public override void ExecutePrint(Value value)
+        public override void ExecutePrint(Instance instance)
         {
-            base.ExecutePrint(value);
+            base.ExecutePrint(instance);
 
-            PrintExecutions.Add(value.Unwrap()?.ToString() ?? "nada");
+            PrintExecutions.Add(instance.ToString() ?? "nada");
         }
 
         public void AssertHasPrinted(string value)
@@ -110,7 +112,7 @@ namespace Quixotic.InterpretTests.TestImplementations
                 if (!frame.Scope.IsVariableDeclared(name))
                     continue;
 
-                var value = frame.Scope.GetValue(name);
+                var value = frame.Scope.GetInstance(name);
                 if (value is NadaValue)
                     return;
                 else
@@ -136,7 +138,7 @@ namespace Quixotic.InterpretTests.TestImplementations
             if (!frame.Scope.IsVariableDeclared(name))
                 throw new AssertFailedException($"A variable named '{name}' has not been defined.");
 
-            var variableValue = frame.Scope.GetValue(name);
+            var variableValue = frame.Scope.GetInstance(name);
 
             if (variableValue is not NadaValue)
                 throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
@@ -154,7 +156,7 @@ namespace Quixotic.InterpretTests.TestImplementations
                 if (!frame.Scope.IsVariableDeclared(name))
                     continue;
 
-                if (frame.Scope.GetValue(name) is StringValue stringValue)
+                if (frame.Scope.GetInstance(name) is StringValue stringValue)
                 {
                     if (Equals(stringValue.Value, value))
                         return;
@@ -182,7 +184,7 @@ namespace Quixotic.InterpretTests.TestImplementations
             if (!frame.Scope.IsVariableDeclared(name))
                 throw new AssertFailedException($"A variable named '{name}' has not been defined.");
 
-            var variableValue = frame.Scope.GetValue(name);
+            var variableValue = frame.Scope.GetInstance(name);
 
             if (variableValue is not StringValue stringValue)
                 throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
@@ -205,7 +207,7 @@ namespace Quixotic.InterpretTests.TestImplementations
                 if (!frame.Scope.IsVariableDeclared(name))
                     continue;
 
-                if (frame.Scope.GetValue(name) is NumberValue numberValue)
+                if (frame.Scope.GetInstance(name) is NumberValue numberValue)
                 {
                     if (Equals(numberValue.Value, value))
                         return;
@@ -233,7 +235,7 @@ namespace Quixotic.InterpretTests.TestImplementations
             if (!frame.Scope.IsVariableDeclared(name))
                 throw new AssertFailedException($"A variable named '{name}' has not been defined.");
 
-            var variableValue = frame.Scope.GetValue(name);
+            var variableValue = frame.Scope.GetInstance(name);
 
             if (variableValue is not NumberValue numberValue)
                 throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
@@ -245,7 +247,38 @@ namespace Quixotic.InterpretTests.TestImplementations
                 Assert.AreEqual(expected, actual, $"The variable named '{name}' has a value of {actual}. It was not '{expected}'.");
         }
 
-        public void AssertVariableHasValue(string name, bool value)
+        private string? AreEqual(ArrayInstance array, double[] values)
+        {
+            if (array.ElementType != QxType.Number)
+                return "The array is not a number array.";
+
+            if (array.Elements.Length != values.Length)
+                return $"The array length is {array.Elements.Length}. This is {(array.Elements.Length > values.Length ? "greater" : "less")} than was expected length of {values.Length}.";
+
+            for (var i = 0; i < values.Length; i++)
+            {
+                var element = array.Elements[i] as NumberValue;
+
+                if (array.Elements[i] is not NumberValue numberValue)
+                    return $"The array element at index {i} is not a number. It is {array.Elements[i].Type.Name}.";
+
+                if (!Equals(numberValue.Value, values[i]))
+                    return $"The array element at index {i} is {array.Elements[i]}. It was expected to be {values[i]}.";
+            }
+
+            return null;
+        }
+
+        private string? ToString<TValue>(TValue[] array)
+        {
+            return $"[{string.Join(", ", array.Select(e => e?.ToString()))}]";
+        }
+        private string? ToString(ArrayInstance array)
+        {
+            return $"[{string.Join(", ", array.Elements.Select(e => e?.ToString()))}]";
+        }
+
+        public void AssertVariableHasValue(string name, double[] values)
         {
             List<string> otherFrameValues = [];
 
@@ -256,22 +289,22 @@ namespace Quixotic.InterpretTests.TestImplementations
                 if (!frame.Scope.IsVariableDeclared(name))
                     continue;
 
-                if (frame.Scope.GetValue(name) is BooleanValue booleanValue)
+                if (frame.Scope.GetInstance(name) is ArrayInstance array && array.ElementType == QxType.Number)
                 {
-                    if (Equals(booleanValue.Value, value))
+                    if (AreEqual(array, values) is null)
                         return;
 
-                    otherFrameValues.Add($"In frame #{i}, {name} = {booleanValue.Value}.");
+                    otherFrameValues.Add($"In frame #{i}, {name} = {ToString(array)}.");
                 }
             }
 
             if (otherFrameValues.Count == 0)
                 throw new AssertFailedException($"A variable named '{name}' was never defined.");
             else
-                throw new AssertFailedException($"In no frame was a variable named '{name}' left with a value {value}. \r\n\t{string.Join("\r\n\t", otherFrameValues)}");
+                throw new AssertFailedException($"In no frame was a variable named '{name}' left with a value {ToString(values)}. \r\n\t{string.Join("\r\n\t", otherFrameValues)}");
         }
 
-        public void AssertVariableHasValue(int frameIndex, string name, bool value)
+        public void AssertVariableHasValue(int frameIndex, string name, double[] value)
         {
             if (frameIndex < 0)
                 throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
@@ -284,16 +317,20 @@ namespace Quixotic.InterpretTests.TestImplementations
             if (!frame.Scope.IsVariableDeclared(name))
                 throw new AssertFailedException($"A variable named '{name}' has not been defined.");
 
-            var variableValue = frame.Scope.GetValue(name);
+            var variableValue = frame.Scope.GetInstance(name);
 
-            if (variableValue is not BooleanValue booleanValue)
+            if (variableValue is not ArrayInstance array || array.ElementType != QxType.Number)
                 throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
 
             var expected = value;
-            var actual = booleanValue.Value;
+            var actual = array.Elements.Select(e => (e as NumberValue)?.Value).ToArray();
 
-            if (!Equals(booleanValue.Value, value))
-                Assert.AreEqual(expected, actual, $"The variable named '{name}' has a value of {actual}. It was not '{expected}'.");
+            var message = AreEqual(array, value);
+
+            if (message is null)
+                return;
+
+            throw new AssertFailedException(message);
         }
     }
 }

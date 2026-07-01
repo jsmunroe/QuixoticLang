@@ -1,12 +1,12 @@
-﻿using Quixotic.Interpret.Symbols.Values;
+﻿using Quixotic.Interpret.Symbols.Instances;
 
 namespace Quixotic.Interpret.Symbols
 {
-    public class Argument(string name, Value value)
+    public class Argument(string name, Instance instance)
     {
         public string Name { get; } = name;
 
-        public Value Value { get; } = value;
+        public Instance Value { get; } = instance;
     }
 
 }

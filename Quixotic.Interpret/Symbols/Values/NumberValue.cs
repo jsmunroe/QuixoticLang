@@ -1,27 +1,23 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Interpret.Symbols.Instances;
 using Quixotic.Interpret.Symbols.Types;
 
 namespace Quixotic.Interpret.Symbols.Values
 {
 
-    public record NumberValue(double value) : Value(QxType.Number, value)
+    public class NumberValue(double value) : Value(QxType.Number)
     {
         public double Value { get; } = value;
 
-        public override string ToString() => Value.ToString();
-
-        public override Value Add(Value right)
+        public override Instance Add(Instance right)
         {
             if (right is NumberValue numberValue)
                 return new NumberValue(Value + numberValue.Value);
 
-            if (right is StringValue stringValue)
-                return new StringValue(Value.ToString() + stringValue.Value);
-
             throw new BinaryOperatorException(Type, "+", right.Type);
         }
 
-        public override Value Subtract(Value right)
+        public override Instance Subtract(Instance right)
         {
             if (right is NumberValue numberValue)
                 return new NumberValue(Value - numberValue.Value);
@@ -29,7 +25,7 @@ namespace Quixotic.Interpret.Symbols.Values
             throw new BinaryOperatorException(Type, "-", right.Type);
         }
 
-        public override Value Multiply(Value right)
+        public override Instance Multiply(Instance right)
         {
             if (right is NumberValue numberValue)
                 return new NumberValue(Value * numberValue.Value);
@@ -37,7 +33,7 @@ namespace Quixotic.Interpret.Symbols.Values
             throw new BinaryOperatorException(Type, "*", right.Type);
         }
 
-        public override Value Divide(Value right)
+        public override Instance Divide(Instance right)
         {
             if (right is NumberValue numberValue)
                 return new NumberValue(Value / numberValue.Value);
@@ -45,14 +41,14 @@ namespace Quixotic.Interpret.Symbols.Values
             throw new BinaryOperatorException(Type, "/", right.Type);
         }
 
-        public override BooleanValue IsLessThan(Value right)
+        public override BooleanValue IsLessThan(Instance right)
         {
             if (right is NumberValue numberValue)
                 return new BooleanValue(Value < numberValue.Value);
 
             throw new BinaryOperatorException(Type, "<", right.Type);
         }
-        public override BooleanValue IsLessThanOrEqualTo(Value right)
+        public override BooleanValue IsLessThanOrEqualTo(Instance right)
         {
             if (right is NumberValue numberValue)
                 return new BooleanValue(Value <= numberValue.Value);
@@ -61,7 +57,7 @@ namespace Quixotic.Interpret.Symbols.Values
         }
 
 
-        public override BooleanValue IsGreaterThan(Value right)
+        public override BooleanValue IsGreaterThan(Instance right)
         {
             if (right is NumberValue numberValue)
                 return new BooleanValue(Value > numberValue.Value);
@@ -69,7 +65,7 @@ namespace Quixotic.Interpret.Symbols.Values
             throw new BinaryOperatorException(Type, ">", right.Type);
         }
 
-        public override BooleanValue IsGreaterThanOrEqualTo(Value right)
+        public override BooleanValue IsGreaterThanOrEqualTo(Instance right)
         {
             if (right is NumberValue numberValue)
                 return new BooleanValue(Value >= numberValue.Value);
@@ -77,5 +73,29 @@ namespace Quixotic.Interpret.Symbols.Values
             throw new BinaryOperatorException(Type, ">=", right.Type);
         }
 
+        public override object? Unwrap()
+        {
+            return Value;
+        }
+
+        public override bool Equals(Instance other)
+        {
+            return other is NumberValue numberValue && Value == numberValue.Value;
+        }
+
+        public override bool IsTruthy()
+        {
+            return Value != 0;
+        }
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 }

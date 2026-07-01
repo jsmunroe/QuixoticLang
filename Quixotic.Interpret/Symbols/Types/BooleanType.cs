@@ -1,5 +1,4 @@
-﻿using Quixotic.Interpret.Symbols.Values;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace Quixotic.Interpret.Symbols.Types
 {
@@ -11,13 +10,5 @@ namespace Quixotic.Interpret.Symbols.Types
         protected BooleanType()
             : base("boolean", typeof(BooleanType))
         { }
-
-        public override bool IsTruthy(Value value)
-        {
-            if (value is not BooleanValue booleanValue)
-                return false;
-
-            return booleanValue.Value;
-        }
     }
 }

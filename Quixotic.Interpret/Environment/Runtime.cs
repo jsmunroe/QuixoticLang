@@ -1,6 +1,6 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Interpret.Contracts;
-using Quixotic.Interpret.Symbols.Values;
+using Quixotic.Interpret.Symbols.Instances;
 
 namespace Quixotic.Interpret.Environment
 {
@@ -46,9 +46,9 @@ namespace Quixotic.Interpret.Environment
             return result;
         }
 
-        public virtual void ExecutePrint(Value value)
+        public virtual void ExecutePrint(Instance value)
         {
-            Console.WriteLine(value.Unwrap());
+            Console.WriteLine(value.ToString());
         }
     }
 }

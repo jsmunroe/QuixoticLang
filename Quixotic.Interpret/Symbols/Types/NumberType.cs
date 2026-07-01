@@ -11,13 +11,5 @@ namespace Quixotic.Interpret.Symbols.Types
         protected NumberType()
             : base("number", typeof(NumberValue))
         { }
-
-        public override bool IsTruthy(Value value)
-        {
-            if (value is not NumberValue numberValue)
-                return false;
-
-            return numberValue.Value != 0;
-        }
     }
 }

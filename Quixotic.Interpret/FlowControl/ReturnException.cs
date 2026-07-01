@@ -1,9 +1,9 @@
-﻿using Quixotic.Interpret.Symbols.Values;
+﻿using Quixotic.Interpret.Symbols.Instances;
 
 namespace Quixotic.Interpret.FlowControl
 {
-    public class ReturnException(Value? value) : FlowControlException
+    public class ReturnException(Instance? value) : FlowControlException
     {
-        public Value? Value { get; } = value;
+        public Instance? Value { get; } = value;
     }
 }
