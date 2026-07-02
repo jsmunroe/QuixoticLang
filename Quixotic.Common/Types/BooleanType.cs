@@ -1,6 +1,6 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
-namespace Quixotic.Interpret.Symbols.Types
+namespace Quixotic.Common.Types
 {
     [Description("boolean")]
     public class BooleanType : QxValueType
@@ -8,7 +8,7 @@ namespace Quixotic.Interpret.Symbols.Types
         public static BooleanType Instance { get; } = new();
 
         protected BooleanType()
-            : base("boolean", typeof(BooleanType))
+            : base("boolean", typeof(bool))
         { }
     }
 }

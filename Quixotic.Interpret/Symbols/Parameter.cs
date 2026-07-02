@@ -1,4 +1,4 @@
-﻿using Quixotic.Interpret.Symbols.Types;
+﻿using Quixotic.Common.Types;
 
 namespace Quixotic.Interpret.Symbols
 {

@@ -2,27 +2,23 @@
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
 using Quixotic.Common.Statements;
+using Quixotic.Common.Types;
+using Quixotic.Common.Utilities;
 using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Environment;
 using Quixotic.Interpret.FlowControl;
 using Quixotic.Interpret.Symbols;
 using Quixotic.Interpret.Symbols.Instances;
-using Quixotic.Interpret.Symbols.Types;
 using Quixotic.Interpret.Symbols.Values;
 using Quixotic.Parsing;
 using QuixoticLang.Lexer;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 
 namespace Quixotic.Interpret
 {
     public class Interpreter(IRuntime runtime)
     {
-        private readonly static Dictionary<Type, Action<Interpreter, QxStatement>> _executeMap = [];
-
-        private readonly static Dictionary<Type, Func<Interpreter, QxExpression, Instance>> _evaluateMap = [];
-
-        static Interpreter() => LoadMapEntries();
+        private readonly static MethodIndexer<Action<Interpreter, QxStatement>> _executes = new(typeof(Interpreter), "Execute");
+        private readonly static MethodIndexer<Func<Interpreter, QxExpression, Instance>> _evaluates = new(typeof(Interpreter), "Evaluate");
 
         public void Execute(string source)
         {
@@ -98,7 +94,7 @@ namespace Quixotic.Interpret
         public void Execute(QxStatement statement)
         {
             var statementType = statement.GetType();
-            if (!_executeMap.TryGetValue(statementType, out var action))
+            if (!_executes.TryGetDelegate(statementType, out var action))
                 throw new NotSupportedException($"Unsupported statement type: {statementType.Name}");
 
             action(this, statement);
@@ -107,7 +103,7 @@ namespace Quixotic.Interpret
         private Instance Evaluate(QxExpression expression)
         {
             var expressionType = expression.GetType();
-            if (!_evaluateMap.TryGetValue(expressionType, out var function))
+            if (!_evaluates.TryGetDelegate(expressionType, out var function))
                 throw new NotSupportedException($"Unsupported expression type: {expressionType.Name}");
 
             return function(this, expression);
@@ -165,7 +161,9 @@ namespace Quixotic.Interpret
                 parameters.Add(new(parameter.Name, type));
             }
 
-            var function = new Function(statement.Body) { Parameters = [.. parameters] };
+            var returnType = QxType.Parse(statement.ReturnType);
+
+            var function = new Function(statement.Body, returnType) { Parameters = [.. parameters] };
             runtime.Frame.Scope.DefineFunction(statement.Name, function);
         }
 
@@ -326,7 +324,7 @@ namespace Quixotic.Interpret
         {
             List<Instance> elements = [.. expression.Elements.Select(Evaluate)];
 
-            var baseType = QxType.GetCommonBase(elements);
+            var baseType = Instance.GetCommonBase(elements);
 
             return new ArrayInstance(baseType, elements);
         }
@@ -559,89 +557,6 @@ namespace Quixotic.Interpret
             }
 
             return arguments;
-        }
-
-        private static void LoadMapEntries()
-        {
-            foreach (var method in typeof(Interpreter).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
-            {
-                var methodParameters = method.GetParameters();
-
-                if (methodParameters.Length < 1)
-                    continue;
-
-                var methodParameter = method.GetParameters()[0];
-                var parameterType = methodParameter.ParameterType;
-
-                if (TryCreateExecuteMapEntry(method, out var execute))
-                    _executeMap[parameterType] = execute;
-
-                if (TryCreateEvaluateMapEntry(method, out var evaluate))
-                    _evaluateMap[parameterType] = evaluate;
-            }
-        }
-
-        private static bool TryCreateExecuteMapEntry(MethodInfo method, [NotNullWhen(true)] out Action<Interpreter, QxStatement>? action)
-        {
-            action = null;
-
-            if (method.Name != "Execute")
-                return false;
-
-            var parameters = method.GetParameters();
-
-            if (parameters.Length != 1)
-                return false;
-
-            var parameterType = parameters[0].ParameterType;
-
-            if (!typeof(QxStatement).IsAssignableFrom(parameterType))
-                return false;
-
-            var isStatic = method.IsStatic;
-
-            var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
-            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(QxStatement), "statement");
-            var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
-            var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Action<Interpreter, QxStatement>>(call, instance, parameter);
-
-            action = lambda.Compile();
-
-            return true;
-        }
-
-        private static bool TryCreateEvaluateMapEntry(MethodInfo method, [NotNullWhen(true)] out Func<Interpreter, QxExpression, Instance>? action)
-        {
-            action = null;
-
-            if (method.Name != "Evaluate")
-                return false;
-
-            var parameters = method.GetParameters();
-
-            if (parameters.Length != 1)
-                return false;
-
-            var parameterType = parameters[0].ParameterType;
-
-            if (!typeof(QxExpression).IsAssignableFrom(parameterType))
-                return false;
-
-            if (!method.ReturnType.IsAssignableFrom(typeof(Value)))
-                return false;
-
-            var isStatic = method.IsStatic;
-
-            var instance = System.Linq.Expressions.Expression.Parameter(typeof(Interpreter), "instance");
-            var parameter = System.Linq.Expressions.Expression.Parameter(typeof(QxExpression), "expression");
-            var castParameter = System.Linq.Expressions.Expression.Convert(parameter, parameterType);
-            var call = System.Linq.Expressions.Expression.Call(isStatic ? null : instance, method, castParameter);
-            var lambda = System.Linq.Expressions.Expression.Lambda<Func<Interpreter, QxExpression, Instance>>(call, instance, parameter);
-
-            action = lambda.Compile();
-
-            return true;
         }
     }
 }

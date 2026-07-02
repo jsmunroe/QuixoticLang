@@ -1,15 +1,14 @@
-﻿using Quixotic.Interpret.Symbols.Values;
 using System.ComponentModel;
 
-namespace Quixotic.Interpret.Symbols.Types
+namespace Quixotic.Common.Types
 {
-    [Description("number")]
+    [Description("nada")]
     public class NadaType : QxValueType
     {
         public static NadaType Instance { get; } = new();
 
         protected NadaType()
-            : base("nada", typeof(NadaValue))
+            : base("nada", typeof(object))
         { }
     }
 }

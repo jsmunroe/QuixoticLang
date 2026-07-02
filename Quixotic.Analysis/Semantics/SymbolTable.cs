@@ -1,30 +1,20 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿
+using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Types;
-using Quixotic.Interpret.Symbols;
-using Quixotic.Interpret.Symbols.Instances;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Quixotic.Interpret.Environment
+namespace Quixotic.Analysis.Semantics
 {
-    // I changed this to scope because C# already has a static Environment object
-    // under the System namespace, and it was colliding with this class.
-    public class Scope(Scope? parent)
+    public class SymbolTable(SymbolTable? parent = null)
     {
         private readonly Dictionary<string, Symbol> _values = [];
-
-        public void DefineVariable(string name, Instance instance)
-        {
-            ExpectUndefined(name);
-
-            _values[name] = new VariableSymbol(instance);
-        }
 
         public void DefineVariable(string name, QxType type)
         {
             ExpectUndefined(name);
 
-            _values[name] = new VariableSymbol(type);
+            _values[name] = new VariableTypeSymbol(type);
         }
 
         public bool IsSymbolDeclared(string name)
@@ -34,12 +24,12 @@ namespace Quixotic.Interpret.Environment
 
         public bool IsFunctionDeclared(string name)
         {
-            return _values.TryGetValue(name, out var symbol) && symbol is FunctionSymbol;
+            return _values.TryGetValue(name, out var symbol) && symbol is FunctionTypeSymbol;
         }
 
         public bool IsVariableDeclared(string name)
         {
-            return _values.TryGetValue(name, out var symbol) && symbol is VariableSymbol;
+            return _values.TryGetValue(name, out var symbol) && symbol is VariableTypeSymbol;
         }
 
         private bool TryGetSymbol(string name, [NotNullWhen(returnValue: true)] out Symbol? symbol)
@@ -60,45 +50,43 @@ namespace Quixotic.Interpret.Environment
             return false;
         }
 
-        public void AssignVariable(string name, Instance instance)
+        public void AssignVariable(string name, QxType instance)
         {
-            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
+            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableTypeSymbol variableSymbol)
                 throw new UndefinedSymbolException(name);
-
-            variableSymbol.Assign(instance); // Throws TypeConversionException if type of value is not type of set identifer.
         }
 
-        public Instance GetInstance(string name)
+        public QxType GetVariableType(string name)
         {
-            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
+            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableTypeSymbol variableSymbol)
                 throw new UndefinedSymbolException(name);
 
-            return variableSymbol.Instance;
+            return variableSymbol.Type;
         }
 
-        public void DefineFunction(string name, Function function)
+        public void DefineFunction(string name, QxType returnValue, params QxType[] parameterValues)
         {
             ExpectUndefined(name);
 
-            _values[name] = new FunctionSymbol(function);
+            _values[name] = new FunctionTypeSymbol(returnValue) { ParameterTypes = [.. parameterValues] };
         }
 
-        public Function GetFunction(string name)
+        public FunctionTypeSymbol GetFunction(string name)
         {
-            if (!TryGetSymbol(name, out var symbol) || symbol is not FunctionSymbol functionSymbol)
+            if (!TryGetSymbol(name, out var symbol) || symbol is not FunctionTypeSymbol functionSymbol)
                 throw new UndefinedFunctionException(name);
 
-            return functionSymbol.Function;
+            return functionSymbol;
         }
 
         private void ExpectUndefined(string name)
         {
             if (TryGetSymbol(name, out var symbol))
             {
-                if (symbol is VariableSymbol)
+                if (symbol is VariableTypeSymbol)
                     throw new VariableAlreadyDefinedException(name);
 
-                if (symbol is FunctionSymbol)
+                if (symbol is FunctionTypeSymbol)
                     throw new FunctionAlreadyDefinedException(name);
 
                 throw new SymbolAlreadyDefinedException(name);

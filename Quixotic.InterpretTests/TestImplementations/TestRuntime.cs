@@ -1,7 +1,7 @@
-﻿using Quixotic.Interpret.Contracts;
+﻿using Quixotic.Common.Types;
+using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Environment;
 using Quixotic.Interpret.Symbols.Instances;
-using Quixotic.Interpret.Symbols.Types;
 using Quixotic.Interpret.Symbols.Values;
 
 namespace Quixotic.InterpretTests.TestImplementations

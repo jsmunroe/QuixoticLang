@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Quixotic.Common\Quixotic.Common.csproj" />
+    <ProjectReference Include="..\Quixotic.Parsing\Quixotic.Parsing.csproj" />
   </ItemGroup>
 
 </Project>

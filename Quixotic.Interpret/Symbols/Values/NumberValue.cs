@@ -1,6 +1,6 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Interpret.Symbols.Instances;
-using Quixotic.Interpret.Symbols.Types;
+using Quixotic.Common.Types;
 
 namespace Quixotic.Interpret.Symbols.Values
 {

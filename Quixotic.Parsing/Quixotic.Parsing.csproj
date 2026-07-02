@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Quixotic.Analysis\Quixotic.Analysis.csproj" />
     <ProjectReference Include="..\Quixotic.Common\Quixotic.Common.csproj" />
     <ProjectReference Include="..\Quixotic.Lexography\Quixotic.Lexography.csproj" />
   </ItemGroup>

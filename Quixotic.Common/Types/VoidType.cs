@@ -1,4 +1,4 @@
-﻿namespace Quixotic.Interpret.Symbols.Types
+namespace Quixotic.Common.Types
 {
     public class VoidType : QxType
     {

@@ -1,6 +1,6 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
-using Quixotic.Interpret.Symbols.Types;
 using Quixotic.Interpret.Symbols.Values;
+using Quixotic.Common.Types;
 
 namespace Quixotic.Interpret.Symbols.Instances
 {
@@ -83,5 +83,9 @@ namespace Quixotic.Interpret.Symbols.Instances
             return new BooleanValue(IsTruthy() || right.IsTruthy());
         }
 
+        public static QxType GetCommonBase(IEnumerable<Instance> instances)
+        {
+            return QxType.GetCommonBase(instances.Select(i => i.Type));
+        }
     }
 }

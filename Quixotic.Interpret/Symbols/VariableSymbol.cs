@@ -1,25 +1,24 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.Symbols;
+using Quixotic.Common.Types;
 using Quixotic.Interpret.Symbols.Instances;
-using Quixotic.Interpret.Symbols.Types;
 
 namespace Quixotic.Interpret.Symbols
 {
-    public class VariableSymbol : Symbol
+    public class VariableSymbol : VariableTypeSymbol
     {
         public Instance Instance { get; private set; }
 
-        public QxType Type { get; }
-
         public VariableSymbol(Instance instance)
+            : base(instance.Type)
         {
             Instance = instance;
-            Type = instance.Type;
         }
 
-        public VariableSymbol(QxType valueType)
+        public VariableSymbol(QxType type)
+            : base(type)
         {
             Instance = Instance.Nada;
-            Type = valueType;
         }
 
         public void Assign(Instance instance)
@@ -29,10 +28,5 @@ namespace Quixotic.Interpret.Symbols
 
             Instance = instance;
         }
-    }
-
-    public class FunctionSymbol(Function function) : Symbol
-    {
-        public Function Function { get; } = function;
     }
 }

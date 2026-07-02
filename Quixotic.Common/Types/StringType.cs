@@ -1,7 +1,6 @@
-﻿using Quixotic.Interpret.Symbols.Values;
 using System.ComponentModel;
 
-namespace Quixotic.Interpret.Symbols.Types
+namespace Quixotic.Common.Types
 {
     [Description("string")]
     public class StringType : QxValueType
@@ -9,7 +8,7 @@ namespace Quixotic.Interpret.Symbols.Types
         public static StringType Instance { get; } = new();
 
         protected StringType()
-            : base("string", typeof(StringValue))
+            : base("string", typeof(string))
         { }
     }
 }

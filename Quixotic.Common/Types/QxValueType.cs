@@ -1,4 +1,4 @@
-﻿namespace Quixotic.Interpret.Symbols.Types
+namespace Quixotic.Common.Types
 {
     public class QxValueType : QxType
     {

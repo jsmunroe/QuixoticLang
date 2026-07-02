@@ -1,18 +1,13 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
-using Quixotic.Interpret.Symbols.Instances;
-using Quixotic.Interpret.Symbols.Values;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
-namespace Quixotic.Interpret.Symbols.Types
+namespace Quixotic.Common.Types
 {
     public class QxType(string name)
     {
         private static readonly Regex _rexTypeString = new(@"^([a-zA-Z_][a-zA-Z0-9_\.]+)(\[\])?$", RegexOptions.Compiled);
 
         public string Name { get; } = name;
-
-        public bool Is(Value value) => IsAssignableFrom(value.Type);
 
         public override int GetHashCode()
         {
@@ -21,6 +16,9 @@ namespace Quixotic.Interpret.Symbols.Types
 
         public virtual bool IsAssignableFrom(QxType subtype)
         {
+            if (ReferenceEquals(this, Any))
+                return true;
+
             if (Equals(subtype))
                 return true;
 
@@ -36,11 +34,6 @@ namespace Quixotic.Interpret.Symbols.Types
                 return other;
 
             return Any;
-        }
-
-        public static QxType GetCommonBase(IEnumerable<Instance> instances)
-        {
-            return GetCommonBase(instances.Select(i => i.Type));
         }
 
         public static QxType GetCommonBase(IEnumerable<QxType> types)
@@ -62,6 +55,7 @@ namespace Quixotic.Interpret.Symbols.Types
         {
             return Name;
         }
+
         public override bool Equals(object? obj)
         {
             if (obj is not QxType other)
@@ -72,7 +66,7 @@ namespace Quixotic.Interpret.Symbols.Types
 
         public static QxType Parse(string typeName)
         {
-            return TryParse(typeName, out var type) ? type : throw new UnrecognizedTypeException(typeName);
+            return TryParse(typeName, out var type) ? type : throw new InvalidOperationException($"Unrecognized type: {typeName}");
         }
 
         public static bool TryParse(string? typeName, [NotNullWhen(returnValue: true)] out QxType? type)
@@ -95,6 +89,8 @@ namespace Quixotic.Interpret.Symbols.Types
                 "number" => Number,
                 "string" => String,
                 "boolean" => Boolean,
+                "nada" => Nada,
+                "void" => Void,
                 _ => null
             };
 
@@ -115,6 +111,6 @@ namespace Quixotic.Interpret.Symbols.Types
         public static QxType Nada { get; } = NadaType.Instance;
         public static QxType Void { get; } = VoidType.Instance;
 
-        public static QxType Array(QxType ElementType) => new ArrayType(ElementType);
+        public static QxType Array(QxType elementType) => new ArrayType(elementType);
     }
 }

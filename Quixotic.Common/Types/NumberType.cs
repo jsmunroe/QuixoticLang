@@ -1,7 +1,6 @@
-﻿using Quixotic.Interpret.Symbols.Values;
 using System.ComponentModel;
 
-namespace Quixotic.Interpret.Symbols.Types
+namespace Quixotic.Common.Types
 {
     [Description("number")]
     public class NumberType : QxValueType
@@ -9,7 +8,7 @@ namespace Quixotic.Interpret.Symbols.Types
         public static NumberType Instance { get; } = new();
 
         protected NumberType()
-            : base("number", typeof(NumberValue))
+            : base("number", typeof(double))
         { }
     }
 }
