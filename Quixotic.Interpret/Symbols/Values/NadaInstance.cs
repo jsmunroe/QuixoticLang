@@ -1,17 +1,12 @@
-﻿using Quixotic.Interpret.Symbols.Instances;
-using Quixotic.Common.Types;
+﻿using Quixotic.Common.Types;
+using Quixotic.Interpret.Symbols.Instances;
 
 namespace Quixotic.Interpret.Symbols.Values
 {
 
-    public class NadaValue() : Instance(QxType.Nada)
+    public class NadaInstance() : Instance(QxType.Nada)
     {
         public override string ToString() => "nada";
-
-        public override bool Equals(object? obj)
-        {
-            return obj is NadaValue;
-        }
 
         public override int GetHashCode()
         {
@@ -20,7 +15,7 @@ namespace Quixotic.Interpret.Symbols.Values
 
         public override bool Equals(Instance other)
         {
-            return other is NadaValue;
+            return other is NadaInstance;
         }
 
         public override bool IsTruthy()
@@ -28,7 +23,7 @@ namespace Quixotic.Interpret.Symbols.Values
             return false;
         }
 
-        public static NadaValue Value { get; } = new();
+        public static NadaInstance Instance { get; } = new();
     }
 
 

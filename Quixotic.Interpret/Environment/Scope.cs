@@ -1,6 +1,7 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Types;
+using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Symbols;
 using Quixotic.Interpret.Symbols.Instances;
 using System.Diagnostics.CodeAnalysis;
@@ -12,6 +13,13 @@ namespace Quixotic.Interpret.Environment
     public class Scope(Scope? parent)
     {
         private readonly Dictionary<string, Symbol> _values = [];
+
+        private readonly FunctionRegistry _functionRegistry = new();
+
+        public void Add(IFunctionProvider functionProvider)
+        {
+            functionProvider.Register(_functionRegistry);
+        }
 
         public void DefineVariable(string name, Instance instance)
         {
@@ -80,15 +88,19 @@ namespace Quixotic.Interpret.Environment
         {
             ExpectUndefined(name);
 
-            _values[name] = new FunctionSymbol(function);
+            _values[name] = new FunctionSymbol(name, function);
+            _functionRegistry.Register(name, function);
         }
 
-        public Function GetFunction(string name)
+        public Function GetFunction(string name, params QxType[] arguments)
         {
-            if (!TryGetSymbol(name, out var symbol) || symbol is not FunctionSymbol functionSymbol)
-                throw new UndefinedFunctionException(name);
+            if (_functionRegistry.TryResolve(name, arguments, out var functionSymbol))
+                return functionSymbol.Function;
 
-            return functionSymbol.Function;
+            if (parent is not null)
+                return parent.GetFunction(name, arguments);
+
+            throw new UndefinedFunctionException(name);
         }
 
         private void ExpectUndefined(string name)

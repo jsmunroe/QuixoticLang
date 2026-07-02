@@ -16,6 +16,9 @@ namespace Quixotic.Common.Types
 
         public virtual bool IsAssignableFrom(QxType subtype)
         {
+            if (this == Any)
+                return true;
+
             if (ReferenceEquals(this, Any))
                 return true;
 

@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.Expressions;
+﻿using Quixotic.Analysis.Environment;
+using Quixotic.Common.Expressions;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Types;
 using Quixotic.Common.Utilities;

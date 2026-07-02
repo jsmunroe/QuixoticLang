@@ -581,7 +581,7 @@ namespace Quixotic.InterpretTests
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute & Assert
-            Assert.Throws<TypeMismatchException>(() => interpreter.Execute(parser.Parse()));
+            Assert.Throws<UndefinedFunctionException>(() => interpreter.Execute(parser.Parse())); // There is no function with signature 'sayHello(string, number, number)'
         }
 
 

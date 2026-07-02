@@ -1,40 +1,47 @@
-﻿
+﻿using Quixotic.Analysis.BuiltIn;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Types;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Quixotic.Analysis.Semantics
+namespace Quixotic.Analysis.Environment
 {
     public class SymbolTable(SymbolTable? parent = null)
     {
-        private readonly Dictionary<string, Symbol> _values = [];
+        private readonly Dictionary<string, VariableTypeSymbol> _variables = [];
+
+        private readonly SignatureRegistry _signatureRegistry = new();
+
+        public void Add(ISignatureProvider signatureProvider)
+        {
+            signatureProvider.Register(_signatureRegistry);
+        }
 
         public void DefineVariable(string name, QxType type)
         {
             ExpectUndefined(name);
 
-            _values[name] = new VariableTypeSymbol(type);
+            _variables[name] = new VariableTypeSymbol(type);
         }
 
         public bool IsSymbolDeclared(string name)
         {
-            return _values.ContainsKey(name);
+            return _variables.ContainsKey(name);
         }
 
-        public bool IsFunctionDeclared(string name)
+        public bool IsFunctionDeclared(string name, params QxType[] arguments)
         {
-            return _values.TryGetValue(name, out var symbol) && symbol is FunctionTypeSymbol;
+            return _signatureRegistry.Contains(name, arguments);
         }
 
         public bool IsVariableDeclared(string name)
         {
-            return _values.TryGetValue(name, out var symbol) && symbol is VariableTypeSymbol;
+            return _variables.ContainsKey(name);
         }
 
         private bool TryGetSymbol(string name, [NotNullWhen(returnValue: true)] out Symbol? symbol)
         {
-            if (_values.TryGetValue(name, out var localSymbol))
+            if (_variables.TryGetValue(name, out var localSymbol))
             {
                 symbol = localSymbol;
                 return true;
@@ -56,7 +63,7 @@ namespace Quixotic.Analysis.Semantics
                 throw new UndefinedSymbolException(name);
         }
 
-        public QxType GetVariableType(string name)
+        public QxType GetInstance(string name)
         {
             if (!TryGetSymbol(name, out var symbol) || symbol is not VariableTypeSymbol variableSymbol)
                 throw new UndefinedSymbolException(name);
@@ -64,19 +71,19 @@ namespace Quixotic.Analysis.Semantics
             return variableSymbol.Type;
         }
 
-        public void DefineFunction(string name, QxType returnValue, params QxType[] parameterValues)
+        public void DefineSignature(string name, QxType returnType, params QxType[] parameters)
         {
             ExpectUndefined(name);
 
-            _values[name] = new FunctionTypeSymbol(returnValue) { ParameterTypes = [.. parameterValues] };
+            _signatureRegistry.Register(name, returnType, parameters);
         }
 
-        public FunctionTypeSymbol GetFunction(string name)
+        public FunctionSignatureSymbol GetSignature(string name, params QxType[] arguments)
         {
-            if (!TryGetSymbol(name, out var symbol) || symbol is not FunctionTypeSymbol functionSymbol)
-                throw new UndefinedFunctionException(name);
+            if (_signatureRegistry.TryResolve(name, arguments, out var functionSymbol))
+                return functionSymbol;
 
-            return functionSymbol;
+            throw new UndefinedFunctionException(name);
         }
 
         private void ExpectUndefined(string name)
@@ -86,7 +93,7 @@ namespace Quixotic.Analysis.Semantics
                 if (symbol is VariableTypeSymbol)
                     throw new VariableAlreadyDefinedException(name);
 
-                if (symbol is FunctionTypeSymbol)
+                if (symbol is FunctionSignatureSymbol)
                     throw new FunctionAlreadyDefinedException(name);
 
                 throw new SymbolAlreadyDefinedException(name);

@@ -1,6 +1,5 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿using Quixotic.Common.Types;
 using Quixotic.Interpret.Symbols.Instances;
-using Quixotic.Common.Types;
 namespace Quixotic.Interpret.Symbols.Values
 {
     public class StringValue(string value) : Value(QxType.String)
@@ -9,19 +8,7 @@ namespace Quixotic.Interpret.Symbols.Values
 
         public override Instance Add(Instance right)
         {
-            if (right is StringValue stringValue)
-                return new StringValue(Value + stringValue.Value);
-
-            if (right is NumberValue numberValue)
-                return new StringValue(Value + numberValue.ToString());
-
-            if (right is BooleanValue booleanValue)
-                return new StringValue(Value + booleanValue.ToString());
-
-            if (right is NadaValue)
-                return new StringValue(Value + "nada");
-
-            throw new BinaryOperatorException(Type, "+", right.Type);
+            return new StringValue(Value + right.ToString());
         }
 
         public override object? Unwrap()

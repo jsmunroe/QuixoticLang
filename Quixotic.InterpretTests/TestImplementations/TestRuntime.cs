@@ -113,7 +113,7 @@ namespace Quixotic.InterpretTests.TestImplementations
                     continue;
 
                 var value = frame.Scope.GetInstance(name);
-                if (value is NadaValue)
+                if (value is NadaInstance)
                     return;
                 else
                     otherFrameValues.Add($"In frame #{i}, {name} = {value}.");
@@ -140,7 +140,7 @@ namespace Quixotic.InterpretTests.TestImplementations
 
             var variableValue = frame.Scope.GetInstance(name);
 
-            if (variableValue is not NadaValue)
+            if (variableValue is not NadaInstance)
                 throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
         }
 

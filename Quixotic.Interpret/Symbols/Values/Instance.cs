@@ -1,16 +1,19 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
-using Quixotic.Interpret.Symbols.Values;
+﻿using Quixotic.Common.Contracts;
+using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Types;
+using Quixotic.Interpret.Symbols.Values;
 
 namespace Quixotic.Interpret.Symbols.Instances
 {
-    public abstract class Instance(QxType type)
+    public abstract class Instance(QxType type) : IHasType
     {
         public QxType Type { get; } = type;
 
-        public bool IsNada => this is NadaValue;
+        public bool IsNada => this is NadaInstance;
 
-        public static Instance Nada { get; } = NadaValue.Value;
+        public static Instance Nada { get; } = NadaInstance.Instance;
+
+        public static Instance Void { get; } = VoisInstance.Instance;
 
         public abstract bool Equals(Instance other);
 

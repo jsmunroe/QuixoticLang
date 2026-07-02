@@ -6,6 +6,7 @@ using Quixotic.Common.Types;
 using Quixotic.Common.Utilities;
 using Quixotic.Interpret.Contracts;
 using Quixotic.Interpret.Environment;
+using Quixotic.Interpret.Expressions;
 using Quixotic.Interpret.FlowControl;
 using Quixotic.Interpret.Symbols;
 using Quixotic.Interpret.Symbols.Instances;
@@ -46,6 +47,12 @@ namespace Quixotic.Interpret
                 Execute(statement);
         }
 
+        public IEnumerable<Instance> Evaluate(IEnumerable<QxExpression> expressions)
+        {
+            foreach (var expression in expressions)
+                yield return Evaluate(expression);
+        }
+
         public void Execute(Block statements, RuntimeFrameType frameType, List<Argument>? arguments = null)
         {
             runtime.PushBlock(frameType);
@@ -69,7 +76,7 @@ namespace Quixotic.Interpret
             runtime.Pop();
         }
 
-        public void Execute(Function function, List<Argument> arguments)
+        public Instance Evaluate(Function function, List<Argument> arguments)
         {
             runtime.PushFunction();
 
@@ -78,9 +85,13 @@ namespace Quixotic.Interpret
 
             try
             {
-
                 foreach (var statement in function.Body)
                     Execute(statement);
+            }
+            catch (ReturnException returnException)
+            {
+                runtime.Pop();
+                return returnException.Value;
             }
             catch (FlowControlException)
             {
@@ -89,6 +100,7 @@ namespace Quixotic.Interpret
             }
 
             runtime.Pop();
+            return Instance.Void;
         }
 
         public void Execute(QxStatement statement)
@@ -169,19 +181,7 @@ namespace Quixotic.Interpret
 
         public void Execute(QxFunctionCallStatement statement)
         {
-            var call = statement.Call;
-
-            var name = call.Name;
-
-            var function = runtime.Frame.Scope.GetFunction(name);
-
-            var arguments = BindArguments(name, function, call.Arguments);
-
-            try
-            {
-                Execute(function, arguments);
-            }
-            catch (ReturnException) { } // Ignore returned value;
+            Evaluate(statement.Call);
         }
 
         public void Execute(QxReturnStatement statement)
@@ -374,48 +374,37 @@ namespace Quixotic.Interpret
             var left = expression.Left;
             var right = expression.Right;
 
-            var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator) ?? string.Empty;
-
-            return expression.Operator switch
+            try
             {
-                Operator.Add => Add(left, right),
-                Operator.Subtract => Subtract(left, right),
-                Operator.Multiply => Multiply(left, right),
-                Operator.Divide => Divide(left, right),
-
-                Operator.EqualTo => IsEqualTo(left, right),
-                Operator.NotEqualTo => IsNotEqualTo(left, right),
-                Operator.LessThan => IsLessThan(left, right),
-                Operator.LessThanOrEqualTo => IsLessThanOrEqualTo(left, right),
-                Operator.GreaterThan => IsGreaterThan(left, right),
-                Operator.GreaterThanOrEqualTo => IsGreaterThanOrEqualTo(left, right),
-
-                Operator.And => And(left, right),
-                Operator.Or => Or(left, right),
-
-                _ => throw new BinaryOperatorException(left, operatorValue, right),
-            };
+                var result = InvokeOperator(expression.Operator, left, right);
+                return result;
+            }
+            catch
+            {
+                var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator) ?? "unknown";
+                throw new BinaryOperatorException(left, operatorValue, right);
+            }
         }
 
         protected Instance Evaluate(QxFunctionCallExpression expression)
         {
             var name = expression.Name;
 
-            var function = runtime.Frame.Scope.GetFunction(name);
+            var argumentValues = Evaluate(expression.Arguments);
 
-            var arguments = BindArguments(name, function, expression.Arguments);
+            var function = runtime.Frame.Scope.GetFunction(name, [.. argumentValues.GetTypes()]);
 
-            try
-            {
-                Execute(function, arguments);
-            }
-            catch (ReturnException returnException)
-            {
-                if (returnException.Value is not null)
-                    return returnException.Value;
-            }
+            var arguments = BindArguments(name, function.Parameters, [.. argumentValues]);
 
-            throw new ExpectedReturnValueException(name);
+            return Evaluate(function, arguments);
+        }
+
+        protected Instance Evaluate(QxExternalCallExpression expression)
+        {
+            var arguments = Evaluate(expression.Arguments);
+
+            var result = expression.Invoke([.. arguments]);
+            return result;
         }
 
         private static bool IsTruthy(Instance instance)
@@ -432,84 +421,27 @@ namespace Quixotic.Interpret
             return expectedValue;
         }
 
-        private Instance Add(QxExpression left, QxExpression right)
+        private Instance InvokeOperator(Operator op, QxExpression left, QxExpression right)
         {
+            if (op == Operator.And)
+                return And(left, right);
+
+            if (op == Operator.Or)
+                return Or(left, right);
+
+            var name = OperationMetadata.GetOperatorValue(op);
+
+            if (string.IsNullOrEmpty(name))
+                throw new NotSupportedException($"Operator {op} is not supported.");
+
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
 
-            return leftValue.Add(rightValue);
-        }
+            var function = runtime.Frame.Scope.GetFunction(name, leftValue.Type, rightValue.Type);
 
-        private Instance Subtract(QxExpression left, QxExpression right)
-        {
-            var leftValue = Evaluate(left);
-            var rightValue = Evaluate(right);
+            var arguments = BindArguments(name, function.Parameters, [leftValue, rightValue]);
 
-            return leftValue.Subtract(rightValue);
-        }
-
-        private Instance Multiply(QxExpression left, QxExpression right)
-        {
-            var leftValue = Evaluate(left);
-            var rightValue = Evaluate(right);
-
-            return leftValue.Multiply(rightValue);
-        }
-
-        private Instance Divide(QxExpression left, QxExpression right)
-        {
-            var leftValue = Evaluate(left);
-            var rightValue = Evaluate(right);
-
-            return leftValue.Divide(rightValue);
-        }
-
-        private BooleanValue IsEqualTo(QxExpression left, QxExpression right)
-        {
-            var leftValue = Evaluate(left);
-            var rightValue = Evaluate(right);
-
-            return leftValue.IsEqualTo(rightValue);
-        }
-
-        private BooleanValue IsNotEqualTo(QxExpression left, QxExpression right)
-        {
-            var leftValue = Evaluate(left);
-            var rightValue = Evaluate(right);
-
-            return leftValue.IsNotEqualTo(rightValue);
-        }
-
-        private BooleanValue IsLessThan(QxExpression left, QxExpression right)
-        {
-            var leftValue = Evaluate(left);
-            var rightValue = Evaluate(right);
-
-            return leftValue.IsLessThan(rightValue);
-        }
-
-        private BooleanValue IsLessThanOrEqualTo(QxExpression left, QxExpression right)
-        {
-            var leftValue = Evaluate(left);
-            var rightValue = Evaluate(right);
-
-            return leftValue.IsLessThanOrEqualTo(rightValue);
-        }
-
-        private BooleanValue IsGreaterThan(QxExpression left, QxExpression right)
-        {
-            var leftValue = Evaluate(left);
-            var rightValue = Evaluate(right);
-
-            return leftValue.IsGreaterThan(rightValue);
-        }
-
-        private BooleanValue IsGreaterThanOrEqualTo(QxExpression left, QxExpression right)
-        {
-            var leftValue = Evaluate(left);
-            var rightValue = Evaluate(right);
-
-            return leftValue.IsGreaterThanOrEqualTo(rightValue);
+            return Evaluate(function, arguments);
         }
 
         private BooleanValue And(QxExpression left, QxExpression right)
@@ -536,20 +468,16 @@ namespace Quixotic.Interpret
             return IsTruthy(rightValue) ? BooleanValue.True : BooleanValue.False;
         }
 
-        public List<Argument> BindArguments(string name, Function function, List<QxExpression> expressions)
+        public List<Argument> BindArguments(string name, List<Parameter> parameters, List<Instance> instances)
         {
-            var parameters = function.Parameters;
-
-            if (parameters.Count != expressions.Count)
-                throw new ParameterCountException(name, parameters.Count, expressions.Count);
+            if (parameters.Count != instances.Count)
+                throw new ParameterCountException(name, parameters.Count, instances.Count);
 
             List<Argument> arguments = [];
 
             // Push function parameters into 
-            foreach (var (parameter, expression) in parameters.Zip(expressions))
+            foreach (var (parameter, instance) in parameters.Zip(instances))
             {
-                var instance = Evaluate(expression);
-
                 if (!parameter.Type.IsAssignableFrom(instance.Type))
                     throw new TypeMismatchException(instance.Type, parameter.Type);
 
