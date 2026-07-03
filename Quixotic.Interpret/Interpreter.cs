@@ -252,7 +252,7 @@ namespace Quixotic.Interpret
 
         public void Execute(QxForStatement statement)
         {
-            var iterator = statement.Iterator.Name;
+            var iterator = statement.Iterator;
 
             var from = ExpectType<NumberValue>(Evaluate(statement.From));
             var to = ExpectType<NumberValue>(Evaluate(statement.To));
@@ -276,7 +276,7 @@ namespace Quixotic.Interpret
                 to = ExpectType<NumberValue>(Evaluate(statement.To));
                 step = ExpectType<NumberValue>(Evaluate(statement.Step));
 
-                Execute(statement.Block, RuntimeFrameType.ForBlock, [new(iterator, new NumberValue(i))]);
+                Execute(statement.Block, RuntimeFrameType.Loop, [new(iterator, new NumberValue(i))]);
             }
         }
 

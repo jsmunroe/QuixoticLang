@@ -5,7 +5,7 @@ using Quixotic.Common.Types;
 namespace Quixotic.Interpret.Symbols.Values
 {
 
-    public class ArrayInstance(QxType elementType, IEnumerable<Instance> elements) : Reference(new ArrayType(elementType))
+    public class ArrayInstance(QxType elementType, IEnumerable<Instance> elements) : Reference(new QxArrayType(elementType))
     {
         public ArrayInstance(QxType ElementType)
             : this(ElementType, [])

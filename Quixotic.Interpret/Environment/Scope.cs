@@ -25,14 +25,14 @@ namespace Quixotic.Interpret.Environment
         {
             ExpectUndefined(name);
 
-            _values[name] = new VariableSymbol(instance);
+            _values[name] = new VariableSymbol(name, instance);
         }
 
         public void DefineVariable(string name, QxType type)
         {
             ExpectUndefined(name);
 
-            _values[name] = new VariableSymbol(type);
+            _values[name] = new VariableSymbol(name, type);
         }
 
         public bool IsSymbolDeclared(string name)

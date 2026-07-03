@@ -1,4 +1,5 @@
-﻿using Quixotic.Analysis.Semantics;
+﻿using Quixotic.Analysis.Exceptions;
+using Quixotic.Analysis.Semantics;
 using Quixotic.Parsing;
 using QuixoticLang.Lexer;
 
@@ -22,6 +23,7 @@ namespace Quixotic.AnalysisTests.Semantics
             analyzer.Analyze(parser);
 
             // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -39,6 +41,7 @@ namespace Quixotic.AnalysisTests.Semantics
             analyzer.Analyze(parser);
 
             // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -57,6 +60,7 @@ namespace Quixotic.AnalysisTests.Semantics
             analyzer.Analyze(parser);
 
             // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -74,6 +78,7 @@ namespace Quixotic.AnalysisTests.Semantics
             analyzer.Analyze(parser);
 
             // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -91,6 +96,7 @@ namespace Quixotic.AnalysisTests.Semantics
             analyzer.Analyze(parser);
 
             // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -108,6 +114,7 @@ namespace Quixotic.AnalysisTests.Semantics
             analyzer.Analyze(parser);
 
             // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -125,6 +132,7 @@ namespace Quixotic.AnalysisTests.Semantics
             analyzer.Analyze(parser);
 
             // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -143,7 +151,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -160,7 +169,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -178,7 +188,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -196,7 +207,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -216,7 +228,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
 
@@ -235,7 +248,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
 
@@ -254,7 +268,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -272,6 +287,7 @@ namespace Quixotic.AnalysisTests.Semantics
             analyzer.Analyze(parser);
 
             // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -289,7 +305,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -309,7 +326,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -331,7 +349,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
 
@@ -359,7 +378,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -379,7 +399,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -401,7 +422,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -423,7 +445,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -445,7 +468,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -471,7 +495,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -495,7 +520,10 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            Assert.HasCount(1, analyzer.Issues);
+
+            Assert.IsInstanceOfType<AssignmentTypeMismatchException>(analyzer.Issues[0]);
         }
 
         [TestMethod]
@@ -519,7 +547,10 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            Assert.HasCount(1, analyzer.Issues);
+
+            Assert.IsInstanceOfType<UnrecognizedFunctionSignatureException>(analyzer.Issues[0]);
         }
 
 
@@ -543,7 +574,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
 
@@ -567,7 +599,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -590,7 +623,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -613,7 +647,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -636,7 +671,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
 
@@ -664,7 +700,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -691,7 +728,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -713,7 +751,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -735,7 +774,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
 
@@ -758,7 +798,10 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            Assert.HasCount(1, analyzer.Issues);
+
+            Assert.IsInstanceOfType<UnreachableCodeException>(analyzer.Issues[0]);
         }
 
         [TestMethod]
@@ -778,7 +821,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -798,7 +842,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -818,7 +863,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -841,7 +887,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -859,7 +906,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -879,7 +927,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -899,7 +948,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -919,7 +969,8 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            AssertNoIssues(analyzer);
         }
 
         [TestMethod]
@@ -939,7 +990,10 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            Assert.HasCount(1, analyzer.Issues);
+
+            Assert.IsInstanceOfType<AssignmentTypeMismatchException>(analyzer.Issues[0]);
         }
 
         [TestMethod]
@@ -959,7 +1013,19 @@ namespace Quixotic.AnalysisTests.Semantics
             // Execute
             analyzer.Analyze(parser);
 
-            // Assert 
+            // Assert
+            Assert.HasCount(1, analyzer.Issues);
+
+            Assert.IsInstanceOfType<AssignmentTypeMismatchException>(analyzer.Issues[0]);
+        }
+
+        public void AssertNoIssues(SemanticAnalyzer analyzer)
+        {
+            if (analyzer.Issues.Count > 0)
+            {
+                var issues = string.Join(Environment.NewLine, analyzer.Issues.Select(i => $"{i.GetType().Name}: {i.Message}"));
+                Assert.Fail($"Expected no issues, but found {analyzer.Issues.Count} issues: {Environment.NewLine}{issues}");
+            }
         }
     }
 }

@@ -396,13 +396,8 @@ namespace Quixotic.Parsing
         {
             _parseContext.AssignStatementType(StatementType.For);
 
-            var identifier = CaptureActivity(() =>
-            {
-                var identifierToken = Expect(TokenType.Identifier);
-                return new QxIdentifierExpression(identifierToken.Value);
-
-            }, ActivityType.Iterator);
-
+            var iteratorToken = Expect(TokenType.Identifier);
+            var iterator = iteratorToken.Value;
 
             // From value
             var from = CaptureExpression(() =>
@@ -436,7 +431,7 @@ namespace Quixotic.Parsing
 
             Expect(TokenType.Next);
 
-            return new(identifier, from, to)
+            return new(iterator, from, to)
             {
                 Step = step,
                 Block = block,

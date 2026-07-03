@@ -1,4 +1,4 @@
-﻿using Quixotic.Analysis.BuiltIn;
+﻿using Quixotic.Analysis.Contracts;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Types;
@@ -12,16 +12,20 @@ namespace Quixotic.Analysis.Environment
 
         private readonly SignatureRegistry _signatureRegistry = new();
 
+        public SymbolTable? Parent { get; } = parent;
+
         public void Add(ISignatureProvider signatureProvider)
         {
             signatureProvider.Register(_signatureRegistry);
         }
 
-        public void DefineVariable(string name, QxType type)
+        public bool TryDefineVariable(string name, QxType type)
         {
-            ExpectUndefined(name);
+            if (IsDefined(name))
+                return false;
 
-            _variables[name] = new VariableTypeSymbol(type);
+            _variables[name] = new VariableTypeSymbol(name, type);
+            return true;
         }
 
         public bool IsSymbolDeclared(string name)
@@ -47,7 +51,7 @@ namespace Quixotic.Analysis.Environment
                 return true;
             }
 
-            if (parent?.TryGetSymbol(name, out var parentSymbol) == true)
+            if (Parent?.TryGetSymbol(name, out var parentSymbol) == true)
             {
                 symbol = parentSymbol;
                 return true;
@@ -63,43 +67,39 @@ namespace Quixotic.Analysis.Environment
                 throw new UndefinedSymbolException(name);
         }
 
-        public QxType GetInstance(string name)
+        public QxType? GetInstance(string name)
         {
             if (!TryGetSymbol(name, out var symbol) || symbol is not VariableTypeSymbol variableSymbol)
-                throw new UndefinedSymbolException(name);
+                return null;
 
             return variableSymbol.Type;
         }
 
-        public void DefineSignature(string name, QxType returnType, params QxType[] parameters)
+        public bool TryDefineSignature(string name, QxType returnType, params QxType[] parameters)
         {
-            ExpectUndefined(name);
+            if (IsDefined(name))
+                return false;
 
             _signatureRegistry.Register(name, returnType, parameters);
+            return true;
         }
 
-        public FunctionSignatureSymbol GetSignature(string name, params QxType[] arguments)
+        public FunctionSignatureSymbol? GetSignature(string name, params QxType[] arguments)
         {
-            if (_signatureRegistry.TryResolve(name, arguments, out var functionSymbol))
+            var signature = new Signature(name, [.. arguments]);
+
+            if (_signatureRegistry.TryResolve(signature, out var functionSymbol))
                 return functionSymbol;
 
-            throw new UndefinedFunctionException(name);
+            if (Parent is not null)
+                return Parent.GetSignature(name, arguments);
+
+            return null;
         }
 
-        private void ExpectUndefined(string name)
+        public bool IsDefined(string name)
         {
-            if (TryGetSymbol(name, out var symbol))
-            {
-                if (symbol is VariableTypeSymbol)
-                    throw new VariableAlreadyDefinedException(name);
-
-                if (symbol is FunctionSignatureSymbol)
-                    throw new FunctionAlreadyDefinedException(name);
-
-                throw new SymbolAlreadyDefinedException(name);
-            }
-
-            parent?.ExpectUndefined(name);
+            return TryGetSymbol(name, out _);
         }
 
     }

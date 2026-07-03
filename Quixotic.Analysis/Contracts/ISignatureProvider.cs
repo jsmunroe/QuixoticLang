@@ -1,6 +1,6 @@
 ﻿using Quixotic.Analysis.Environment;
 
-namespace Quixotic.Analysis.BuiltIn
+namespace Quixotic.Analysis.Contracts
 {
     public interface ISignatureProvider
     {

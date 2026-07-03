@@ -27,6 +27,11 @@ namespace Quixotic.Analysis.Environment
             return TryResolve(name, parameterTypes, out var functionSymbol) ? functionSymbol : null;
         }
 
+        public FunctionSignatureSymbol? Resolve(Signature signature)
+        {
+            return TryResolve(signature.Name, [.. signature.Parameters], out var functionSymbol) ? functionSymbol : null;
+        }
+
         public bool TryResolve(string name, QxType[] parameterTypes, [NotNullWhen(returnValue: true)] out FunctionSignatureSymbol? functionSignature)
         {
             functionSignature = null;
@@ -38,6 +43,7 @@ namespace Quixotic.Analysis.Environment
 
             foreach (var (s, f) in _signatures)
             {
+
                 if (s.IsCompatible(name, parameterTypes))
                 {
                     functionSignature = f;
@@ -46,6 +52,12 @@ namespace Quixotic.Analysis.Environment
             }
 
             return false;
+        }
+
+
+        public bool TryResolve(Signature signature, [NotNullWhen(returnValue: true)] out FunctionSignatureSymbol? functionSignature)
+        {
+            return TryResolve(signature.Name, [.. signature.Parameters], out functionSignature);
         }
     }
 }

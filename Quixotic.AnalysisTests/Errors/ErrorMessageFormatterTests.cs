@@ -725,7 +725,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected end of line was encountered while parsing the iterator of the for statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected end of line was encountered while parsing the for statement. The parser expected an identifier.", result);
         }
 
         [TestMethod]
@@ -748,7 +748,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected keyword 'do' was encountered while parsing the iterator of the for statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected keyword 'do' was encountered while parsing the for statement. The parser expected an identifier.", result);
         }
 
         [TestMethod]
@@ -980,7 +980,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected operator ':=' was encountered while parsing the iterator of the for statement. The parser expected an identifier.", result);
+            Assert.AreEqual("An unexpected operator ':=' was encountered while parsing the for statement. The parser expected an identifier.", result);
         }
 
         [TestMethod]

@@ -16,7 +16,7 @@ namespace Quixotic.Common.Types
 
         public virtual bool IsAssignableFrom(QxType subtype)
         {
-            if (this == Any)
+            if (this == Any || this is QxGeneric)
                 return true;
 
             if (ReferenceEquals(this, Any))
@@ -101,7 +101,7 @@ namespace Quixotic.Common.Types
                 return false;
 
             if (isArray)
-                type = new ArrayType(type);
+                type = new QxArrayType(type);
 
             return true;
         }
@@ -114,6 +114,8 @@ namespace Quixotic.Common.Types
         public static QxType Nada { get; } = NadaType.Instance;
         public static QxType Void { get; } = VoidType.Instance;
 
-        public static QxType Array(QxType elementType) => new ArrayType(elementType);
+        public static QxType Array(QxType elementType) => new QxArrayType(elementType);
+
+        public static QxGeneric Generic(string name) => new QxGeneric(name);
     }
 }

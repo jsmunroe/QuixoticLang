@@ -26,6 +26,11 @@ namespace Quixotic.Common.Symbols
             return true;
         }
 
+        public bool IsCompatible(Signature other)
+        {
+            return IsCompatible(other.Name, [.. other.Parameters]);
+        }
+
         public override bool Equals(object? obj)
         {
             if (obj is not Signature other)

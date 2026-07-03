@@ -5,8 +5,6 @@
         Global,
         Function,
         IfBlock,
-        WhileBlock,
-        ForBlock,
         Loop,
     }
 }

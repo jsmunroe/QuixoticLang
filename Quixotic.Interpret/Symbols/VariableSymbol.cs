@@ -9,14 +9,14 @@ namespace Quixotic.Interpret.Symbols
     {
         public Instance Instance { get; private set; }
 
-        public VariableSymbol(Instance instance)
-            : base(instance.Type)
+        public VariableSymbol(string name, Instance instance)
+            : base(name, instance.Type)
         {
             Instance = instance;
         }
 
-        public VariableSymbol(QxType type)
-            : base(type)
+        public VariableSymbol(string name, QxType type)
+            : base(name, type)
         {
             Instance = Instance.Nada;
         }

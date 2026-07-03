@@ -806,7 +806,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
             Assert.AreEqual(StatementType.For, diagnostic.StatementType);
-            Assert.AreEqual(ActivityType.Iterator, diagnostic.ActivityType);
+            Assert.AreEqual(ActivityType.None, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.NewLine, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Identifier, issue.Expected);
@@ -834,7 +834,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
             Assert.AreEqual(StatementType.For, diagnostic.StatementType);
-            Assert.AreEqual(ActivityType.Iterator, diagnostic.ActivityType);
+            Assert.AreEqual(ActivityType.None, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.Do, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Identifier, issue.Expected);
@@ -1111,7 +1111,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.IsNotNull(diagnostic);
             Assert.AreEqual(ContextType.Parsing, diagnostic.ContextType);
             Assert.AreEqual(StatementType.For, diagnostic.StatementType);
-            Assert.AreEqual(ActivityType.Iterator, diagnostic.ActivityType);
+            Assert.AreEqual(ActivityType.None, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.Assignment, issue.Encountered.Type);
             Assert.AreEqual(TokenType.Identifier, issue.Expected);

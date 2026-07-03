@@ -21,7 +21,6 @@
         ElseIfBlock,
         DoPrecondition,
         DoBlock,
-        Iterator,
         ForBlock,
         FunctionName,
         FunctionBody,

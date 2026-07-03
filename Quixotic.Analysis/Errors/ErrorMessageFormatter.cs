@@ -247,7 +247,6 @@ namespace Quixotic.Analysis.Errors
                 ActivityType.ElseIfBlock => "the else if block",
                 ActivityType.DoPrecondition => "the precondition of the do statement",
                 ActivityType.DoBlock => "the do block",
-                ActivityType.Iterator => "the iterator of the for statement",
                 ActivityType.ForBlock => "the for block",
                 ActivityType.FunctionName => "the function name",
                 ActivityType.FunctionBody => "the function body",

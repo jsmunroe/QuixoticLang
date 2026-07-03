@@ -2,8 +2,10 @@
 
 namespace Quixotic.Common.Symbols
 {
-    public class VariableTypeSymbol(QxType type) : Symbol
+    public class VariableTypeSymbol(string name, QxType type) : Symbol
     {
+        public string Name { get; } = name;
+
         public QxType Type { get; } = type;
     }
 }

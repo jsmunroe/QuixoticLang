@@ -12,6 +12,20 @@ namespace Quixotic.Common.Symbols
 
         public List<QxType> ParameterTypes { get; init; } = [.. parameterTypes];
 
+        public FunctionSignatureSymbol ReplaceGenerics(params QxType[] arguments)
+        {
+            var genericTypes = new Dictionary<string, QxType>();
+
+            foreach (var (parameter, argument) in ParameterTypes.Zip(arguments))
+                QxGeneric.GetKeyValues(parameter, argument, genericTypes);
+
+            var replacedParameters = ParameterTypes.Select(p => QxGeneric.SetKeyValues(p, genericTypes));
+
+            var replacedReturnType = QxGeneric.SetKeyValues(ReturnType, genericTypes);
+
+            return new FunctionSignatureSymbol(Name, replacedReturnType, [.. replacedParameters]);
+        }
+
         public override string ToString()
         {
             return $"{Name}({string.Join(", ", ParameterTypes)})";

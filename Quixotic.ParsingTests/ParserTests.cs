@@ -1128,7 +1128,7 @@ namespace Quixotic.ParsingTests
             var forStatement = Assert.IsInstanceOfType<QxForStatement>(statement);
 
             if (iterator is not null)
-                Assert.AreEqual(iterator, forStatement.Iterator.Name);
+                Assert.AreEqual(iterator, forStatement.Iterator);
 
             if (from is not null)
                 from.Assert(forStatement.From);

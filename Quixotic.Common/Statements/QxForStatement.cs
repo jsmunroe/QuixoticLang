@@ -2,9 +2,9 @@
 
 namespace Quixotic.Common.Statements
 {
-    public class QxForStatement(QxIdentifierExpression iterator, QxExpression from, QxExpression to) : QxStatement
+    public class QxForStatement(string iterator, QxExpression from, QxExpression to) : QxStatement
     {
-        public QxIdentifierExpression Iterator { get; } = iterator;
+        public string Iterator { get; } = iterator;
 
         public QxExpression From { get; } = from;
         public QxExpression To { get; } = to;
