@@ -1,12 +1,14 @@
-﻿using Quixotic.Common.Contracts;
+﻿using Quixotic.Analysis.Exceptions;
+using Quixotic.Common.Contracts;
 using Quixotic.Common.Diagnostics;
 using Quixotic.Common.Diagnostics.Issues;
 using Quixotic.Common.Extensions;
 using Quixotic.Common.Operations;
+using Quixotic.Common.Source;
 using Quixotic.Common.Syntax;
 using Quixotic.Common.Tokens;
+using Quixotic.Common.Utilities;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace Quixotic.Analysis.Errors
 {
@@ -14,14 +16,61 @@ namespace Quixotic.Analysis.Errors
     {
         public bool PrintTokensAsValues { get; set; } = false;
 
-        public string Describe(Exception exception)
+        public ConsoleText Describe(Exception exception, ISource source)
         {
-            if (exception is not IHasDiagnostic diagnosticSource)
-                return exception.Message;
+            var description = Describe(exception);
 
-            var diagnostic = diagnosticSource.Diagnostic;
+            var span = Span.Empty;
 
-            var description = new StringBuilder();
+            if (exception is IHasDiagnostic hasDiagnostic)
+                span = hasDiagnostic.Diagnostic.Span;
+
+            if (exception is SemanticException semanticException)
+                span = semanticException.Span;
+
+            if (span.IsEmpty)
+                return description;
+
+            SourceDocument sourceDocument = new(source);
+
+            var sourceLines = sourceDocument.GetLines(span);
+
+            description.WriteLine();
+            description.WriteLine(sourceLines);
+
+            return description;
+        }
+
+        public ConsoleText Describe(Exception exception)
+        {
+            if (exception is IHasDiagnostic diagnosticSource)
+                return Describe(exception, diagnosticSource.Diagnostic);
+
+            if (exception is SemanticException semanticException)
+                return Describe(semanticException);
+
+            return new ConsoleText(exception.Message);
+        }
+
+        public ConsoleText Describe(SemanticException semanticException)
+        {
+            var description = new ConsoleText();
+
+            var color = semanticException.Severity switch
+            {
+                Semantics.Severity.Warning => ConsoleColor.Yellow,
+                Semantics.Severity.Error => ConsoleColor.Red,
+                _ => ConsoleColor.Gray,
+            };
+
+            description.Write($"{semanticException.Severity}: {semanticException.Message}", color);
+
+            return description;
+        }
+
+        public ConsoleText Describe(Exception exception, Diagnostic diagnostic)
+        {
+            var description = new ConsoleText();
 
             switch (diagnostic.ContextType)
             {
@@ -38,19 +87,19 @@ namespace Quixotic.Analysis.Errors
                     break;
 
                 default:
-                    description.Append(exception.Message);
+                    description.Write(exception.Message);
                     break;
             }
 
-            return description.ToString().Trim();
+            return description;
         }
 
-        private void DescribeLexical(StringBuilder description, Exception exception, Diagnostic diagnostic)
+        private void DescribeLexical(ConsoleText description, Exception exception, Diagnostic diagnostic)
         {
-            description.Append(exception.Message);
+            description.Write(exception.Message);
         }
 
-        private void DescribeParsing(StringBuilder description, Exception exception, Diagnostic diagnostic)
+        private void DescribeParsing(ConsoleText description, Exception exception, Diagnostic diagnostic)
         {
             switch (diagnostic.Issue)
             {
@@ -75,17 +124,17 @@ namespace Quixotic.Analysis.Errors
                     break;
 
                 default:
-                    description.Append(exception.Message);
+                    description.Write(exception.Message);
                     break;
             }
         }
 
-        private void DescribeInterpretation(StringBuilder description, Exception exception, Diagnostic diagnostic)
+        private void DescribeInterpretation(ConsoleText description, Exception exception, Diagnostic diagnostic)
         {
-            description.Append(exception.Message);
+            description.Write(exception.Message);
         }
 
-        private void DescribeParsingUnexpectedToken(StringBuilder description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
+        private void DescribeParsingUnexpectedToken(ConsoleText description, Exception exception, UnexpectedToken issue, Diagnostic diagnostic)
         {
             var activity = diagnostic.Activity;
 
@@ -105,25 +154,25 @@ namespace Quixotic.Analysis.Errors
             if (activityType is not null && activityType != ActivityType.None)
             {
                 if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing {DescribeActivityType(activityType.Value, diagnostic)}. ");
+                    description.Write($"An unexpected end of line was encountered while parsing {DescribeActivityType(activityType.Value, diagnostic)}. ");
                 else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing {DescribeActivityType(activityType.Value, diagnostic)}. ");
+                    description.Write($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing {DescribeActivityType(activityType.Value, diagnostic)}. ");
             }
             else
             {
                 if (diagnostic.IsEndOfLine)
-                    description.Append($"An unexpected end of line was encountered while parsing {DescribeStatementType(diagnostic.StatementType, diagnostic)}. ");
+                    description.Write($"An unexpected end of line was encountered while parsing {DescribeStatementType(diagnostic.StatementType, diagnostic)}. ");
                 else
-                    description.Append($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing {DescribeStatementType(diagnostic.StatementType, diagnostic)}. ");
+                    description.Write($"An unexpected {DescribeToken(issue.Encountered)} was encountered while parsing {DescribeStatementType(diagnostic.StatementType, diagnostic)}. ");
             }
 
             DescribeActivity(description, diagnostic.ActivityType, diagnostic, issue);
 
             if (issue.Expected is not null)
-                description.Append($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
+                description.Write($"The parser expected {DescribeToken(issue.Expected.Value).PrependIndefiniteArticle()}. ");
         }
 
-        private void DescribeParsingIncompleteSource(StringBuilder description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
+        private void DescribeParsingIncompleteSource(ConsoleText description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
         {
             switch (diagnostic.StatementType)
             {
@@ -145,44 +194,44 @@ namespace Quixotic.Analysis.Errors
                     break;
 
                 default:
-                    description.Append(exception.Message);
+                    description.Write(exception.Message);
                     break;
             }
         }
 
-        private void DescribeParsingIncompleteSourceInIf(StringBuilder description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
+        private void DescribeParsingIncompleteSourceInIf(ConsoleText description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
         {
-            description.Append("Encountered end of file before if block has been properly terminated (end if).");
+            description.Write("Encountered end of file before if block has been properly terminated (end if).");
         }
 
-        private void DescribeParsingIncompleteSourceInDo(StringBuilder description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
+        private void DescribeParsingIncompleteSourceInDo(ConsoleText description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
         {
-            description.Append("Encountered end of file before do block has been properly terminated (end do).");
+            description.Write("Encountered end of file before do block has been properly terminated (end do).");
         }
 
-        private void DescribeParsingIncompleteSourceInFor(StringBuilder description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
+        private void DescribeParsingIncompleteSourceInFor(ConsoleText description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
         {
-            description.Append("Encountered end of file before for block has been properly terminated (next).");
+            description.Write("Encountered end of file before for block has been properly terminated (next).");
         }
 
-        private void DescribeParsingIncompleteSourceInFunctionDeclaration(StringBuilder description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
+        private void DescribeParsingIncompleteSourceInFunctionDeclaration(ConsoleText description, Exception exception, IncompleteSource issue, Diagnostic diagnostic)
         {
-            description.Append("Encountered end of file before function declaration has been properly terminated (end function).");
+            description.Write("Encountered end of file before function declaration has been properly terminated (end function).");
         }
 
-        private void DescribeParsingDoLoopNoCondition(StringBuilder description, Exception exception, DoLoopNoCondition doLoopNoCondition, Diagnostic diagnostic)
+        private void DescribeParsingDoLoopNoCondition(ConsoleText description, Exception exception, DoLoopNoCondition doLoopNoCondition, Diagnostic diagnostic)
         {
-            description.Append("A do statement is lacking a condition. A do loop statement must have either a precondition (do while/until) or a postcondition (loop while/until) followed by a Boolean expression.");
+            description.Write("A do statement is lacking a condition. A do loop statement must have either a precondition (do while/until) or a postcondition (loop while/until) followed by a Boolean expression.");
         }
 
-        private void DescribeParsingDoLoopDualCondition(StringBuilder description, Exception exception, DoLoopDualCondition doLoopDualCondition, Diagnostic diagnostic)
+        private void DescribeParsingDoLoopDualCondition(ConsoleText description, Exception exception, DoLoopDualCondition doLoopDualCondition, Diagnostic diagnostic)
         {
-            description.Append("A do statement cannot have both a precondition and postcondition expression.");
+            description.Write("A do statement cannot have both a precondition and postcondition expression.");
         }
 
-        private void DescribeParsingStandaloneExpression(StringBuilder description, Exception exception, StandaloneExpression standaloneExpression, Diagnostic diagnostic)
+        private void DescribeParsingStandaloneExpression(ConsoleText description, Exception exception, StandaloneExpression standaloneExpression, Diagnostic diagnostic)
         {
-            description.Append($"The expression '{diagnostic.Statement?.Tokens.GetValue()}' cannot stand alone as a statement.");
+            description.Write($"The expression '{diagnostic.Statement?.Tokens.GetValue()}' cannot stand alone as a statement.");
         }
 
         private string DescribeStatementType(StatementType statementType, Diagnostic diagnostic)
@@ -264,31 +313,31 @@ namespace Quixotic.Analysis.Errors
             };
         }
 
-        private void DescribeActivity(StringBuilder description, ActivityType activityType)
+        private void DescribeActivity(ConsoleText description, ActivityType activityType)
         {
             if (activityType == ActivityType.ParenSet)
-                description.Append($"An open parenthesis has been left without a matching close parenthesis. ");
+                description.Write($"An open parenthesis has been left without a matching close parenthesis. ");
 
             if (activityType == ActivityType.UnaryPlus)
-                description.Append($"A unary plus operator (+n) was encountered without an operand. ");
+                description.Write($"A unary plus operator (+n) was encountered without an operand. ");
 
             if (activityType == ActivityType.UnaryNegation)
-                description.Append($"A unary negation operator (-n) was encountered without an operand. ");
+                description.Write($"A unary negation operator (-n) was encountered without an operand. ");
 
             if (activityType == ActivityType.UnaryNot)
-                description.Append($"A unary not operator (not n) was encountered without an operand. ");
+                description.Write($"A unary not operator (not n) was encountered without an operand. ");
         }
 
-        private void DescribeActivity(StringBuilder description, ActivityType activityType, Diagnostic diagnostic, UnexpectedToken issue)
+        private void DescribeActivity(ConsoleText description, ActivityType activityType, Diagnostic diagnostic, UnexpectedToken issue)
         {
             DescribeActivity(description, activityType);
 
             if (activityType == ActivityType.RightOperand)
             {
                 if (!diagnostic.IsEndOfLine)
-                    description.Append($"{DescribeToken(issue.Encountered).Capitalize()} is an invalid operand in the expression '{GetExpressionValue(diagnostic)}'. ");
+                    description.Write($"{DescribeToken(issue.Encountered).Capitalize()} is an invalid operand in the expression '{GetExpressionValue(diagnostic)}'. ");
                 else
-                    description.Append($"The expression '{GetExpressionValue(diagnostic)}' may not be finished. ");
+                    description.Write($"The expression '{GetExpressionValue(diagnostic)}' may not be finished. ");
             }
 
             if (activityType == ActivityType.IfCondition && diagnostic.IsEndOfLine)
@@ -298,7 +347,7 @@ namespace Quixotic.Analysis.Errors
                 if (expression is not null)
                     expression = $" '{expression}'";
 
-                description.Append($"The if condition expression{expression} may not be finished. ");
+                description.Write($"The if condition expression{expression} may not be finished. ");
             }
 
         }

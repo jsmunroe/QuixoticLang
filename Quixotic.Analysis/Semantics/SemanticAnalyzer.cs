@@ -22,6 +22,10 @@ namespace Quixotic.Analysis.Semantics
 
         public List<SemanticException> Issues { get; } = [];
 
+        public IEnumerable<SemanticException> Errors => Issues.Where(issue => issue.Severity == Severity.Error);
+
+        public IEnumerable<SemanticException> Warnings => Issues.Where(issue => issue.Severity == Severity.Warning);
+
         public void PushBlockFrame()
         {
             Frame = new BlockFrame(Frame);
@@ -45,13 +49,13 @@ namespace Quixotic.Analysis.Semantics
             Frame = Frame.Parent;
         }
 
-        public void Analyze(Parser parser)
+        public IEnumerable<QxStatement> Analyze(Parser parser)
         {
             var statements = parser.Parse();
-            Analyze(statements);
+            return Analyze(statements);
         }
 
-        public void Analyze(IEnumerable<QxStatement> statements)
+        public IEnumerable<QxStatement> Analyze(IEnumerable<QxStatement> statements)
         {
             foreach (var statement in statements)
             {
@@ -63,6 +67,8 @@ namespace Quixotic.Analysis.Semantics
                 {
                     Issues.Add(ex);
                 }
+
+                yield return statement;
             }
         }
 
@@ -134,7 +140,9 @@ namespace Quixotic.Analysis.Semantics
             if (!_expressionIndexer.TryGetDelegate(expressionType, out var func))
                 throw new NotImplementedException($"No analyzer implemented for expression type: {expressionType.Name}");
 
-            return func(this, expression);
+            var type = func(this, expression);
+            expression.SemanticInfo = expression.SemanticInfo is null ? new Common.Expressions.SemanticInfo(type) : expression.SemanticInfo with { Type = type };
+            return type;
         }
 
         // Example statement analyzers

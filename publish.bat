@@ -1,0 +1,1 @@
+dotnet publish ./Quixotic.Cli/Quixotic.Cli.csproj -c Release -o C:\Users\jsmun\Path\quixotic --self-contained true

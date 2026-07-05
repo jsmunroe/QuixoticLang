@@ -1,6 +1,8 @@
-﻿namespace Quixotic.Cli
+﻿using Quixotic.Common.Contracts;
+
+namespace Quixotic.Common.Utilities
 {
-    public class ConsoleWriter
+    public class ConsoleWriter : IConsoleWriter
     {
         public void Clear() => Console.Clear();
 
@@ -23,7 +25,14 @@
             Console.WriteLine();
         }
 
-        public void WriteError(object text, Exception? exception = null, ConsoleColor foreground = ConsoleColor.Gray)
+        public void WriteWarning(object text, ConsoleColor foreground = ConsoleColor.Yellow)
+        {
+            Console.ForegroundColor = foreground;
+            Console.WriteLine(text);
+            Console.ResetColor();
+        }
+
+        public void WriteError(object text, Exception? exception = null, ConsoleColor foreground = ConsoleColor.Red)
         {
             Console.ForegroundColor = foreground;
             Console.WriteLine(text);

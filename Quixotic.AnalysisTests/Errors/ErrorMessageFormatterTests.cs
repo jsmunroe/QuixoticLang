@@ -31,7 +31,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -61,7 +61,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -84,7 +84,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -106,7 +106,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -130,7 +130,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -153,7 +153,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -176,7 +176,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -199,7 +199,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -222,7 +222,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -245,7 +245,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -268,12 +268,13 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
+            Assert.AreEqual("An unexpected keyword 'next' was encountered while parsing the expression. Keyword 'next' is an invalid operand in the expression 'i := next'.", result);
             Assert.AreEqual("An unexpected keyword 'next' was encountered while parsing the expression. Keyword 'next' is an invalid operand in the expression 'i := next'.", result);
         }
 
@@ -291,7 +292,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -314,7 +315,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -337,7 +338,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -360,7 +361,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -383,7 +384,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -409,7 +410,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -433,7 +434,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -458,7 +459,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -481,7 +482,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -504,7 +505,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -527,7 +528,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -550,7 +551,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -573,7 +574,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -596,7 +597,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -621,7 +622,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -646,7 +647,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -671,7 +672,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -696,7 +697,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -719,7 +720,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -742,7 +743,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -765,7 +766,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -788,7 +789,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -811,7 +812,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -834,7 +835,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -857,7 +858,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -880,7 +881,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -903,7 +904,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -926,7 +927,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -949,7 +950,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -974,7 +975,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -997,7 +998,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1020,7 +1021,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1043,7 +1044,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1066,7 +1067,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1090,7 +1091,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1113,7 +1114,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1136,7 +1137,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1159,7 +1160,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1183,7 +1184,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1209,7 +1210,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1234,7 +1235,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1260,7 +1261,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1285,7 +1286,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1308,7 +1309,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1331,7 +1332,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1354,7 +1355,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);
@@ -1378,7 +1379,7 @@ namespace Quixotic.AnalysisTests.Errors
             var errorMessageFormatter = new ErrorMessageFormatter();
 
             // Execute
-            var result = errorMessageFormatter.Describe(exception);
+            var result = errorMessageFormatter.Describe(exception).ToString();
 
             // Assert
             Console.WriteLine(result);

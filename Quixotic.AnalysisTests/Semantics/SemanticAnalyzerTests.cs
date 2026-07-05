@@ -20,7 +20,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -38,7 +38,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -57,7 +57,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -75,7 +75,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -93,7 +93,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -111,7 +111,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -129,7 +129,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -149,7 +149,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -167,7 +167,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -186,7 +186,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -205,7 +205,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -226,7 +226,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -246,7 +246,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -266,7 +266,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -284,7 +284,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -303,7 +303,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -324,7 +324,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -347,7 +347,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -376,7 +376,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -397,7 +397,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -420,7 +420,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -443,7 +443,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -466,7 +466,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -493,7 +493,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -518,7 +518,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             Assert.HasCount(1, analyzer.Issues);
@@ -545,7 +545,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             Assert.HasCount(1, analyzer.Issues);
@@ -572,7 +572,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -597,7 +597,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -621,7 +621,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -645,7 +645,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -669,7 +669,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -698,7 +698,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -726,7 +726,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -749,7 +749,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -772,7 +772,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -796,7 +796,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             Assert.HasCount(1, analyzer.Issues);
@@ -819,7 +819,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -840,7 +840,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -861,7 +861,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -885,7 +885,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -904,7 +904,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -925,7 +925,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -946,7 +946,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -967,7 +967,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
@@ -988,7 +988,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             Assert.HasCount(1, analyzer.Issues);
@@ -1011,7 +1011,7 @@ namespace Quixotic.AnalysisTests.Semantics
             var analyzer = new SemanticAnalyzer();
 
             // Execute
-            analyzer.Analyze(parser);
+            analyzer.Analyze(parser).ToList();
 
             // Assert
             Assert.HasCount(1, analyzer.Issues);

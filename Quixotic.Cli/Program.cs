@@ -1,4 +1,5 @@
-﻿using Quixotic.Interpret;
+﻿using Quixotic.Common.Utilities;
+using Quixotic.Interpret;
 using Quixotic.Interpret.Environment;
 using Quixotic.Parsing;
 

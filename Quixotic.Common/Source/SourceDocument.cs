@@ -145,5 +145,19 @@ namespace Quixotic.Common.Source
 
             return [.. lines];
         }
+
+        public string GetLines(Span span)
+        {
+            var linesText = string.Empty;
+
+            for (var i = span.Start.Line; i <= span.End.Line; i++)
+            {
+                var line = GetLine(i);
+
+                linesText += $"{i}: {line?.Text ?? string.Empty}\r\n";
+            }
+
+            return linesText.TrimEnd('\r', '\n');
+        }
     }
 }

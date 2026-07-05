@@ -1,6 +1,7 @@
-﻿using Quixotic.Common.Tokens;
+﻿using Quixotic.Analysis.Semantics;
+using Quixotic.Common.Tokens;
 
 namespace Quixotic.Analysis.Exceptions
 {
-    public class UnreachableCodeException(Span span) : SemanticException($"Unreachable code.", span);
+    public class UnreachableCodeException(Span span) : SemanticException($"Unreachable code.", span, Severity.Warning);
 }

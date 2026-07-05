@@ -1,6 +1,10 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿using Quixotic.Analysis.Errors;
+using Quixotic.Analysis.Semantics;
+using Quixotic.Common.Contracts;
+using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
+using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Types;
 using Quixotic.Common.Utilities;
@@ -16,27 +20,58 @@ using QuixoticLang.Lexer;
 
 namespace Quixotic.Interpret
 {
-    public class Interpreter(IRuntime runtime)
+    public class Interpreter(IRuntime runtime, IConsoleWriter? consoleWriter = null)
     {
-        private readonly static MethodIndexer<Action<Interpreter, QxStatement>> _executes = new(typeof(Interpreter), "Execute");
-        private readonly static MethodIndexer<Func<Interpreter, QxExpression, Instance>> _evaluates = new(typeof(Interpreter), "Evaluate");
+        // Defer construction to avoid TypeInitializationException at app startup when referenced
+        // types live in other assemblies that may be versioned/updated separately.
+        private readonly static Lazy<MethodIndexer<Action<Interpreter, QxStatement>>> _executes =
+            new(() => new MethodIndexer<Action<Interpreter, QxStatement>>(typeof(Interpreter), "Execute"));
+
+        private readonly static Lazy<MethodIndexer<Func<Interpreter, QxExpression, Instance>>> _evaluates =
+            new(() => new MethodIndexer<Func<Interpreter, QxExpression, Instance>>(typeof(Interpreter), "Evaluate"));
+
+        private readonly IConsoleWriter _consoleWriter = consoleWriter ?? new ConsoleWriter();
 
         public void Execute(string source)
         {
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
-            var statements = parser.Parse();
-
-            Execute(statements);
+            Execute(new StringSource(source));
         }
 
         public void Execute(Stream source)
         {
+            Execute(StringSource.FromStream(source));
+        }
+
+        private void Execute(ISource source)
+        {
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var statements = parser.Parse();
 
-            Execute(statements);
+            var formatter = new ErrorMessageFormatter();
+
+            try
+            {
+                var statements = parser.Parse();
+
+                var analyzer = new SemanticAnalyzer();
+                analyzer.Analyze(statements);
+
+                foreach (var issue in analyzer.Issues)
+                {
+                    var message = formatter.Describe(issue, source);
+                    message.Output(_consoleWriter);
+                }
+
+                if (analyzer.Errors.Any())
+                    return;
+
+                Execute(statements);
+            }
+            catch (Exception ex)
+            {
+                var message = formatter.Describe(ex, source);
+                message.Output(_consoleWriter);
+            }
         }
 
         public void Execute(IEnumerable<QxStatement> statements)
@@ -106,7 +141,7 @@ namespace Quixotic.Interpret
         public void Execute(QxStatement statement)
         {
             var statementType = statement.GetType();
-            if (!_executes.TryGetDelegate(statementType, out var action))
+            if (!_executes.Value.TryGetDelegate(statementType, out var action))
                 throw new NotSupportedException($"Unsupported statement type: {statementType.Name}");
 
             action(this, statement);
@@ -115,7 +150,7 @@ namespace Quixotic.Interpret
         private Instance Evaluate(QxExpression expression)
         {
             var expressionType = expression.GetType();
-            if (!_evaluates.TryGetDelegate(expressionType, out var function))
+            if (!_evaluates.Value.TryGetDelegate(expressionType, out var function))
                 throw new NotSupportedException($"Unsupported expression type: {expressionType.Name}");
 
             return function(this, expression);
