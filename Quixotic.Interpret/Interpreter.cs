@@ -311,7 +311,18 @@ namespace Quixotic.Interpret
                 to = ExpectType<NumberValue>(Evaluate(statement.To));
                 step = ExpectType<NumberValue>(Evaluate(statement.Step));
 
-                Execute(statement.Block, RuntimeFrameType.Loop, [new(iterator, new NumberValue(i))]);
+                try
+                {
+                    Execute(statement.Block, RuntimeFrameType.Loop, [new(iterator, new NumberValue(i))]);
+                }
+                catch (BreakException)
+                {
+                    break;
+                }
+                catch (ContinueException)
+                {
+                    continue;
+                }
             }
         }
 
