@@ -51,6 +51,7 @@ namespace Quixotic.Common.Tokens
         To,
         Next,
         Step,
+        In,
         Comment,
         Type,
         OpenBracket,

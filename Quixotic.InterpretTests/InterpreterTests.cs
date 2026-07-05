@@ -1156,6 +1156,34 @@ namespace Quixotic.InterpretTests
         }
 
 
+        [TestMethod]
+        public void Parse_for_loop_with_array()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+
+                for i in array
+                    print i
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertHasPrinted(0, "1");
+            runtime.AssertHasPrinted(1, "2");
+            runtime.AssertHasPrinted(2, "3");
+            runtime.AssertHasPrinted(3, "4");
+            runtime.AssertHasPrinted(4, "5");
+        }
+
         private Stream GetTestFile(string name)
         {
             if (!name.EndsWith(".qx"))

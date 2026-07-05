@@ -392,12 +392,15 @@ namespace Quixotic.Parsing
             };
         }
 
-        private QxForStatement ParseFor()
+        private QxStatement ParseFor()
         {
             _parseContext.AssignStatementType(StatementType.For);
 
             var iteratorToken = Expect(TokenType.Identifier);
             var iterator = iteratorToken.Value;
+
+            if (IsToken(TokenType.In))
+                return ParseForIn(iterator);
 
             // From value
             var from = CaptureExpression(() =>
@@ -431,9 +434,30 @@ namespace Quixotic.Parsing
 
             Expect(TokenType.Next);
 
-            return new(iterator, from, to)
+            return new QxForStatement(iterator, from, to)
             {
                 Step = step,
+                Block = block,
+            };
+        }
+
+        private QxForInStatement ParseForIn(string iterator)
+        {
+            // From value
+            var collection = CaptureExpression(() =>
+            {
+                Expect(TokenType.In);
+
+                return ParseExpression();
+
+            }, ActivityType.FromValue);
+
+            var block = CaptureActivity(() => ParseBlock(BlockType.For), ActivityType.ForBlock);
+
+            Expect(TokenType.Next);
+
+            return new QxForInStatement(iterator, collection)
+            {
                 Block = block,
             };
         }

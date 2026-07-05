@@ -1060,6 +1060,38 @@ namespace Quixotic.ParsingTests
             AssertAssignment(statements[1], "array", index: 2, expression: 10);
         }
 
+        [TestMethod]
+        public void Parse_for_loop_with_array()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+
+                for i in array
+                    print i
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "array", expression: [1, 2, 3, 4, 5]);
+
+            AssertForIn(statements[1],
+                iterator: "i",
+                @in: "[array]",
+                block: block =>
+                {
+                    AssertPrint(block[0], "[i]");
+                });
+        }
+
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression[] expression)
         {
             return AssertVariableDeclaration(statement, name, expression: new TestArrayExpression(expression));
@@ -1141,6 +1173,23 @@ namespace Quixotic.ParsingTests
                 Assert.IsNotNull(forStatement.Step);
                 step.Assert(forStatement.Step);
             }
+
+            if (block is not null)
+                block(forStatement.Block);
+
+            return forStatement;
+
+        }
+
+        private QxForInStatement AssertForIn(QxStatement statement, string? iterator = null, TestExpression? @in = null, Action<Block>? block = null)
+        {
+            var forStatement = Assert.IsInstanceOfType<QxForInStatement>(statement);
+
+            if (iterator is not null)
+                Assert.AreEqual(iterator, forStatement.Iterator);
+
+            if (@in is not null)
+                @in.Assert(forStatement.Collection);
 
             if (block is not null)
                 block(forStatement.Block);

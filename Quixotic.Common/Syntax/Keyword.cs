@@ -15,6 +15,7 @@ namespace Quixotic.Common.Syntax
             new (TokenType.To , "to"),
             new (TokenType.Step , "step"),
             new (TokenType.Next , "next"),
+            new (TokenType.In , "in"),
             new (TokenType.Do , "do"),
             new (TokenType.While , "while"),
             new (TokenType.Until , "until"),

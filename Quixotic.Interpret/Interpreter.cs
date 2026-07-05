@@ -326,6 +326,19 @@ namespace Quixotic.Interpret
             }
         }
 
+        public void Execute(QxForInStatement statement)
+        {
+            var iterator = statement.Iterator;
+
+            var collection = Evaluate(statement.Collection);
+
+            if (collection is not ArrayInstance array)
+                throw new TypeMismatchException(collection.Type, QxType.Array(QxType.Any));
+
+            foreach (var item in array.Elements)
+                Execute(statement.Block, RuntimeFrameType.Loop, [new(iterator, item)]);
+        }
+
         public void Execute(QxDoStatement statement)
         {
             while (true)
