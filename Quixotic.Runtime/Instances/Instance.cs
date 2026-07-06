@@ -1,8 +1,9 @@
 ﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Types;
+using Quixotic.Runtime.Values;
 
-namespace Quixotic.Runtime.Symbols.Values
+namespace Quixotic.Runtime.Instances
 {
     public abstract class Instance(QxType type) : IHasType
     {
@@ -12,7 +13,7 @@ namespace Quixotic.Runtime.Symbols.Values
 
         public static Instance Nada { get; } = NadaInstance.Instance;
 
-        public static Instance Void { get; } = VoisInstance.Instance;
+        public static Instance Void { get; } = VoidInstance.Instance;
 
         public abstract bool Equals(Instance other);
 

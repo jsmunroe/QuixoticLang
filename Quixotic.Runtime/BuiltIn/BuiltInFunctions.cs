@@ -1,8 +1,9 @@
 ﻿using Quixotic.Common.Types;
 using Quixotic.Interpret.Contracts;
 using Quixotic.Runtime.Environment;
+using Quixotic.Runtime.Instances;
 using Quixotic.Runtime.Symbols;
-using Quixotic.Runtime.Symbols.Values;
+using Quixotic.Runtime.Values;
 
 namespace Quixotic.Runtime.BuiltIn
 {

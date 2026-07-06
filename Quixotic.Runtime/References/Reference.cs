@@ -1,6 +1,7 @@
 ﻿using Quixotic.Common.Types;
+using Quixotic.Runtime.Instances;
 
-namespace Quixotic.Runtime.Symbols.Values
+namespace Quixotic.Runtime.References
 {
     public abstract class Reference(QxType type) : Instance(type)
     {

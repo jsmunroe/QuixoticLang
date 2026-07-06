@@ -1,7 +1,8 @@
 ﻿using Quixotic.Common.Types;
 using Quixotic.Runtime.Contracts;
 using Quixotic.Runtime.Environment;
-using Quixotic.Runtime.Symbols.Values;
+using Quixotic.Runtime.Instances;
+using Quixotic.Runtime.Values;
 
 namespace Quixotic.InterpretTests.TestImplementations
 {

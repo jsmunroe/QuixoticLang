@@ -1,7 +1,9 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Types;
+using Quixotic.Runtime.Instances;
+using Quixotic.Runtime.References;
 
-namespace Quixotic.Runtime.Symbols.Values
+namespace Quixotic.Runtime.Values
 {
 
     public class ArrayInstance(QxType elementType, IEnumerable<Instance> elements) : Reference(new QxArrayType(elementType))

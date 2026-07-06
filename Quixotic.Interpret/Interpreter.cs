@@ -13,8 +13,9 @@ using Quixotic.Interpret.FlowControl;
 using Quixotic.Parsing;
 using Quixotic.Runtime.Contracts;
 using Quixotic.Runtime.Environment;
+using Quixotic.Runtime.Instances;
 using Quixotic.Runtime.Symbols;
-using Quixotic.Runtime.Symbols.Values;
+using Quixotic.Runtime.Values;
 using QuixoticLang.Lexer;
 
 namespace Quixotic.Interpret

@@ -1,8 +1,8 @@
 ﻿using Quixotic.Common.Types;
 
-namespace Quixotic.Runtime.Symbols.Values
+namespace Quixotic.Runtime.Instances
 {
-    public class VoisInstance() : Instance(QxType.Void)
+    public class VoidInstance() : Instance(QxType.Void)
     {
         public override string ToString() => "void";
 
@@ -20,7 +20,7 @@ namespace Quixotic.Runtime.Symbols.Values
         {
             return false;
         }
-        public static VoisInstance Instance { get; } = new();
+        public static VoidInstance Instance { get; } = new();
     }
 
 

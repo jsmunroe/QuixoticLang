@@ -1,6 +1,7 @@
 ﻿using Quixotic.Common.Types;
+using Quixotic.Runtime.Instances;
 
-namespace Quixotic.Runtime.Symbols.Values
+namespace Quixotic.Runtime.Values
 {
 
     public class BooleanValue(bool value) : Value(QxType.Boolean)

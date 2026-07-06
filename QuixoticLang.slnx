@@ -10,6 +10,5 @@
   <Project Path="Quixotic.LexographyTests/Quixotic.LexographyTests.csproj" />
   <Project Path="Quixotic.Parsing/Quixotic.Parsing.csproj" Id="b744fa57-ccd2-4032-a0f4-765d5b3845b2" />
   <Project Path="Quixotic.ParsingTests/Quixotic.ParsingTests.csproj" Id="6ff0b923-8cb6-44ad-982a-786477d4222c" />
-  <Project Path="Quixotic.Processing/Quixotic.Processing.csproj" Id="cc6e81af-6d09-4d78-8f1a-485aefde286a" />
   <Project Path="Quixotic.Runtime/Quixotic.Runtime.csproj" Id="be41615c-d309-4104-845c-4f5c6af51e8d" />
 </Solution>

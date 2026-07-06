@@ -1,5 +1,5 @@
 ﻿using Quixotic.Runtime.Environment;
-using Quixotic.Runtime.Symbols.Values;
+using Quixotic.Runtime.Instances;
 
 namespace Quixotic.Runtime.Contracts
 {

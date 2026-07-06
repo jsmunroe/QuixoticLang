@@ -2,8 +2,8 @@
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Types;
 using Quixotic.Interpret.Contracts;
+using Quixotic.Runtime.Instances;
 using Quixotic.Runtime.Symbols;
-using Quixotic.Runtime.Symbols.Values;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Runtime.Environment

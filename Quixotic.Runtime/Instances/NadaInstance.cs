@@ -1,6 +1,6 @@
 ﻿using Quixotic.Common.Types;
 
-namespace Quixotic.Runtime.Symbols.Values
+namespace Quixotic.Runtime.Instances
 {
 
     public class NadaInstance() : Instance(QxType.Nada)

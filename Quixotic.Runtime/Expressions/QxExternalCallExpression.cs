@@ -1,5 +1,5 @@
 ﻿using Quixotic.Common.Expressions;
-using Quixotic.Runtime.Symbols.Values;
+using Quixotic.Runtime.Instances;
 
 namespace Quixotic.Interpret.Expressions
 {
