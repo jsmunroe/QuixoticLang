@@ -2,7 +2,7 @@
   "profiles": {
     "Quixotic.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "c:\\Users\\jsmun\\source\\repos\\quixotic-vscode\\test\\samples\\factorial_recursive.qx"
+      "commandLineArgs": "c:\\Users\\jsmun\\source\\repos\\quixotic-vscode\\test\\samples\\pi.qx"
     }
   }
 }

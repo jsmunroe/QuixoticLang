@@ -1,12 +1,11 @@
 ﻿using Quixotic.Common.Types;
-using Quixotic.Interpret.Contracts;
-using Quixotic.Interpret.Environment;
-using Quixotic.Interpret.Symbols.Instances;
-using Quixotic.Interpret.Symbols.Values;
+using Quixotic.Runtime.Contracts;
+using Quixotic.Runtime.Environment;
+using Quixotic.Runtime.Symbols.Values;
 
 namespace Quixotic.InterpretTests.TestImplementations
 {
-    internal class TestRuntime : Runtime
+    internal class TestRuntime : Runtime.Environment.Runtime
     {
         public TestRuntime()
         {

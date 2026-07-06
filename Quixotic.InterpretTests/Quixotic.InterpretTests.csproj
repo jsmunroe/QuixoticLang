@@ -25,6 +25,7 @@
     <ProjectReference Include="..\Quixotic.Interpret\Quixotic.Interpret.csproj" />
     <ProjectReference Include="..\Quixotic.Lexography\Quixotic.Lexography.csproj" />
     <ProjectReference Include="..\Quixotic.Parsing\Quixotic.Parsing.csproj" />
+    <ProjectReference Include="..\Quixotic.Runtime\Quixotic.Runtime.csproj" />
   </ItemGroup>
 
   <ItemGroup>

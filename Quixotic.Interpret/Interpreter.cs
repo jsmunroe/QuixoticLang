@@ -8,29 +8,28 @@ using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Types;
 using Quixotic.Common.Utilities;
-using Quixotic.Interpret.Contracts;
-using Quixotic.Interpret.Environment;
 using Quixotic.Interpret.Expressions;
 using Quixotic.Interpret.FlowControl;
-using Quixotic.Interpret.Symbols;
-using Quixotic.Interpret.Symbols.Instances;
-using Quixotic.Interpret.Symbols.Values;
 using Quixotic.Parsing;
+using Quixotic.Runtime.Contracts;
+using Quixotic.Runtime.Environment;
+using Quixotic.Runtime.Symbols;
+using Quixotic.Runtime.Symbols.Values;
 using QuixoticLang.Lexer;
 
 namespace Quixotic.Interpret
 {
     public class Interpreter(IRuntime runtime, IConsoleWriter? consoleWriter = null)
     {
-        // Defer construction to avoid TypeInitializationException at app startup when referenced
-        // types live in other assemblies that may be versioned/updated separately.
-        private readonly static Lazy<MethodIndexer<Action<Interpreter, QxStatement>>> _executes =
-            new(() => new MethodIndexer<Action<Interpreter, QxStatement>>(typeof(Interpreter), "Execute"));
+        private readonly static MethodIndexer<Action<Interpreter, QxStatement>> _executes = new(typeof(Interpreter), "Execute");
 
-        private readonly static Lazy<MethodIndexer<Func<Interpreter, QxExpression, Instance>>> _evaluates =
-            new(() => new MethodIndexer<Func<Interpreter, QxExpression, Instance>>(typeof(Interpreter), "Evaluate"));
+        private readonly static MethodIndexer<Func<Interpreter, QxExpression, Instance>> _evaluates = new(typeof(Interpreter), "Evaluate");
 
         private readonly IConsoleWriter _consoleWriter = consoleWriter ?? new ConsoleWriter();
+
+        public Interpreter(IConsoleWriter? consoleWriter = null)
+            : this(new Runtime.Environment.Runtime(), consoleWriter)
+        { }
 
         public void Execute(string source)
         {
@@ -141,7 +140,7 @@ namespace Quixotic.Interpret
         public void Execute(QxStatement statement)
         {
             var statementType = statement.GetType();
-            if (!_executes.Value.TryGetDelegate(statementType, out var action))
+            if (!_executes.TryGetDelegate(statementType, out var action))
                 throw new NotSupportedException($"Unsupported statement type: {statementType.Name}");
 
             action(this, statement);
@@ -150,7 +149,7 @@ namespace Quixotic.Interpret
         private Instance Evaluate(QxExpression expression)
         {
             var expressionType = expression.GetType();
-            if (!_evaluates.Value.TryGetDelegate(expressionType, out var function))
+            if (!_evaluates.TryGetDelegate(expressionType, out var function))
                 throw new NotSupportedException($"Unsupported expression type: {expressionType.Name}");
 
             return function(this, expression);

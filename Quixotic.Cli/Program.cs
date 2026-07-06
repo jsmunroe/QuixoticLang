@@ -1,6 +1,5 @@
 ﻿using Quixotic.Common.Utilities;
 using Quixotic.Interpret;
-using Quixotic.Interpret.Environment;
 using Quixotic.Parsing;
 
 namespace Quixotic.Cli
@@ -11,8 +10,7 @@ namespace Quixotic.Cli
 
         static void Main(string[] args)
         {
-            var runtime = new Runtime();
-            var interpreter = new Interpreter(runtime);
+            var interpreter = new Interpreter();
 
             if (args.Length > 0)
                 InterpretFile(interpreter, args[0]);
