@@ -5,7 +5,7 @@ using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Symbols;
-using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Common.Utilities;
 using Quixotic.Parsing;
 

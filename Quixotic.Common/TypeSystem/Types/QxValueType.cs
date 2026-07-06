@@ -1,4 +1,4 @@
-namespace Quixotic.Common.Types
+namespace Quixotic.Common.TypeSystem.Types
 {
     public class QxValueType : QxType
     {

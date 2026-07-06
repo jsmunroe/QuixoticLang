@@ -2,6 +2,8 @@
 using Quixotic.Common.Statements;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Symbols;
+using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Interpret.Expressions;
 using Quixotic.Runtime.Symbols;
 using System.Diagnostics.CodeAnalysis;

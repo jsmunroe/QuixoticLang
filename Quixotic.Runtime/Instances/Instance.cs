@@ -1,6 +1,6 @@
 ﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.Exceptions.Interpret;
-using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Runtime.Values;
 
 namespace Quixotic.Runtime.Instances

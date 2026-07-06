@@ -1,5 +1,5 @@
 ﻿using Quixotic.Common.Contracts;
-using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Runtime.Symbols
 {

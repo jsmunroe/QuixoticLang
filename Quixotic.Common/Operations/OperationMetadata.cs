@@ -13,6 +13,7 @@ namespace Quixotic.Common.Operations
         public const int Product = 20;
         public const int Quotient = 20;
         public const int Indexer = 30;
+        public const int Dot = 30;
 
         public static readonly Dictionary<TokenType, OperationMetadata> Operators = new()
         {
@@ -30,6 +31,7 @@ namespace Quixotic.Common.Operations
             [TokenType.And] = new(Logical, "and", Operator.And, Associativity.Left),
             [TokenType.Or] = new(Logical, "or", Operator.Or, Associativity.Left),
             [TokenType.OpenBracket] = new(Indexer, "[", Operator.Indexer, Associativity.Left),
+            [TokenType.Dot] = new(Dot, ".", Operator.Dot, Associativity.Left),
         };
 
         public static OperationMetadata Get(TokenType type)

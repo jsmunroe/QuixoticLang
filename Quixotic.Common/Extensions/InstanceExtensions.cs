@@ -1,4 +1,5 @@
 ﻿using Quixotic.Common.Contracts;
+using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.Types
 {

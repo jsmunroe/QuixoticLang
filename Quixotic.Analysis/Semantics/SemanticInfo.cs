@@ -1,4 +1,4 @@
-﻿using Quixotic.Common.Types;
+﻿using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Analysis.Semantics
 {

@@ -1,5 +1,6 @@
 ﻿using Quixotic.Common.Symbols;
-using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Symbols;
+using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Runtime.Symbols
 {

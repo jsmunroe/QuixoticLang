@@ -1,7 +1,8 @@
-﻿using Quixotic.Common.Types;
+﻿using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Runtime.Contracts;
 using Quixotic.Runtime.Environment;
 using Quixotic.Runtime.Instances;
+using Quixotic.Runtime.References;
 using Quixotic.Runtime.Values;
 
 namespace Quixotic.InterpretTests.TestImplementations
@@ -247,7 +248,7 @@ namespace Quixotic.InterpretTests.TestImplementations
                 Assert.AreEqual(expected, actual, $"The variable named '{name}' has a value of {actual}. It was not '{expected}'.");
         }
 
-        private string? AreEqual(ArrayInstance array, double[] values)
+        private string? AreEqual(ArrayReference array, double[] values)
         {
             if (array.ElementType != QxType.Number)
                 return "The array is not a number array.";
@@ -273,7 +274,7 @@ namespace Quixotic.InterpretTests.TestImplementations
         {
             return $"[{string.Join(", ", array.Select(e => e?.ToString()))}]";
         }
-        private string? ToString(ArrayInstance array)
+        private string? ToString(ArrayReference array)
         {
             return $"[{string.Join(", ", array.Elements.Select(e => e?.ToString()))}]";
         }
@@ -289,7 +290,7 @@ namespace Quixotic.InterpretTests.TestImplementations
                 if (!frame.Scope.IsVariableDeclared(name))
                     continue;
 
-                if (frame.Scope.GetInstance(name) is ArrayInstance array && array.ElementType == QxType.Number)
+                if (frame.Scope.GetInstance(name) is ArrayReference array && array.ElementType == QxType.Number)
                 {
                     if (AreEqual(array, values) is null)
                         return;
@@ -319,7 +320,7 @@ namespace Quixotic.InterpretTests.TestImplementations
 
             var variableValue = frame.Scope.GetInstance(name);
 
-            if (variableValue is not ArrayInstance array || array.ElementType != QxType.Number)
+            if (variableValue is not ArrayReference array || array.ElementType != QxType.Number)
                 throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
 
             var expected = value;

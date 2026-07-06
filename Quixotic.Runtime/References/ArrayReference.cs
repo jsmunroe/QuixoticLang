@@ -1,14 +1,14 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
-using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Runtime.Instances;
-using Quixotic.Runtime.References;
+using Quixotic.Runtime.Values;
 
-namespace Quixotic.Runtime.Values
+namespace Quixotic.Runtime.References
 {
 
-    public class ArrayInstance(QxType elementType, IEnumerable<Instance> elements) : Reference(new QxArrayType(elementType))
+    public class ArrayReference(QxType elementType, IEnumerable<Instance> elements) : Reference(new QxArrayType(elementType))
     {
-        public ArrayInstance(QxType ElementType)
+        public ArrayReference(QxType ElementType)
             : this(ElementType, [])
         { }
 
@@ -16,15 +16,15 @@ namespace Quixotic.Runtime.Values
 
         public QxType ElementType { get; } = elementType;
 
-        public override ArrayInstance Add(Instance element)
+        public override ArrayReference Add(Instance element)
         {
-            if (element is ArrayInstance array)
+            if (element is ArrayReference array)
                 return Concat(array);
 
             return Append(element);
         }
 
-        public ArrayInstance Concat(ArrayInstance other)
+        public ArrayReference Concat(ArrayReference other)
         {
             if (!ElementType.IsAssignableFrom(other.ElementType))
                 throw new TypeMismatchException(other.ElementType, ElementType);
@@ -32,7 +32,7 @@ namespace Quixotic.Runtime.Values
             return new(ElementType, [.. Elements, .. other.Elements]);
         }
 
-        public ArrayInstance Append(Instance element)
+        public ArrayReference Append(Instance element)
         {
             if (!ElementType.IsAssignableFrom(element.Type))
                 throw new TypeMismatchException(element.Type, ElementType);

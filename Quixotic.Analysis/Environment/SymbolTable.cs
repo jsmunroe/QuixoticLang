@@ -1,7 +1,7 @@
 ﻿using Quixotic.Analysis.Contracts;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
-using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Analysis.Environment

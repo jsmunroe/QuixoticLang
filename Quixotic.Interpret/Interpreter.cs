@@ -7,6 +7,8 @@ using Quixotic.Common.Operations;
 using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Symbols;
+using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Common.Utilities;
 using Quixotic.Interpret.Expressions;
 using Quixotic.Interpret.FlowControl;
@@ -14,6 +16,7 @@ using Quixotic.Parsing;
 using Quixotic.Runtime.Contracts;
 using Quixotic.Runtime.Environment;
 using Quixotic.Runtime.Instances;
+using Quixotic.Runtime.References;
 using Quixotic.Runtime.Symbols;
 using Quixotic.Runtime.Values;
 using QuixoticLang.Lexer;
@@ -253,7 +256,7 @@ namespace Quixotic.Interpret
                 var targetValue = Evaluate(indexerExpression.Target);
                 var indexValue = Evaluate(indexerExpression.Index);
 
-                if (targetValue is ArrayInstance array && indexValue is NumberValue indexNumber)
+                if (targetValue is ArrayReference array && indexValue is NumberValue indexNumber)
                     array.Set(indexNumber, value);
                 else
                     throw new IndexerTargetException(targetValue.Type);
@@ -332,7 +335,7 @@ namespace Quixotic.Interpret
 
             var collection = Evaluate(statement.Collection);
 
-            if (collection is not ArrayInstance array)
+            if (collection is not ArrayReference array)
                 throw new TypeMismatchException(collection.Type, QxType.Array(QxType.Any));
 
             foreach (var item in array.Elements)
@@ -385,7 +388,7 @@ namespace Quixotic.Interpret
 
             var baseType = Instance.GetCommonBase(elements);
 
-            return new ArrayInstance(baseType, elements);
+            return new ArrayReference(baseType, elements);
         }
 
         protected Instance Evaluate(QxIdentifierExpression expression)
@@ -402,7 +405,7 @@ namespace Quixotic.Interpret
 
             var index = Evaluate(expression.Index);
 
-            if (target is ArrayInstance array)
+            if (target is ArrayReference array)
             {
                 if (index is not NumberValue number)
                     throw new IndexTypeException(array.Type, index.Type);
@@ -488,6 +491,9 @@ namespace Quixotic.Interpret
             if (op == Operator.Or)
                 return Or(left, right);
 
+            if (op == Operator.Dot)
+                return InvokeMember(left, right);
+
             var name = OperationMetadata.GetOperatorValue(op);
 
             if (string.IsNullOrEmpty(name))
@@ -501,6 +507,25 @@ namespace Quixotic.Interpret
             var arguments = BindArguments(name, function.Parameters, [leftValue, rightValue]);
 
             return Evaluate(function, arguments);
+        }
+
+        private Instance InvokeMember(QxExpression thisExpression, QxExpression memberExpression)
+        {
+            var thisInstance = Evaluate(thisExpression);
+
+            if (memberExpression is QxIdentifierExpression)
+            {
+
+            }
+
+            var member = Evaluate(memberExpression);
+
+            return Instance.Nada;
+        }
+
+        private Instance InvokePropertyGetter(Instance instance, string propertyName)
+        {
+
         }
 
         private BooleanValue And(QxExpression left, QxExpression right)

@@ -1,5 +1,5 @@
 ﻿using Quixotic.Common.Symbols;
-using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Analysis.Environment

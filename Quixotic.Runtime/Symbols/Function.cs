@@ -1,7 +1,8 @@
 ﻿using Quixotic.Common.Statements;
-using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Types;
+using Quixotic.Runtime.Symbols;
 
-namespace Quixotic.Runtime.Symbols
+namespace Quixotic.Common.TypeSystem.Symbols
 {
     public class Function(Block body, QxType returnType)
     {

@@ -1157,7 +1157,7 @@ namespace Quixotic.InterpretTests
 
 
         [TestMethod]
-        public void Parse_for_loop_with_array()
+        public void Execute_for_loop_with_array()
         {
             // Setup
             var source = @"
@@ -1183,6 +1183,28 @@ namespace Quixotic.InterpretTests
             runtime.AssertHasPrinted(3, "4");
             runtime.AssertHasPrinted(4, "5");
         }
+
+        [TestMethod]
+        public void Execute_array_length_property()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+                
+                print array.length
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+        }
+
 
         private Stream GetTestFile(string name)
         {

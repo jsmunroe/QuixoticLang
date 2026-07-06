@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace Quixotic.Common.Types
+namespace Quixotic.Common.TypeSystem.Types
 {
     [Description("string")]
     public class StringType : QxValueType

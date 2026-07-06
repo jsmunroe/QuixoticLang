@@ -1,7 +1,8 @@
-﻿using Quixotic.Common.Types;
+﻿using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Interpret.Contracts;
 using Quixotic.Runtime.Environment;
 using Quixotic.Runtime.Instances;
+using Quixotic.Runtime.References;
 using Quixotic.Runtime.Symbols;
 using Quixotic.Runtime.Values;
 
@@ -22,8 +23,8 @@ namespace Quixotic.Runtime.BuiltIn
             registry.Register(">=", (NumberValue left, NumberValue right) => left.IsGreaterThanOrEqualTo(right), QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
             registry.Register("=", (Instance left, Instance right) => left.IsEqualTo(right), QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
             registry.Register("!=", (Instance left, Instance right) => left.IsNotEqualTo(right), QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
-            registry.Register("+", (ArrayInstance left, Instance right) => left.Add(right), QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Any));
-            registry.Register("+", (ArrayInstance left, ArrayInstance right) => left.Add(right), QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Array(QxType.Any)));
+            registry.Register("+", (ArrayReference left, Instance right) => left.Add(right), QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Any));
+            registry.Register("+", (ArrayReference left, ArrayReference right) => left.Add(right), QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Array(QxType.Any)));
         }
 
         private static Parameter Param(string name, QxType type) => new(name, type);

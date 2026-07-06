@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
-namespace Quixotic.Common.Types
+namespace Quixotic.Common.TypeSystem.Types
 {
     public class QxType(string name)
     {

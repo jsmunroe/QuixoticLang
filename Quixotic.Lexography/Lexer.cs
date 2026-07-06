@@ -148,6 +148,11 @@ namespace QuixoticLang.Lexer
                         Advance();
                         break;
 
+                    case '.':
+                        yield return Simple(TokenType.Dot, ".");
+                        Advance();
+                        break;
+
                     default:
                         throw new LexerUnexpectedCharacterException(c, CurrentPosition);
                 }
