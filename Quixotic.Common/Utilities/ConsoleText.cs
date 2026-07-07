@@ -21,7 +21,7 @@ namespace Quixotic.Common.Utilities
         {
             _nodes.Add(new()
             {
-                Text = text.ToString() ?? string.Empty + Environment.NewLine,
+                Text = text.ToString() ?? string.Empty + System.Environment.NewLine,
                 Foreground = foreground,
             });
         }
@@ -30,7 +30,7 @@ namespace Quixotic.Common.Utilities
         {
             _nodes.Add(new()
             {
-                Text = Environment.NewLine,
+                Text = System.Environment.NewLine,
             });
         }
 
@@ -46,11 +46,11 @@ namespace Quixotic.Common.Utilities
         public void WriteError(object text, Exception? exception = null, ConsoleColor foreground = ConsoleColor.Red)
         {
             if (exception is not null)
-                text += Environment.NewLine + exception.ToString() + Environment.NewLine;
+                text += System.Environment.NewLine + exception.ToString() + System.Environment.NewLine;
 
             _nodes.Add(new()
             {
-                Text = text.ToString() ?? string.Empty + Environment.NewLine,
+                Text = text.ToString() ?? string.Empty + System.Environment.NewLine,
                 Foreground = foreground
             });
         }

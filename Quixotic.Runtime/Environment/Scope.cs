@@ -1,10 +1,10 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿using Quixotic.Common.Contracts;
+using Quixotic.Common.Environment;
+using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
-using Quixotic.Interpret.Contracts;
-using Quixotic.Runtime.Symbols;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Runtime.Environment

@@ -11,13 +11,11 @@ using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Common.Utilities;
-using Quixotic.Interpret.Expressions;
 using Quixotic.Interpret.FlowControl;
 using Quixotic.Parsing;
 using Quixotic.Runtime.Contracts;
 using Quixotic.Runtime.Environment;
 using Quixotic.Runtime.References;
-using Quixotic.Runtime.Symbols;
 using Quixotic.Runtime.Values;
 using QuixoticLang.Lexer;
 
@@ -218,6 +216,11 @@ namespace Quixotic.Interpret
         }
 
         public void Execute(QxFunctionCallStatement statement)
+        {
+            Evaluate(statement.Call);
+        }
+
+        public void Execute(QxMethodCallStatement statement)
         {
             Evaluate(statement.Call);
         }
@@ -466,6 +469,21 @@ namespace Quixotic.Interpret
             var arguments = BindArguments(name, function.Parameters, [.. argumentValues]);
 
             return Evaluate(function, arguments);
+        }
+
+        protected Instance Evaluate(QxMethodCallExpression expression)
+        {
+            var target = Evaluate(expression.Target);
+
+            var name = expression.MethodName;
+
+            var argumentValues = Evaluate(expression.Arguments);
+
+            var method = target.Type.GetMemberMethod(target, name, [target, .. argumentValues]);
+
+            var arguments = BindArguments(name, method.Parameters, [target, .. argumentValues]);
+
+            return Evaluate(method, arguments);
         }
 
         protected Instance Evaluate(QxExternalCallExpression expression)

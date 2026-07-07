@@ -1,3 +1,7 @@
+using Quixotic.Common.Contracts;
+using Quixotic.Common.Environment;
+using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.TypeSystem.Symbols;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -7,7 +11,7 @@ namespace Quixotic.Common.TypeSystem.Types
     {
         private static readonly Regex _rexTypeString = new(@"^([a-zA-Z_][a-zA-Z0-9_\.]+)(\[\])?$", RegexOptions.Compiled);
 
-
+        private FunctionRegistry _methods = new();
 
         public string Name { get; } = name;
 
@@ -18,7 +22,7 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public virtual bool IsAssignableFrom(QxType subtype)
         {
-            if (this == Any || this is QxGeneric)
+            if (this == Any || this is Generic)
                 return true;
 
             if (ReferenceEquals(this, Any))
@@ -71,6 +75,19 @@ namespace Quixotic.Common.TypeSystem.Types
             return $"{{Qx:{Name}}}";
         }
 
+        public Function GetMemberMethod(Instance thisInstance, string name, params Instance[] arguments)
+        {
+            if (!_methods.TryResolve(name, [.. arguments.Select(a => a.Type)], out var functionSymbol))
+                throw new UndefinedMethodException(this, name);
+
+            return functionSymbol.Function;
+        }
+
+        public void AddMethods(IFunctionProvider methodSource)
+        {
+            methodSource.Register(_methods);
+        }
+
         public virtual bool Equals(Instance first, Instance second)
         {
             return false;
@@ -97,6 +114,11 @@ namespace Quixotic.Common.TypeSystem.Types
                 return false;
 
             return string.Equals(Name, other.Name);
+        }
+
+        public void RegisterMethod(string name, Delegate method, QxType returnValue, params Parameter[] parameters)
+        {
+            _methods.Register(name, method, returnValue, parameters);
         }
 
         public static bool IsNada(Instance instance)
@@ -153,6 +175,6 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public static ArrayType Array(QxType elementType) => new ArrayType(elementType);
 
-        public static QxGeneric Generic(string name) => new QxGeneric(name);
+        public static Generic Generic(string name) => new Generic(name);
     }
 }

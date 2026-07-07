@@ -1,9 +1,9 @@
-﻿using Quixotic.Common.TypeSystem;
+﻿using Quixotic.Common.Contracts;
+using Quixotic.Common.Environment;
+using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
-using Quixotic.Interpret.Contracts;
-using Quixotic.Runtime.Environment;
 using Quixotic.Runtime.References;
-using Quixotic.Runtime.Symbols;
 using Quixotic.Runtime.Values;
 
 namespace Quixotic.Runtime.BuiltIn

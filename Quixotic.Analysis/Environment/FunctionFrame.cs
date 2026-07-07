@@ -3,7 +3,7 @@ using Quixotic.Common.Symbols;
 
 namespace Quixotic.Analysis.Environment
 {
-    public class FunctionFrame(IFrame parent, FunctionSignatureSymbol function) : IFrame
+    public class FunctionFrame(IFrame parent, SignatureSymbol function) : IFrame
     {
         public bool IsContinued { get; set; }
 
@@ -11,7 +11,7 @@ namespace Quixotic.Analysis.Environment
 
         public SymbolTable Symbols { get; } = new(parent.GetGlobalSymbols());
 
-        public FunctionSignatureSymbol Function { get; } = function;
+        public SignatureSymbol Function { get; } = function;
 
         public FrameRedirectionType RedirectionType { get; set; } = FrameRedirectionType.None;
     }

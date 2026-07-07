@@ -3,7 +3,7 @@ using Quixotic.Common.Symbols;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 
-namespace Quixotic.Runtime.Symbols
+namespace Quixotic.Common.TypeSystem.Symbols
 {
     public class VariableSymbol : VariableTypeSymbol
     {

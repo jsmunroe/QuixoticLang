@@ -4,11 +4,9 @@ using Quixotic.Common.Symbols;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
-using Quixotic.Interpret.Expressions;
-using Quixotic.Runtime.Symbols;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Quixotic.Runtime.Environment
+namespace Quixotic.Common.Environment
 {
     public class FunctionRegistry
     {
@@ -38,7 +36,12 @@ namespace Quixotic.Runtime.Environment
             var function = new Function([returnStatement], returnType) { Parameters = [.. parameters] };
             var functionSymbol = new FunctionSymbol(name, function);
 
-            _functions[signature] = functionSymbol;
+            Register(signature, functionSymbol);
+        }
+
+        public void Register(Signature signature, FunctionSymbol function)
+        {
+            _functions.Add(signature, function);
         }
 
         public bool Contains(string name, params QxType[] arguments)

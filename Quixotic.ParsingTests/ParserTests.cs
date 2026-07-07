@@ -1112,6 +1112,25 @@ namespace Quixotic.ParsingTests
             Assert.HasCount(2, statements);
         }
 
+        [TestMethod]
+        public void Parse_array_set_length_property()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+                
+                array.length := 7 ' This shouldn't be possible
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+        }
+
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression[] expression)
         {
             return AssertVariableDeclaration(statement, name, expression: new TestArrayExpression(expression));

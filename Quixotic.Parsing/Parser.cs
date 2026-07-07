@@ -128,6 +128,13 @@ namespace Quixotic.Parsing
                 return new QxAssignmentStatement(assignableExpression, binaryExpression.Right);
             }
 
+            if (expression is QxMethodCallExpression methodCallExpression)
+            {
+                _parseContext.AssignStatementType(StatementType.FunctionCall);
+
+                return new QxMethodCallStatement(methodCallExpression);
+            }
+
             throw new StandaloneExpressionException(GetDiagnostic(Issue.StandaloneExpression()));
         }
 
@@ -254,6 +261,32 @@ namespace Quixotic.Parsing
             var arguments = ParseArguments();
 
             return new(name) { Arguments = [.. arguments] };
+        }
+
+        private QxMethodCallExpression ParseMethodCallExpression(QxExpression target)
+        {
+            var token = Expect(TokenType.Identifier);
+
+            var name = token.Value;
+
+            if (Match(TokenType.NewLine))
+            {
+                return new(target, name) { Arguments = [] };
+            }
+            else if (Match(TokenType.Assignment))
+            {
+                var assigned = ParseExpression();
+
+                return new(target, name) { Arguments = [assigned] };
+            }
+            else if (Match(TokenType.OpenParen))
+            {
+                // Parse arguments
+                var arguments = ParseArguments();
+                return new(target, name) { Arguments = [.. arguments] };
+            }
+
+            throw new NotImplementedException();
         }
 
         private List<QxExpression> ParseArguments()
@@ -518,6 +551,9 @@ namespace Quixotic.Parsing
             while (true)
             {
                 var token = Peek();
+
+                if (Match(TokenType.Dot))
+                    return ParseMethodCallExpression(left);
 
                 var operationMetadata = OperationMetadata.Get(token.Type);
 

@@ -1,6 +1,6 @@
-﻿using Quixotic.Runtime.Environment;
+﻿using Quixotic.Common.Environment;
 
-namespace Quixotic.Interpret.Contracts
+namespace Quixotic.Common.Contracts
 {
     public interface IFunctionProvider
     {

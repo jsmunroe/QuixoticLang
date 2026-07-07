@@ -2,7 +2,7 @@
 
 namespace Quixotic.Common.Symbols
 {
-    public class FunctionSignatureSymbol(string name, QxType returnType, params QxType[] parameterTypes) : Symbol
+    public class SignatureSymbol(string name, QxType returnType, params QxType[] parameterTypes) : Symbol
     {
         public string Name { get; } = name;
 
@@ -12,18 +12,18 @@ namespace Quixotic.Common.Symbols
 
         public List<QxType> ParameterTypes { get; init; } = [.. parameterTypes];
 
-        public FunctionSignatureSymbol ReplaceGenerics(params QxType[] arguments)
+        public SignatureSymbol ReplaceGenerics(params QxType[] arguments)
         {
             var genericTypes = new Dictionary<string, QxType>();
 
             foreach (var (parameter, argument) in ParameterTypes.Zip(arguments))
-                QxGeneric.GetKeyValues(parameter, argument, genericTypes);
+                Generic.GetKeyValues(parameter, argument, genericTypes);
 
-            var replacedParameters = ParameterTypes.Select(p => QxGeneric.SetKeyValues(p, genericTypes));
+            var replacedParameters = ParameterTypes.Select(p => Generic.SetKeyValues(p, genericTypes));
 
-            var replacedReturnType = QxGeneric.SetKeyValues(ReturnType, genericTypes);
+            var replacedReturnType = Generic.SetKeyValues(ReturnType, genericTypes);
 
-            return new FunctionSignatureSymbol(Name, replacedReturnType, [.. replacedParameters]);
+            return new SignatureSymbol(Name, replacedReturnType, [.. replacedParameters]);
         }
 
         public override string ToString()

@@ -1,6 +1,5 @@
 ﻿using Quixotic.Common.Statements;
 using Quixotic.Common.TypeSystem.Types;
-using Quixotic.Runtime.Symbols;
 
 namespace Quixotic.Common.TypeSystem.Symbols
 {
@@ -12,6 +11,4 @@ namespace Quixotic.Common.TypeSystem.Symbols
 
         public QxType ReturnType { get; internal set; } = returnType;
     }
-
-
 }

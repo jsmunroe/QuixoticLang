@@ -1203,6 +1203,26 @@ namespace Quixotic.InterpretTests
             interpreter.Execute(parser.Parse());
 
             // Assert
+            runtime.AssertHasPrinted("5");
+        }
+
+        [TestMethod]
+        public void Execute_array_set_length_property()
+        {
+            // Setup
+            var source = @"
+                let array := [1, 2, 3, 4, 5]
+                
+                array.length := 7 ' This shouldn't be possible
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute & Assert
+            Assert.Throws<UndefinedMethodException>(() => interpreter.Execute(parser.Parse()));
         }
 
 

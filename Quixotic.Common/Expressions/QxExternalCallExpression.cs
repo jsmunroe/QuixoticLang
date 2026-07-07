@@ -1,7 +1,6 @@
-﻿using Quixotic.Common.Expressions;
-using Quixotic.Common.TypeSystem;
+﻿using Quixotic.Common.TypeSystem;
 
-namespace Quixotic.Interpret.Expressions
+namespace Quixotic.Common.Expressions
 {
     public class QxExternalCallExpression(Delegate call) : QxExpression
     {

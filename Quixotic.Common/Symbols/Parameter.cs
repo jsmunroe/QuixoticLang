@@ -1,7 +1,7 @@
 ﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.TypeSystem.Types;
 
-namespace Quixotic.Runtime.Symbols
+namespace Quixotic.Common.TypeSystem.Symbols
 {
     public class Parameter(string name, QxType type) : IHasType
     {

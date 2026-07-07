@@ -84,7 +84,7 @@ namespace Quixotic.Analysis.Environment
             return true;
         }
 
-        public FunctionSignatureSymbol? GetSignature(string name, params QxType[] arguments)
+        public SignatureSymbol? GetSignature(string name, params QxType[] arguments)
         {
             var signature = new Signature(name, [.. arguments]);
 

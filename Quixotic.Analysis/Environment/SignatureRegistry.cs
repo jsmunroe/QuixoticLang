@@ -6,15 +6,13 @@ namespace Quixotic.Analysis.Environment
 {
     public class SignatureRegistry
     {
-        private readonly Dictionary<Signature, FunctionSignatureSymbol> _signatures = [];
+        private readonly Dictionary<Signature, SignatureSymbol> _signatures = [];
 
         public void Register(string name, QxType returnType, params QxType[] parameters)
         {
-            var signature = new Signature(name, parameters);
+            var signatureSymbol = new SignatureSymbol(name, returnType, parameters);
 
-            var functionSignature = new FunctionSignatureSymbol(name, returnType, parameters);
-
-            _signatures[signature] = functionSignature;
+            _signatures[signatureSymbol.Signature] = signatureSymbol;
         }
 
         public bool Contains(string name, params QxType[] parameterTypes)
@@ -22,17 +20,17 @@ namespace Quixotic.Analysis.Environment
             return TryResolve(name, parameterTypes, out _);
         }
 
-        public FunctionSignatureSymbol? Resolve(string name, params QxType[] parameterTypes)
+        public SignatureSymbol? Resolve(string name, params QxType[] parameterTypes)
         {
             return TryResolve(name, parameterTypes, out var functionSymbol) ? functionSymbol : null;
         }
 
-        public FunctionSignatureSymbol? Resolve(Signature signature)
+        public SignatureSymbol? Resolve(Signature signature)
         {
             return TryResolve(signature.Name, [.. signature.Parameters], out var functionSymbol) ? functionSymbol : null;
         }
 
-        public bool TryResolve(string name, QxType[] parameterTypes, [NotNullWhen(returnValue: true)] out FunctionSignatureSymbol? functionSignature)
+        public bool TryResolve(string name, QxType[] parameterTypes, [NotNullWhen(returnValue: true)] out SignatureSymbol? functionSignature)
         {
             functionSignature = null;
 
@@ -55,7 +53,7 @@ namespace Quixotic.Analysis.Environment
         }
 
 
-        public bool TryResolve(Signature signature, [NotNullWhen(returnValue: true)] out FunctionSignatureSymbol? functionSignature)
+        public bool TryResolve(Signature signature, [NotNullWhen(returnValue: true)] out SignatureSymbol? functionSignature)
         {
             return TryResolve(signature.Name, [.. signature.Parameters], out functionSignature);
         }

@@ -1,12 +1,12 @@
 namespace Quixotic.Common.TypeSystem.Types
 {
-    public class QxGeneric(string key) : QxType($"<{key}>")
+    public class Generic(string key) : QxType($"<{key}>")
     {
         public string Key { get; } = key;
 
         public static void GetKeyValues(QxType type, QxType replacement, Dictionary<string, QxType> genericTypes)
         {
-            if (type is QxGeneric generic)
+            if (type is Generic generic)
                 genericTypes[generic.Key] = replacement;
 
             if (type is ArrayType array && replacement is ArrayType arrayReplacement)
@@ -15,7 +15,7 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public static QxType SetKeyValues(QxType type, Dictionary<string, QxType> keyValues)
         {
-            if (type is QxGeneric generic)
+            if (type is Generic generic)
             {
                 if (keyValues.TryGetValue(generic.Key, out var replacement))
                     return replacement;

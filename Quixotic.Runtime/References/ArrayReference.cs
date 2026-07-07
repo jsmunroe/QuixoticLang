@@ -40,5 +40,13 @@ namespace Quixotic.Runtime.References
         {
             return ((ArrayType)Type).Get(this, index);
         }
+
+        public static ArrayReference Convert(Instance instance)
+        {
+            if (instance is ArrayReference array)
+                return array;
+
+            return new ArrayReference(instance);
+        }
     }
 }

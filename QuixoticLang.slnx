@@ -11,5 +11,4 @@
   <Project Path="Quixotic.Parsing/Quixotic.Parsing.csproj" Id="b744fa57-ccd2-4032-a0f4-765d5b3845b2" />
   <Project Path="Quixotic.ParsingTests/Quixotic.ParsingTests.csproj" Id="6ff0b923-8cb6-44ad-982a-786477d4222c" />
   <Project Path="Quixotic.Runtime/Quixotic.Runtime.csproj" Id="be41615c-d309-4104-845c-4f5c6af51e8d" />
-  <Project Path="Quixotic.TypeSystem/Quixotic.TypeSystem.csproj" Id="98500c67-ce59-4651-8c70-7c15058b5edc" />
 </Solution>

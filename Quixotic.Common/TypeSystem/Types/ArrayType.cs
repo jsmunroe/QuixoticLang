@@ -1,11 +1,19 @@
+using Quixotic.Common.TypeSystem.Symbols;
 using System.ComponentModel;
 
 namespace Quixotic.Common.TypeSystem.Types
 {
     [Description("array")]
-    public class ArrayType(QxType elementType) : QxType($"{elementType}[]")
+    public class ArrayType : QxType
     {
-        public QxType ElementType { get; } = elementType;
+        public QxType ElementType { get; }
+
+        public ArrayType(QxType elementType) : base($"{elementType}[]")
+        {
+            ElementType = elementType;
+
+            RegisterMethod("length", (Instance instance) => Number.Construct(Length(instance)), Number, new Parameter("this", this));
+        }
 
         public Instance Construct(Instance[] elements)
         {

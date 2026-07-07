@@ -36,7 +36,7 @@ namespace Quixotic.Analysis.Semantics
             Frame = new LoopFrame(Frame);
         }
 
-        public void PushFunctionFrame(FunctionSignatureSymbol signatureSymbol)
+        public void PushFunctionFrame(SignatureSymbol signatureSymbol)
         {
             Frame = new FunctionFrame(Frame, signatureSymbol);
         }

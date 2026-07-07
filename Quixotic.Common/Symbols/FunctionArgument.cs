@@ -1,6 +1,4 @@
-﻿using Quixotic.Common.TypeSystem;
-
-namespace Quixotic.Runtime.Symbols
+﻿namespace Quixotic.Common.TypeSystem.Symbols
 {
     public class Argument(string name, Instance instance)
     {
