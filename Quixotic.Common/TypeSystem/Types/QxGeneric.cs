@@ -9,7 +9,7 @@ namespace Quixotic.Common.TypeSystem.Types
             if (type is QxGeneric generic)
                 genericTypes[generic.Key] = replacement;
 
-            if (type is QxArrayType array && replacement is QxArrayType arrayReplacement)
+            if (type is ArrayType array && replacement is ArrayType arrayReplacement)
                 GetKeyValues(array.ElementType, arrayReplacement.ElementType, genericTypes);
         }
 
@@ -23,7 +23,7 @@ namespace Quixotic.Common.TypeSystem.Types
                     return type;
             }
 
-            if (type is QxArrayType array)
+            if (type is ArrayType array)
             {
                 var newElementType = SetKeyValues(array.ElementType, keyValues);
                 if (newElementType != array.ElementType)

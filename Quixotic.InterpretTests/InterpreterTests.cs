@@ -517,7 +517,7 @@ namespace Quixotic.InterpretTests
                 function sayHello(first: number, second: number, third: number): number
                     return first * second * third
                 end function
-
+    
                 let value: number
 
                 value := sayHello(1, 2, 3)

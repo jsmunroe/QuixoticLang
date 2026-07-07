@@ -1,5 +1,5 @@
-﻿using Quixotic.Runtime.Environment;
-using Quixotic.Runtime.Instances;
+﻿using Quixotic.Common.TypeSystem;
+using Quixotic.Runtime.Environment;
 
 namespace Quixotic.Runtime.Contracts
 {

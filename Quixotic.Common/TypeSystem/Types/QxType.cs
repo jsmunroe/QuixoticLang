@@ -7,6 +7,8 @@ namespace Quixotic.Common.TypeSystem.Types
     {
         private static readonly Regex _rexTypeString = new(@"^([a-zA-Z_][a-zA-Z0-9_\.]+)(\[\])?$", RegexOptions.Compiled);
 
+
+
         public string Name { get; } = name;
 
         public override int GetHashCode()
@@ -54,6 +56,36 @@ namespace Quixotic.Common.TypeSystem.Types
             return commonBase ?? Any;
         }
 
+        public static QxType GetCommonBase(IEnumerable<Instance> instances)
+        {
+            return GetCommonBase(instances.Select(i => i.Type));
+        }
+
+        public bool Is(Instance instance)
+        {
+            return Equals(instance.Type);
+        }
+
+        public virtual string ToString(Instance instance)
+        {
+            return $"{{Qx:{Name}}}";
+        }
+
+        public virtual bool Equals(Instance first, Instance second)
+        {
+            return false;
+        }
+
+        public virtual int GetHashCode(Instance instance)
+        {
+            return 0;
+        }
+
+        public virtual bool IsTruthy(Instance instance)
+        {
+            return false;
+        }
+
         public override string ToString()
         {
             return Name;
@@ -65,6 +97,11 @@ namespace Quixotic.Common.TypeSystem.Types
                 return false;
 
             return string.Equals(Name, other.Name);
+        }
+
+        public static bool IsNada(Instance instance)
+        {
+            return (instance == Nada);
         }
 
         public static QxType Parse(string typeName)
@@ -92,8 +129,8 @@ namespace Quixotic.Common.TypeSystem.Types
                 "number" => Number,
                 "string" => String,
                 "boolean" => Boolean,
-                "nada" => Nada,
-                "void" => Void,
+                "nada" => Nada.Type,
+                "void" => Void.Type,
                 _ => null
             };
 
@@ -101,20 +138,20 @@ namespace Quixotic.Common.TypeSystem.Types
                 return false;
 
             if (isArray)
-                type = new QxArrayType(type);
+                type = new ArrayType(type);
 
             return true;
         }
 
         public static QxType Any { get; } = new("any");
 
-        public static QxType Number { get; } = NumberType.Instance;
-        public static QxType String { get; } = StringType.Instance;
-        public static QxType Boolean { get; } = BooleanType.Instance;
-        public static QxType Nada { get; } = NadaType.Instance;
-        public static QxType Void { get; } = VoidType.Instance;
+        public static NumberType Number { get; } = NumberType.Instance;
+        public static StringType String { get; } = StringType.Instance;
+        public static BooleanType Boolean { get; } = BooleanType.Instance;
+        public static Instance Nada { get; } = NadaType.Value;
+        public static Instance Void { get; } = VoidType.Value;
 
-        public static QxType Array(QxType elementType) => new QxArrayType(elementType);
+        public static ArrayType Array(QxType elementType) => new ArrayType(elementType);
 
         public static QxGeneric Generic(string name) => new QxGeneric(name);
     }

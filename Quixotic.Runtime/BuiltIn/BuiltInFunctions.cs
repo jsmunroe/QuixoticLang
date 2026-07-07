@@ -1,7 +1,7 @@
-﻿using Quixotic.Common.TypeSystem.Types;
+﻿using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Interpret.Contracts;
 using Quixotic.Runtime.Environment;
-using Quixotic.Runtime.Instances;
 using Quixotic.Runtime.References;
 using Quixotic.Runtime.Symbols;
 using Quixotic.Runtime.Values;
@@ -12,19 +12,90 @@ namespace Quixotic.Runtime.BuiltIn
     {
         public void Register(FunctionRegistry registry)
         {
-            registry.Register("+", (StringValue left, Instance right) => left.Add(right), QxType.String, Param("left", QxType.String), Param("right", QxType.Any));
-            registry.Register("+", (NumberValue left, NumberValue right) => left.Add(right), QxType.Number, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("-", (NumberValue left, NumberValue right) => left.Subtract(right), QxType.Number, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("*", (NumberValue left, NumberValue right) => left.Multiply(right), QxType.Number, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("/", (NumberValue left, NumberValue right) => left.Divide(right), QxType.Number, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("<", (NumberValue left, NumberValue right) => left.IsLessThan(right), QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("<=", (NumberValue left, NumberValue right) => left.IsLessThanOrEqualTo(right), QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register(">", (NumberValue left, NumberValue right) => left.IsGreaterThan(right), QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register(">=", (NumberValue left, NumberValue right) => left.IsGreaterThanOrEqualTo(right), QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("=", (Instance left, Instance right) => left.IsEqualTo(right), QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
-            registry.Register("!=", (Instance left, Instance right) => left.IsNotEqualTo(right), QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
-            registry.Register("+", (ArrayReference left, Instance right) => left.Add(right), QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Any));
-            registry.Register("+", (ArrayReference left, ArrayReference right) => left.Add(right), QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Array(QxType.Any)));
+            registry.Register("+", Concat, QxType.String, Param("left", QxType.String), Param("right", QxType.Any));
+            registry.Register("+", Add, QxType.Number, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("-", Subtract, QxType.Number, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("*", Multiply, QxType.Number, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("/", Divide, QxType.Number, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("<", IsLessThan, QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("<=", IsLessThanOrEqualTo, QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register(">", IsGreaterThan, QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register(">=", IsGreaterThanOrEqualTo, QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("=", IsEqualTo, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
+            registry.Register("!=", IsNotEqualTo, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
+            registry.Register("+", ArrayAppend, QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Any));
+            registry.Register("+", ArrayConcat, QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Array(QxType.Any)));
+        }
+
+        public static Instance Concat(StringValue left, Instance right)
+        {
+            return new StringValue($"{left.Value}{right}");
+        }
+
+        public static Instance Add(NumberValue left, NumberValue right)
+        {
+            return new NumberValue(left.Value + right.Value);
+        }
+
+        public static Instance Subtract(NumberValue left, NumberValue right)
+        {
+            return new NumberValue(left.Value - right.Value);
+        }
+
+        public static Instance Multiply(NumberValue left, NumberValue right)
+        {
+            return new NumberValue(left.Value * right.Value);
+        }
+
+        public static Instance Divide(NumberValue left, NumberValue right)
+        {
+            return new NumberValue(left.Value / right.Value);
+        }
+
+        public static Instance IsLessThan(NumberValue left, NumberValue right)
+        {
+            return new BooleanValue(left.Value < right.Value);
+        }
+
+        public static Instance IsLessThanOrEqualTo(NumberValue left, NumberValue right)
+        {
+            return new BooleanValue(left.Value <= right.Value);
+        }
+
+        public static Instance IsGreaterThan(NumberValue left, NumberValue right)
+        {
+            return new BooleanValue(left.Value > right.Value);
+        }
+
+        public static Instance IsGreaterThanOrEqualTo(NumberValue left, NumberValue right)
+        {
+            return new BooleanValue(left.Value >= right.Value);
+        }
+
+        public static Instance IsEqualTo(Instance left, Instance right)
+        {
+            return new BooleanValue(left.Equals(right));
+        }
+
+        public static Instance IsNotEqualTo(Instance left, Instance right)
+        {
+            return new BooleanValue(!left.Equals(right));
+        }
+
+        public static Instance ArrayAppend(ArrayReference array, Instance element)
+        {
+            if (array.Type is not ArrayType arrayType)
+                throw new ArgumentException("Argument is not an ArrayType", nameof(array));
+
+            return arrayType.Append(array, element);
+        }
+
+        public static Instance ArrayConcat(ArrayReference array, ArrayReference element)
+        {
+            if (array.Type is not ArrayType arrayType)
+                throw new ArgumentException("Argument is not an ArrayType", nameof(array));
+
+            return arrayType.Concat(array, element);
         }
 
         private static Parameter Param(string name, QxType type) => new(name, type);

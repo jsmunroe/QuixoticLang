@@ -1,7 +1,7 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
-using Quixotic.Runtime.Instances;
 
 namespace Quixotic.Runtime.Symbols
 {
@@ -18,12 +18,12 @@ namespace Quixotic.Runtime.Symbols
         public VariableSymbol(string name, QxType type)
             : base(name, type)
         {
-            Instance = Instance.Nada;
+            Instance = NadaType.Value;
         }
 
         public void Assign(Instance instance)
         {
-            if (Type != QxType.Nada && !instance.Type.Equals(Type))
+            if (Type != QxType.Nada.Type && !instance.Type.Equals(Type))
                 throw new TypeMismatchException(instance.Type.Name, Type.Name);
 
             Instance = instance;

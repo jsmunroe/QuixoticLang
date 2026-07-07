@@ -10,5 +10,18 @@ namespace Quixotic.Common.TypeSystem.Types
         protected StringType()
             : base("string", typeof(string))
         { }
+
+        public Instance Construct(string value)
+        {
+            return new Instance(this)
+            {
+                ["value"] = value
+            };
+        }
+
+        public override bool IsTruthy(Instance instance)
+        {
+            return !string.IsNullOrEmpty(instance["value"] as string);
+        }
     }
 }

@@ -1,72 +1,44 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
-using Quixotic.Runtime.Instances;
-using Quixotic.Runtime.Values;
 
 namespace Quixotic.Runtime.References
 {
-
-    public class ArrayReference(QxType elementType, IEnumerable<Instance> elements) : Reference(new QxArrayType(elementType))
+    public class ArrayReference : Instance
     {
-        public ArrayReference(QxType ElementType)
-            : this(ElementType, [])
-        { }
-
-        public Instance[] Elements { get; } = [.. elements];
-
-        public QxType ElementType { get; } = elementType;
-
-        public override ArrayReference Add(Instance element)
+        public ArrayReference(Instance instance)
+            : base(instance)
         {
-            if (element is ArrayReference array)
-                return Concat(array);
-
-            return Append(element);
+            if (instance.Type is not ArrayType)
+                throw new InvalidOperationException($"Instance is not of type {QxType.Array(QxType.Any)}.");
         }
 
-        public ArrayReference Concat(ArrayReference other)
+        public ArrayReference(QxType elementType, Instance[] elements) : base(QxType.Array(elementType))
         {
-            if (!ElementType.IsAssignableFrom(other.ElementType))
-                throw new TypeMismatchException(other.ElementType, ElementType);
-
-            return new(ElementType, [.. Elements, .. other.Elements]);
+            QxType.Array(elementType).Assign(this, elements);
         }
 
-        public ArrayReference Append(Instance element)
-        {
-            if (!ElementType.IsAssignableFrom(element.Type))
-                throw new TypeMismatchException(element.Type, ElementType);
+        public QxType ElementType => ((ArrayType)Type).ElementType;
 
-            return new(ElementType, [.. Elements, element]);
+        public Instance[] Elements => (Instance[])this["elements"]!;
+
+        public void Set(int index, Instance value)
+        {
+            ((ArrayType)Type).Set(index, this, value);
         }
 
-        public Instance Get(NumberValue index)
+        public void Set(Instance index, Instance value)
         {
-            if (index.Value < 0 || index.Value >= Elements.Length)
-                throw new OutOfRangeException(nameof(index));
-
-            return Elements[(int)index.Value];
+            ((ArrayType)Type).Set(index, this, value);
         }
 
-        public void Set(NumberValue index, Instance element)
+        public Instance Get(int index)
         {
-            if (!ElementType.IsAssignableFrom(element.Type))
-                throw new TypeMismatchException(ElementType, element.Type);
-
-            if (index.Value < 0 || index.Value >= Elements.Length)
-                throw new OutOfRangeException(nameof(index));
-
-            Elements[(int)index.Value] = element;
+            return ((ArrayType)Type).Get(this, index);
         }
 
-        public override bool IsTruthy()
+        public Instance Get(Instance index)
         {
-            return Elements.Length > 0;
-        }
-
-        public override string ToString()
-        {
-            return $"{{Qx:Array<{ElementType}>[{Elements.Length}]}}";
+            return ((ArrayType)Type).Get(this, index);
         }
     }
 }

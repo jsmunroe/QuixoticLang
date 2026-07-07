@@ -282,7 +282,7 @@ namespace Quixotic.Analysis.Semantics
         {
             var functionFrame = Frame.GetFunctionFrame() ?? throw new ReturnOutsideFunctionException(statement.Span);
 
-            var returnValueType = statement.Expression is null ? QxType.Void : AnalyzeExpression(statement.Expression);
+            var returnValueType = statement.Expression is null ? QxType.Void.Type : AnalyzeExpression(statement.Expression);
 
             if (!functionFrame.Function.ReturnType.IsAssignableFrom(returnValueType))
                 throw new ReturnTypeMismatchException(functionFrame.Function.Name, returnValueType, statement.Span);
@@ -347,7 +347,7 @@ namespace Quixotic.Analysis.Semantics
         {
             var targetType = AnalyzeExpression(expression.Target);
 
-            if (targetType is not QxArrayType arrayType)
+            if (targetType is not ArrayType arrayType)
                 throw new InvalidIndexerTargetException(targetType, expression.Span);
 
             var indexType = AnalyzeExpression(expression.Index);

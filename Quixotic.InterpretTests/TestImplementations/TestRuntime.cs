@@ -1,7 +1,7 @@
-﻿using Quixotic.Common.TypeSystem.Types;
+﻿using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Runtime.Contracts;
 using Quixotic.Runtime.Environment;
-using Quixotic.Runtime.Instances;
 using Quixotic.Runtime.References;
 using Quixotic.Runtime.Values;
 
@@ -114,7 +114,7 @@ namespace Quixotic.InterpretTests.TestImplementations
                     continue;
 
                 var value = frame.Scope.GetInstance(name);
-                if (value is NadaInstance)
+                if (value.IsNada)
                     return;
                 else
                     otherFrameValues.Add($"In frame #{i}, {name} = {value}.");
@@ -141,7 +141,7 @@ namespace Quixotic.InterpretTests.TestImplementations
 
             var variableValue = frame.Scope.GetInstance(name);
 
-            if (variableValue is not NadaInstance)
+            if (variableValue.IsNada)
                 throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
         }
 
@@ -290,7 +290,12 @@ namespace Quixotic.InterpretTests.TestImplementations
                 if (!frame.Scope.IsVariableDeclared(name))
                     continue;
 
-                if (frame.Scope.GetInstance(name) is ArrayReference array && array.ElementType == QxType.Number)
+                var instance = frame.Scope.GetInstance(name);
+
+                if (instance is not ArrayReference array)
+                    array = new ArrayReference(instance);
+
+                if (array.ElementType == QxType.Number)
                 {
                     if (AreEqual(array, values) is null)
                         return;
@@ -318,10 +323,13 @@ namespace Quixotic.InterpretTests.TestImplementations
             if (!frame.Scope.IsVariableDeclared(name))
                 throw new AssertFailedException($"A variable named '{name}' has not been defined.");
 
-            var variableValue = frame.Scope.GetInstance(name);
+            var instance = frame.Scope.GetInstance(name);
 
-            if (variableValue is not ArrayReference array || array.ElementType != QxType.Number)
-                throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
+            if (instance is not ArrayReference array)
+                array = new ArrayReference(instance);
+
+            if (array.ElementType == QxType.Number)
+                throw new AssertFailedException($"A variable named '{name}' was {instance.Type.Name} type and has a value of {instance}.");
 
             var expected = value;
             var actual = array.Elements.Select(e => (e as NumberValue)?.Value).ToArray();

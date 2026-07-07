@@ -1,4 +1,4 @@
-﻿using Quixotic.Runtime.Instances;
+﻿using Quixotic.Common.TypeSystem;
 
 namespace Quixotic.Runtime.Symbols
 {

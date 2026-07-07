@@ -1,40 +1,21 @@
-﻿using Quixotic.Common.TypeSystem.Types;
-using Quixotic.Runtime.Instances;
+﻿using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Types;
+using System.Diagnostics;
 
 namespace Quixotic.Runtime.Values
 {
-    public class StringValue(string value) : Value(QxType.String)
+    [DebuggerDisplay("{ToString()}")]
+    public class StringValue : Instance
     {
-        public string Value { get; } = value;
-
-        public override Instance Add(Instance right)
+        public StringValue(string value) : base(QxType.String)
         {
-            return new StringValue(Value + right.ToString());
+            this["value"] = value;
         }
 
-        public override object? Unwrap()
+        public string Value
         {
-            return Value;
-        }
-
-        public override bool Equals(Instance other)
-        {
-            return other is StringValue stringValue && Value == stringValue.Value;
-        }
-
-        public override int GetHashCode()
-        {
-            return Value.GetHashCode();
-        }
-
-        public override bool IsTruthy()
-        {
-            return !string.IsNullOrEmpty(Value);
-        }
-
-        public override string ToString()
-        {
-            return Value;
+            get => (string)this["value"]!;
+            set => this["value"] = value;
         }
     }
 }

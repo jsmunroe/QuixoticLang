@@ -1,9 +1,9 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Interpret.Contracts;
-using Quixotic.Runtime.Instances;
 using Quixotic.Runtime.Symbols;
 using System.Diagnostics.CodeAnalysis;
 

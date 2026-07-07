@@ -7,6 +7,7 @@ using Quixotic.Common.Operations;
 using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Common.Utilities;
@@ -15,7 +16,6 @@ using Quixotic.Interpret.FlowControl;
 using Quixotic.Parsing;
 using Quixotic.Runtime.Contracts;
 using Quixotic.Runtime.Environment;
-using Quixotic.Runtime.Instances;
 using Quixotic.Runtime.References;
 using Quixotic.Runtime.Symbols;
 using Quixotic.Runtime.Values;
@@ -138,7 +138,7 @@ namespace Quixotic.Interpret
             }
 
             runtime.Pop();
-            return Instance.Void;
+            return QxType.Void;
         }
 
         public void Execute(QxStatement statement)
@@ -168,7 +168,7 @@ namespace Quixotic.Interpret
 
         public void Execute(QxVariableDeclarationStatement statement)
         {
-            Instance value = Instance.Nada;
+            Instance value = QxType.Nada;
             if (statement.Value is not null)
                 value = Evaluate(statement.Value);
 
@@ -179,14 +179,14 @@ namespace Quixotic.Interpret
                     throw new UnrecognizedTypeException(statement.TypeName);
             }
 
-            if (!value.IsNada && type is not null)
+            if (!QxType.IsNada(value) && type is not null)
             {
                 if (!type.IsAssignableFrom(value.Type))
                     throw new TypeMismatchException(value.Type, type);
 
                 runtime.Frame.Scope.DefineVariable(statement.Name, value);
             }
-            else if (!value.IsNada)
+            else if (!QxType.IsNada(value))
             {
                 runtime.Frame.Scope.DefineVariable(statement.Name, value);
             }
@@ -256,10 +256,17 @@ namespace Quixotic.Interpret
                 var targetValue = Evaluate(indexerExpression.Target);
                 var indexValue = Evaluate(indexerExpression.Index);
 
-                if (targetValue is ArrayReference array && indexValue is NumberValue indexNumber)
-                    array.Set(indexNumber, value);
-                else
+                if (targetValue is not ArrayReference array || indexValue is not NumberValue indexNumber)
+                {
                     throw new IndexerTargetException(targetValue.Type);
+                }
+                else
+                {
+                    if (!array.ElementType.IsAssignableFrom(value.Type))
+                        throw new TypeMismatchException(value.Type, array.ElementType);
+
+                    array.Set((int)indexNumber.Value, value);
+                }
             }
             else
             {
@@ -386,9 +393,9 @@ namespace Quixotic.Interpret
         {
             List<Instance> elements = [.. expression.Elements.Select(Evaluate)];
 
-            var baseType = Instance.GetCommonBase(elements);
+            var baseType = QxType.GetCommonBase(elements);
 
-            return new ArrayReference(baseType, elements);
+            return new ArrayReference(baseType, [.. elements]);
         }
 
         protected Instance Evaluate(QxIdentifierExpression expression)
@@ -471,7 +478,7 @@ namespace Quixotic.Interpret
 
         private static bool IsTruthy(Instance instance)
         {
-            return instance.IsTruthy();
+            return instance.IsTruthy;
         }
 
         private TValue ExpectType<TValue>(Instance instance)
@@ -520,12 +527,7 @@ namespace Quixotic.Interpret
 
             var member = Evaluate(memberExpression);
 
-            return Instance.Nada;
-        }
-
-        private Instance InvokePropertyGetter(Instance instance, string propertyName)
-        {
-
+            return QxType.Nada;
         }
 
         private BooleanValue And(QxExpression left, QxExpression right)

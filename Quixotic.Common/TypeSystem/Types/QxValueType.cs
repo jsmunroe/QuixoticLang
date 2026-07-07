@@ -10,6 +10,21 @@ namespace Quixotic.Common.TypeSystem.Types
             _typeOfValue = typeOfValue;
         }
 
+        public override string ToString(Instance instance)
+        {
+            return instance["value"]?.ToString() ?? "nada";
+        }
+
+        public override bool Equals(Instance first, Instance second)
+        {
+            return Equals(first["value"], second["value"]);
+        }
+
+        public override int GetHashCode(Instance instance)
+        {
+            return instance["value"]?.GetHashCode() ?? 0;
+        }
+
         public override bool Equals(object? obj)
         {
             if (obj is not QxValueType other)

@@ -1,49 +1,22 @@
-﻿using Quixotic.Common.TypeSystem.Types;
-using Quixotic.Runtime.Instances;
+﻿using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Runtime.Values
 {
-
-    public class BooleanValue(bool value) : Value(QxType.Boolean)
+    public class BooleanValue : Instance
     {
-        public bool Value { get; } = value;
-
-        public BooleanValue Not()
+        public BooleanValue(bool value) : base(QxType.Boolean)
         {
-            return new BooleanValue(!Value);
+            this["value"] = value;
         }
 
-        public override bool Equals(Instance other)
+        public bool Value
         {
-            if (other is BooleanValue booleanValue && booleanValue.Value == Value)
-                return true;
-
-            return false;
+            get => (bool)this["value"]!;
+            set => this["value"] = value;
         }
 
-        public override int GetHashCode()
-        {
-            return Value.GetHashCode();
-        }
-
-        public override bool IsTruthy()
-        {
-            return Value;
-        }
-
-        public override object? Unwrap()
-        {
-            return Value;
-        }
-
-        public static BooleanValue True { get; } = new(true);
-
-        public static BooleanValue False { get; } = new(false);
-
-        public override string ToString()
-        {
-            return Value ? "true" : "false";
-        }
+        public static BooleanValue True => new(true);
+        public static BooleanValue False => new(false);
     }
-
 }
