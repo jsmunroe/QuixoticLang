@@ -466,7 +466,7 @@ namespace Quixotic.Interpret
 
             var function = runtime.Frame.Scope.GetFunction(name, [.. argumentValues.GetTypes()]);
 
-            var arguments = BindArguments(name, function.Parameters, [.. argumentValues]);
+            var arguments = BindArguments(name, [.. function.Parameters], [.. argumentValues]);
 
             return Evaluate(function, arguments);
         }
@@ -477,11 +477,11 @@ namespace Quixotic.Interpret
 
             var name = expression.MethodName;
 
-            var argumentValues = Evaluate(expression.Arguments);
+            Instance[] argumentValues = [.. Evaluate(expression.Arguments)];
 
-            var method = target.Type.GetMemberMethod(target, name, [target, .. argumentValues]);
+            var method = target.Type.ResolveMethod(target, name, argumentValues);
 
-            var arguments = BindArguments(name, method.Parameters, [target, .. argumentValues]);
+            var arguments = BindArguments(name, [.. method.Parameters], [target, .. argumentValues]);
 
             return Evaluate(method, arguments);
         }
@@ -529,7 +529,7 @@ namespace Quixotic.Interpret
 
             var function = runtime.Frame.Scope.GetFunction(name, leftValue.Type, rightValue.Type);
 
-            var arguments = BindArguments(name, function.Parameters, [leftValue, rightValue]);
+            var arguments = BindArguments(name, [.. function.Parameters], [leftValue, rightValue]);
 
             return Evaluate(function, arguments);
         }
@@ -572,10 +572,10 @@ namespace Quixotic.Interpret
             return IsTruthy(rightValue) ? BooleanValue.True : BooleanValue.False;
         }
 
-        public List<Argument> BindArguments(string name, List<Parameter> parameters, List<Instance> instances)
+        public List<Argument> BindArguments(string name, Parameter[] parameters, Instance[] instances)
         {
-            if (parameters.Count != instances.Count)
-                throw new ParameterCountException(name, parameters.Count, instances.Count);
+            if (parameters.Length != instances.Length)
+                throw new ParameterCountException(name, parameters.Length, instances.Length);
 
             List<Argument> arguments = [];
 

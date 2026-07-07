@@ -75,9 +75,11 @@ namespace Quixotic.Common.TypeSystem.Types
             return $"{{Qx:{Name}}}";
         }
 
-        public Function GetMemberMethod(Instance thisInstance, string name, params Instance[] arguments)
+        public Function ResolveMethod(Instance thisInstance, string name, params Instance[] arguments)
         {
-            if (!_methods.TryResolve(name, [.. arguments.Select(a => a.Type)], out var functionSymbol))
+            Instance[] allArguments = [thisInstance, .. arguments];
+
+            if (!_methods.TryResolve(name, [.. allArguments.Select(a => a.Type)], out var functionSymbol))
                 throw new UndefinedMethodException(this, name);
 
             return functionSymbol.Function;
