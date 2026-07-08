@@ -23,8 +23,9 @@ namespace Quixotic.Runtime.BuiltIn
             registry.Register(">=", IsGreaterThanOrEqualTo, QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
             registry.Register("=", IsEqualTo, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
             registry.Register("!=", IsNotEqualTo, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
-            registry.Register("+", ArrayAppend, QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Any));
-            registry.Register("+", ArrayConcat, QxType.Array(QxType.Any), Param("left", QxType.Array(QxType.Any)), Param("right", QxType.Array(QxType.Any)));
+            registry.Register("+", ArrayAppend, QxType.Collection(QxType.Any), Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Any));
+            registry.Register("+", ArrayConcat, QxType.Collection(QxType.Any), Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Collection(QxType.Any)));
+            registry.Register("in", Contains, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Collection(QxType.Any)));
         }
 
         public static Instance Concat(StringValue left, Instance right)
@@ -82,20 +83,28 @@ namespace Quixotic.Runtime.BuiltIn
             return new BooleanValue(!left.Equals(right));
         }
 
-        public static Instance ArrayAppend(ArrayReference array, Instance element)
+        public static Instance ArrayAppend(CollectionReference array, Instance element)
         {
-            if (array.Type is not ArrayType arrayType)
-                throw new ArgumentException("Argument is not an ArrayType", nameof(array));
+            if (array.Type is not CollectionType collectionType)
+                throw new ArgumentException("Argument is not a CollectionType", nameof(array));
 
-            return arrayType.Append(array, element);
+            return collectionType.Append(array, element);
         }
 
-        public static Instance ArrayConcat(ArrayReference array, ArrayReference element)
+        public static Instance ArrayConcat(CollectionReference array, CollectionReference element)
         {
-            if (array.Type is not ArrayType arrayType)
-                throw new ArgumentException("Argument is not an ArrayType", nameof(array));
+            if (array.Type is not CollectionType collectionType)
+                throw new ArgumentException("Argument is not a CollectionType", nameof(array));
 
-            return arrayType.Concat(array, element);
+            return collectionType.Concat(array, element);
+        }
+
+        public static Instance Contains(Instance element, CollectionReference array)
+        {
+            if (array.Type is not CollectionType collectionType)
+                throw new ArgumentException("Argument is not a CollectionType", nameof(array));
+
+            return collectionType.Contains(array, element);
         }
 
         private static Parameter Param(string name, QxType type) => new(name, type);

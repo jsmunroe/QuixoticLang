@@ -43,6 +43,7 @@ namespace Quixotic.Common.Tokens
         Or,
         And,
         Not,
+        Dot,
         Function,
         Return,
         NewLine,
@@ -56,6 +57,7 @@ namespace Quixotic.Common.Tokens
         Type,
         OpenBracket,
         CloseBracket,
-        Dot,
+        OpenBrace,
+        CloseBrace,
     }
 }

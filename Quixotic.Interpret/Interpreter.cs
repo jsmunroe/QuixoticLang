@@ -345,7 +345,7 @@ namespace Quixotic.Interpret
 
             var collection = Evaluate(statement.Collection);
 
-            if (collection is not ArrayReference array)
+            if (collection is not CollectionReference array)
                 throw new TypeMismatchException(collection.Type, QxType.Array(QxType.Any));
 
             foreach (var item in array.Elements)
@@ -399,6 +399,15 @@ namespace Quixotic.Interpret
             var baseType = QxType.GetCommonBase(elements);
 
             return new ArrayReference(baseType, [.. elements]);
+        }
+
+        protected Instance Evaluate(QxSetExpression expression)
+        {
+            List<Instance> elements = [.. expression.Elements.Select(Evaluate)];
+
+            var baseType = QxType.GetCommonBase(elements);
+
+            return new SetReference(baseType, [.. elements]);
         }
 
         protected Instance Evaluate(QxIdentifierExpression expression)

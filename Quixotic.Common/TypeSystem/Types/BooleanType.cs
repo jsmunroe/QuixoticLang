@@ -11,9 +11,9 @@ namespace Quixotic.Common.TypeSystem.Types
             : base("boolean", typeof(bool))
         { }
 
-        public Instance Construct(bool value)
+        public static Instance Construct(bool value)
         {
-            return new Instance(this)
+            return new Instance(Instance)
             {
                 ["value"] = value
             };

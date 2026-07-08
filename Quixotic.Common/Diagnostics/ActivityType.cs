@@ -35,6 +35,7 @@
         LeftOperand,
         FunctionReturnType,
         BracketSet,
+        BraceSet,
         ArrayElement,
         StandaloneExpression,
     }

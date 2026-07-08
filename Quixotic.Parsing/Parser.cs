@@ -346,6 +346,28 @@ namespace Quixotic.Parsing
             };
         }
 
+        private QxSetExpression ParseSet()
+        {
+            if (IsToken(TokenType.CloseBrace))
+                return new QxSetExpression(); // Empty array
+
+            List<QxExpression> elements = [];
+
+            while (!IsToken(TokenType.CloseBrace))
+            {
+                var element = CaptureExpression(() => ParseExpression(), ActivityType.ArrayElement);
+
+                elements.Add(element);
+
+                Allow(TokenType.Comma);
+            }
+
+            return new QxSetExpression
+            {
+                Elements = [.. elements],
+            };
+        }
+
         private QxPrintStatement ParsePrint()
         {
             _parseContext.AssignStatementType(StatementType.Print);
@@ -615,6 +637,17 @@ namespace Quixotic.Parsing
                     return expression;
 
                 }, ActivityType.BracketSet);
+            }
+
+            if (token.Type == TokenType.OpenBrace)
+            {
+                return CaptureExpression(() =>
+                {
+                    Advance();
+                    var expression = ParseSet();
+                    Expect(TokenType.CloseBrace);
+                    return expression;
+                }, ActivityType.BraceSet);
             }
 
             if (token.Type == TokenType.StringLiteral)

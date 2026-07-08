@@ -1221,8 +1221,213 @@ namespace Quixotic.InterpretTests
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
+            // Execute
+            Assert.Throws<UndefinedMethodException>(() => interpreter.Execute(parser.Parse()));
+        }
+
+
+        [TestMethod]
+        public void Execute_set_assignment()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5]));
+        }
+
+        [TestMethod]
+        public void Execute_set_assignment_add_element()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                set := set + 6
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+
+            runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5, 6]));
+
+        }
+
+        [TestMethod]
+        public void Execute_set_assignment_add_duplicate_element()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                set := set + 3
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+
+            runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5]));
+
+        }
+
+        [TestMethod]
+        public void Execute_set_with_in_operator()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                let hasElement := 2 in set
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5]));
+            runtime.AssertVariableHasValue("hasElement", true);
+        }
+
+        [TestMethod]
+        public void Execute_set_add_element_in_variable_declaration()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                let newSet := set + 6
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5]));
+            runtime.AssertVariableHasValue("newSet", Set([1, 2, 3, 4, 5, 6]));
+        }
+
+        [TestMethod]
+        public void Execute_set_add_duplicate_element_in_variable_declaratio()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                let newSet := set + 2
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5]));
+            runtime.AssertVariableHasValue("newSet", Set([1, 2, 3, 4, 5]));
+        }
+
+        [TestMethod]
+        public void Execute_for_loop_with_set()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                for i in set
+                    print i
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+
+        }
+
+        [TestMethod]
+        public void Execute_set_length_property()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+                
+                print set.length
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Executet
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+
+        }
+
+        [TestMethod]
+        public void Execute_set_set_length_property()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+                
+                set.length := 7 ' This shouldn't be possible
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
             // Execute & Assert
             Assert.Throws<UndefinedMethodException>(() => interpreter.Execute(parser.Parse()));
+
+            // Assert
         }
 
 
@@ -1239,5 +1444,7 @@ namespace Quixotic.InterpretTests
             var stream = File.OpenRead(filePath);
             return stream;
         }
+
+        public TestSet<double> Set(double[] elements) => new(elements);
     }
 }

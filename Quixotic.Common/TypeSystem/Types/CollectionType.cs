@@ -1,0 +1,104 @@
+﻿using Quixotic.Common.TypeSystem.Symbols;
+
+namespace Quixotic.Common.TypeSystem.Types
+{
+    public class CollectionType : QxType
+    {
+        public QxType ElementType { get; }
+
+        public CollectionType(string name, QxType elementType) : base(name)
+        {
+            ElementType = elementType;
+
+            RegisterMethod("length", (Instance instance) => Number.Construct(Length(instance)), Number, new Parameter("this", this));
+        }
+        public int Length(Instance instance)
+        {
+            if (instance["elements"] is not Instance[] elements)
+                throw new InvalidOperationException("Instance does not contain a collection of elements.");
+
+            return elements.Length;
+        }
+
+        public Instance Append(Instance collection, Instance value)
+        {
+            if (collection.Type is not CollectionType collectionType)
+                throw new InvalidOperationException("Right instance is not a collection type.");
+
+            if (collection["elements"] is not Instance[] elements)
+                throw new InvalidOperationException("Collection instance does not contain a collection of elements.");
+
+            if (!collectionType.ElementType.IsAssignableFrom(value.Type))
+                throw new InvalidOperationException($"Value is not of type {collectionType.ElementType}.");
+
+            Instance[] newElements = [.. elements, value];
+
+            return new Instance(Collection(collectionType, collectionType.ElementType))
+            {
+                ["elements"] = CleanElements(newElements)
+            };
+        }
+
+        public Instance Concat(Instance collection, Instance other)
+        {
+            if (collection.Type is not CollectionType collectionType)
+                throw new InvalidOperationException("Right instance is not a collection type.");
+
+            if (other.Type is not CollectionType otherSetType)
+                throw new InvalidOperationException("Left instance is not a collection type.");
+
+            if (!collectionType.ElementType.IsAssignableFrom(otherSetType.ElementType))
+                throw new InvalidOperationException($"Elements of type {otherSetType.ElementType} are not assignable to a collection of type {collectionType.ElementType}");
+
+            if (collection["elements"] is not Instance[] elements)
+                throw new InvalidOperationException("Right instance does not contain a collection of elements.");
+
+            if (other["elements"] is not Instance[] otherElements)
+                throw new InvalidOperationException("Left instance does not contain a collection of elements.");
+
+            Instance[] newElements = [.. elements, .. otherElements];
+
+            return new Instance(Collection(collectionType, collectionType.ElementType))
+            {
+                ["elements"] = CleanElements(newElements)
+            };
+        }
+
+        public Instance Contains(Instance collection, Instance value)
+        {
+            if (collection.Type is not CollectionType collectionType)
+                throw new InvalidOperationException("Right instance is not a collection type.");
+
+            if (collection["elements"] is not Instance[] elements)
+                throw new InvalidOperationException("Right instance does not contain a collection of elements.");
+
+            var contains = elements.Any(e => e.Equals(value));
+
+            return BooleanType.Construct(contains);
+        }
+
+        public override bool IsTruthy(Instance instance)
+        {
+            if (instance["elements"] is Instance[] collection)
+                return collection.Length > 0;
+
+            return false;
+        }
+
+        public override bool IsAssignableFrom(QxType subtype)
+        {
+            if (subtype is not CollectionType collectionType)
+                return false;
+
+            if (!ElementType.IsAssignableFrom(collectionType.ElementType))
+                return false;
+
+            return true;
+        }
+
+        protected virtual Instance[] CleanElements(Instance[] elements)
+        {
+            return elements;
+        }
+    }
+}

@@ -102,6 +102,16 @@ namespace QuixoticLang.Lexer
                         Advance();
                         break;
 
+                    case '{':
+                        yield return Simple(TokenType.OpenBrace, "{");
+                        Advance();
+                        break;
+
+                    case '}':
+                        yield return Simple(TokenType.CloseBrace, "}");
+                        Advance();
+                        break;
+
                     case '=':
                         yield return Simple(TokenType.EqualTo, "=");
                         Advance();

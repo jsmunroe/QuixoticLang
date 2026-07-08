@@ -1131,9 +1131,173 @@ namespace Quixotic.ParsingTests
             // Assert
         }
 
+        [TestMethod]
+        public void Parse_set_assignment()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            AssertVariableDeclaration(statements[0], "set", expression: [1, 2, 3, 4, 5]);
+        }
+
+        [TestMethod]
+        public void Parse_set_assignment_add_element()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                set := set + 6
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "set", expression: [1, 2, 3, 4, 5]);
+
+            AssertAssignment(statements[1], "set", ("[set]", "+", 6));
+        }
+
+        [TestMethod]
+        public void Parse_set_with_in_operator()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                let hasElement := 2 in set
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "set", expression: [1, 2, 3, 4, 5]);
+
+            AssertVariableDeclaration(statements[1], "hasElement", expression: (2, "in", "[set]"));
+        }
+
+        [TestMethod]
+        public void Parse_set_index_assignment()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                let newSet := set + 6
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "set", expression: [1, 2, 3, 4, 5]);
+
+            AssertVariableDeclaration(statements[1], "newSet", expression: ("[set]", "+", 6));
+
+        }
+
+        [TestMethod]
+        public void Parse_for_loop_with_set()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+
+                for i in set
+                    print i
+                next
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+
+            AssertVariableDeclaration(statements[0], "set", expression: [1, 2, 3, 4, 5]);
+
+            AssertForIn(statements[1],
+                iterator: "i",
+                @in: "[set]",
+                block: block =>
+                {
+                    AssertPrint(block[0], "[i]");
+                });
+        }
+
+        [TestMethod]
+        public void Parse_set_length_property()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+                
+                print set.length
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(2, statements);
+        }
+
+        [TestMethod]
+        public void Parse_set_set_length_property()
+        {
+            // Setup
+            var source = @"
+                let set := {1, 2, 3, 4, 5}
+                
+                set.length := 7 ' This shouldn't be possible
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+        }
+
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression[] expression)
         {
-            return AssertVariableDeclaration(statement, name, expression: new TestArrayExpression(expression));
+            return AssertVariableDeclaration(statement, name, expression: new TestCollectionExpression(expression));
         }
 
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, string? typeName = null, TestExpression? expression = null)

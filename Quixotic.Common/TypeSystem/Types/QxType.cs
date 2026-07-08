@@ -11,7 +11,7 @@ namespace Quixotic.Common.TypeSystem.Types
     {
         private static readonly Regex _rexTypeString = new(@"^([a-zA-Z_][a-zA-Z0-9_\.]+)(\[\])?$", RegexOptions.Compiled);
 
-        private FunctionRegistry _methods = new();
+        private readonly FunctionRegistry _methods = new();
 
         public string Name { get; } = name;
 
@@ -175,8 +175,19 @@ namespace Quixotic.Common.TypeSystem.Types
         public static Instance Nada { get; } = NadaType.Value;
         public static Instance Void { get; } = VoidType.Value;
 
-        public static ArrayType Array(QxType elementType) => new ArrayType(elementType);
+        public static ArrayType Array(QxType elementType) => new(elementType);
+        public static SetType Set(QxType elementType) => new(elementType);
+        public static CollectionType Collection(QxType elementType) => new($"collection<{elementType}>", elementType);
+        public static CollectionType Collection(CollectionType collectionType, QxType elementType)
+        {
+            return collectionType switch
+            {
+                ArrayType => new ArrayType(elementType),
+                SetType => new SetType(elementType),
+                _ => throw new InvalidOperationException($"Unsupported collection type: {collectionType.Name}")
+            };
+        }
 
-        public static Generic Generic(string name) => new Generic(name);
+        public static Generic Generic(string name) => new(name);
     }
 }

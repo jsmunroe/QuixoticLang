@@ -66,7 +66,7 @@ namespace Quixotic.ParsingTests.TestModels
 
         public static implicit operator TestExpression(double[] elements)
         {
-            return new TestArrayExpression([.. elements.Select(e => new TestNumberExpression(e))]);
+            return new TestCollectionExpression([.. elements.Select(e => new TestNumberExpression(e))]);
         }
 
         public static implicit operator TestExpression((double left, string op, double right) tuple)
@@ -313,7 +313,7 @@ namespace Quixotic.ParsingTests.TestModels
         }
     }
 
-    public record TestArrayExpression(TestExpression[] Elements) : TestExpression
+    public record TestCollectionExpression(TestExpression[] Elements) : TestExpression
     {
         public override string ToString(TestExpression expression)
         {
@@ -327,7 +327,7 @@ namespace Quixotic.ParsingTests.TestModels
         {
             var positionDescription = GetPositionDescription(this);
 
-            var arrayExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxArrayExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not an array expression.");
+            var arrayExpression = Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType<QxCollectionExpression>(expression, $"\r\n{positionDescription}\r\nExpression was not an array expression.");
 
             var actual = arrayExpression.Elements;
             List<TestExpression> expected = [.. Elements];

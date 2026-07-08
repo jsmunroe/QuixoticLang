@@ -4,6 +4,7 @@ using Quixotic.Runtime.Contracts;
 using Quixotic.Runtime.Environment;
 using Quixotic.Runtime.References;
 using Quixotic.Runtime.Values;
+using System.Collections;
 
 namespace Quixotic.InterpretTests.TestImplementations
 {
@@ -248,6 +249,59 @@ namespace Quixotic.InterpretTests.TestImplementations
                 Assert.AreEqual(expected, actual, $"The variable named '{name}' has a value of {actual}. It was not '{expected}'.");
         }
 
+        public void AssertVariableHasValue(string name, bool value)
+        {
+            List<string> otherFrameValues = [];
+
+            for (var i = 0; i < AllFrames.Count; i++)
+            {
+                var frame = AllFrames[i];
+
+                if (!frame.Scope.IsVariableDeclared(name))
+                    continue;
+
+                var instance = frame.Scope.GetInstance(name);
+
+                if (instance is not null)
+                {
+                    if (Equals(instance["value"], value))
+                        return;
+
+                    otherFrameValues.Add($"In frame #{i}, {name} = {instance["value"]}.");
+                }
+            }
+
+            if (otherFrameValues.Count == 0)
+                throw new AssertFailedException($"A variable named '{name}' was never defined.");
+            else
+                throw new AssertFailedException($"In no frame was a variable named '{name}' left with a value {value}. \r\n\t{string.Join("\r\n\t", otherFrameValues)}");
+        }
+
+        public void AssertVariableHasValue(int frameIndex, string name, bool value)
+        {
+            if (frameIndex < 0)
+                throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
+
+            if (frameIndex >= AllFrames.Count)
+                throw new AssertFailedException($"There frames executions at index {frameIndex}.");
+
+            var frame = AllFrames[frameIndex];
+
+            if (!frame.Scope.IsVariableDeclared(name))
+                throw new AssertFailedException($"A variable named '{name}' has not been defined.");
+
+            var variableValue = frame.Scope.GetInstance(name);
+
+            if (variableValue.Type is not BooleanType booleanType)
+                throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
+
+            var expected = value;
+            var actual = booleanType.Get(variableValue);
+
+            if (!Equals(actual, value))
+                Assert.AreEqual(expected, actual, $"The variable named '{name}' has a value of {actual}. It was not '{expected}'.");
+        }
+
         private string? AreEqual(ArrayReference array, double[] values)
         {
             if (array.ElementType != QxType.Number)
@@ -274,9 +328,9 @@ namespace Quixotic.InterpretTests.TestImplementations
         {
             return $"[{string.Join(", ", array.Select(e => e?.ToString()))}]";
         }
-        private string? ToString(ArrayReference array)
+        private string? ToString(CollectionReference collection)
         {
-            return $"[{string.Join(", ", array.Elements.Select(e => e?.ToString()))}]";
+            return $"[{string.Join(", ", collection.Elements.Select(e => e?.ToString()))}]";
         }
 
         public void AssertVariableHasValue(string name, double[] values)
@@ -340,6 +394,109 @@ namespace Quixotic.InterpretTests.TestImplementations
                 return;
 
             throw new AssertFailedException(message);
+        }
+
+        private string? AreEqual(SetReference collection, double[] values)
+        {
+            if (collection.ElementType != QxType.Number)
+                return "The collection is not a number collection.";
+
+            if (collection.Elements.Length != values.Length)
+                return $"The collection length is {collection.Elements.Length}. This is {(collection.Elements.Length > values.Length ? "greater" : "less")} than was expected length of {values.Length}.";
+
+            for (var i = 0; i < values.Length; i++)
+            {
+                var element = collection.Elements[i] as NumberValue;
+
+                if (collection.Elements[i] is not NumberValue numberValue)
+                    return $"The collection element at index {i} is not a number. It is {collection.Elements[i].Type.Name}.";
+            }
+
+            var setHash = new HashSet<double>(collection.Elements.Select(e => (double)e["value"]!));
+            if (!setHash.SetEquals(values))
+                return $"The set elements do not match the expected values.";
+
+            return null;
+        }
+
+
+
+        public void AssertVariableHasValue(string name, TestSet<double> values)
+        {
+            List<string> otherFrameValues = [];
+
+            for (var i = 0; i < AllFrames.Count; i++)
+            {
+                var frame = AllFrames[i];
+
+                if (!frame.Scope.IsVariableDeclared(name))
+                    continue;
+
+                var instance = frame.Scope.GetInstance(name);
+
+                if (instance is not SetReference set)
+                    set = new SetReference(instance);
+
+                if (set.ElementType == QxType.Number)
+                {
+                    if (AreEqual(set, [.. values]) is null)
+                        return;
+
+                    otherFrameValues.Add($"In frame #{i}, {name} = {ToString(set)}.");
+                }
+            }
+
+            if (otherFrameValues.Count == 0)
+                throw new AssertFailedException($"A variable named '{name}' was never defined.");
+            else
+                throw new AssertFailedException($"In no frame was a variable named '{name}' left with a value {ToString([.. values])}. \r\n\t{string.Join("\r\n\t", otherFrameValues)}");
+        }
+
+        public void AssertVariableHasValue(int frameIndex, string name, TestSet<double> value)
+        {
+            if (frameIndex < 0)
+                throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
+
+            if (frameIndex >= AllFrames.Count)
+                throw new AssertFailedException($"There frames executions at index {frameIndex}.");
+
+            var frame = AllFrames[frameIndex];
+
+            if (!frame.Scope.IsVariableDeclared(name))
+                throw new AssertFailedException($"A variable named '{name}' has not been defined.");
+
+            var instance = frame.Scope.GetInstance(name);
+
+            if (instance is not ArrayReference array)
+                array = new ArrayReference(instance);
+
+            if (array.ElementType == QxType.Number)
+                throw new AssertFailedException($"A variable named '{name}' was {instance.Type.Name} type and has a value of {instance}.");
+
+            var expected = value;
+            var actual = array.Elements.Select(e => (e as NumberValue)?.Value).ToArray();
+
+            var message = AreEqual(array, [.. value]);
+
+            if (message is null)
+                return;
+
+            throw new AssertFailedException(message);
+        }
+    }
+
+    public class TestSet<TElement>(IEnumerable<TElement> elements) : IEnumerable<TElement>
+    {
+        private readonly IEnumerable<TElement> _elements = elements;
+
+        public IEnumerator<TElement> GetEnumerator()
+        {
+            return _elements.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }
