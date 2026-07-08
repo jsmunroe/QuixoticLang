@@ -38,5 +38,6 @@
         BraceSet,
         ArrayElement,
         StandaloneExpression,
+        TypeBody,
     }
 }

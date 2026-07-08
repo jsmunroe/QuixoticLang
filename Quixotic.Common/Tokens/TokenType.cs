@@ -59,5 +59,6 @@ namespace Quixotic.Common.Tokens
         CloseBracket,
         OpenBrace,
         CloseBrace,
+        Property,
     }
 }

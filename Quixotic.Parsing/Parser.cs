@@ -7,6 +7,7 @@ using Quixotic.Common.Statements;
 using Quixotic.Common.Tokens;
 using Quixotic.Parsing.Context;
 using QuixoticLang.Lexer;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Parsing
@@ -25,8 +26,9 @@ namespace Quixotic.Parsing
             : this(lexer.Tokenize())
         { }
 
+#if DEBUG
         private Token? Current { get; set; }
-
+#endif
         public IEnumerable<QxStatement> Parse()
         {
             while (!IsAtEnd && Peek().Type != TokenType.Eof)
@@ -101,7 +103,21 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Continue))
                 return ParseContinue();
 
+            if (Match(TokenType.Type))
+                return ParseTypeDeclaration();
+
             return ParseStandalonExpression();
+
+            throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
+        }
+
+        private QxStatement ParseDeclarationStatement()
+        {
+            if (Match(TokenType.Let))
+                return ParseVariableDeclaration();
+
+            if (Match(TokenType.Function))
+                return ParseFunctionDeclaration();
 
             throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
         }
@@ -221,11 +237,23 @@ namespace Quixotic.Parsing
             return new();
         }
 
+        private QxTypeDeclarationStatement ParseTypeDeclaration()
+        {
+            var name = ParseIdentifierName();
+
+            var body = CaptureActivity(() => ParseDeclarationBlock(), ActivityType.TypeBody);
+
+            Expect(TokenType.End);
+            Expect(TokenType.Type);
+
+            return new(name) { Body = body };
+        }
+
         private List<QxParameter> ParseParameters()
         {
             List<QxParameter> parameters = [];
 
-            var keepGoing = true;
+            var keepGoing = !Match(TokenType.CloseParen);
 
             while (keepGoing)
             {
@@ -269,7 +297,7 @@ namespace Quixotic.Parsing
 
             var name = token.Value;
 
-            if (Match(TokenType.NewLine))
+            if (IsToken(TokenType.NewLine))
             {
                 return new(target, name) { Arguments = [] };
             }
@@ -682,16 +710,21 @@ namespace Quixotic.Parsing
         {
             return CaptureExpression<QxExpression>(() =>
             {
-                var token = Peek();
-                Advance();
-
-                var name = token.Value;
+                var name = ParseIdentifierName();
 
                 if (Match(TokenType.OpenParen))
                     return ParseFunctionCallExpression(name);
 
                 return new QxIdentifierExpression(name);
             }, ActivityType.Identifier);
+        }
+
+        private string ParseIdentifierName()
+        {
+            var token = Peek();
+            Advance();
+
+            return token.Value;
         }
 
         private QxExpression ParseUnary()
@@ -720,6 +753,7 @@ namespace Quixotic.Parsing
                 BlockType.Do => [TokenType.Loop],
                 BlockType.For => [TokenType.Next],
                 BlockType.Function => [TokenType.End],
+                BlockType.Type => [TokenType.End],
                 _ => [TokenType.End]
             };
 
@@ -757,6 +791,49 @@ namespace Quixotic.Parsing
             return block;
         }
 
+        private Block ParseDeclarationBlock()
+        {
+            bool isTerminated()
+            {
+                if (IsAtEnd || Match(TokenType.Eof))
+                    throw new IncompleteSourceException("Encountered end of file before block is terminated.", GetDiagnostic(Issue.IncompleteSource()));
+
+                if (IsToken(TokenType.End))
+                    return true;
+
+                return false;
+            }
+
+            var block = new Block();
+
+            while (!isTerminated())
+            {
+                ConsumeNewLines();
+
+                if (IsAtEnd || Match(TokenType.Eof))
+                    throw new IncompleteSourceException("Encountered end of file before block is terminated.", GetDiagnostic(Issue.IncompleteSource()));
+
+                if (isTerminated())
+                    break;
+
+                _parseContext.BeginStatement();
+
+                var next = Peek();
+
+                var statement = ParseDeclarationStatement();
+
+                _parseContext.AttachStatement(statement);
+
+                block.Add(statement);
+
+                _parseContext.EndStatement();
+
+                ConsumeStatementTerminator();
+            }
+
+            return block;
+        }
+
         private QxNumberLiteralExpression ParseNumber()
         {
             return CaptureExpression(() =>
@@ -770,6 +847,7 @@ namespace Quixotic.Parsing
             }, ActivityType.NumberLiteral);
         }
 
+        [DebuggerStepThrough]
         private TValue CaptureActivity<TValue>(Func<TValue> activity, ActivityType expressionType)
         {
             _parseContext.BeginActivity(expressionType);
@@ -781,6 +859,7 @@ namespace Quixotic.Parsing
             return value;
         }
 
+        [DebuggerStepThrough]
         private void CaptureActivity(Action activity, ActivityType expressionType)
         {
             _parseContext.BeginActivity(expressionType);
@@ -790,6 +869,7 @@ namespace Quixotic.Parsing
             _parseContext.EndActivity();
         }
 
+        [DebuggerStepThrough]
         private TExpression CaptureExpression<TExpression>(Func<TExpression> expressionFactory, ActivityType expressionType)
             where TExpression : QxExpression
         {
@@ -810,22 +890,14 @@ namespace Quixotic.Parsing
 
         private Token Peek() => _tokens.Peek();
 
-        private Token Pop()
-        {
-            var token = _tokens.Pop();
-            _parseContext.ConsumeToken(token);
-
-            Current = IsAtEnd ? null : Peek();
-
-            return token;
-        }
-
         private bool Advance()
         {
             _parseContext.ConsumeToken(Peek());
             var canAdvance = _tokens.Advance();
 
+#if DEBUG
             Current = IsAtEnd ? null : Peek();
+#endif
 
             return canAdvance;
         }

@@ -4,6 +4,7 @@ using Quixotic.Common.Exceptions.Parsing;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Tokens;
+using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 
 namespace Quixotic.Parsing.Context
 {
@@ -15,6 +16,7 @@ namespace Quixotic.Parsing.Context
 
         public ActivityContext? CurrentActivity { get; private set; }
 
+        [DebuggerStepThrough]
         public void BeginStatement()
         {
             var newStatement = new StatementContext();
@@ -28,11 +30,13 @@ namespace Quixotic.Parsing.Context
             CurrentStatement = newStatement;
         }
 
+        [DebuggerStepThrough]
         public void AssignStatementType(StatementType type)
         {
             CurrentStatement?.Type = type;
         }
 
+        [DebuggerStepThrough]
         public void AttachStatement(QxStatement statement)
         {
             if (CurrentStatement is not null)
@@ -42,11 +46,13 @@ namespace Quixotic.Parsing.Context
             }
         }
 
+        [DebuggerStepThrough]
         public void EndStatement()
         {
             CurrentStatement = CurrentStatement?.Parent;
         }
 
+        [DebuggerStepThrough]
         public void BeginActivity(ActivityType activityType)
         {
             var activity = new ActivityContext(activityType);
@@ -58,6 +64,8 @@ namespace Quixotic.Parsing.Context
 
             CurrentActivity = activity;
         }
+
+        [DebuggerStepThrough]
         public void AttachExpression(QxExpression expression)
         {
             if (CurrentActivity is not null)
@@ -67,6 +75,7 @@ namespace Quixotic.Parsing.Context
             }
         }
 
+        [DebuggerStepThrough]
         public void EndActivity()
         {
             CurrentActivity = CurrentActivity?.Parent;

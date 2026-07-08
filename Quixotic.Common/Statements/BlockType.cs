@@ -8,5 +8,6 @@
         Do,
         For,
         Function,
+        Type,
     }
 }

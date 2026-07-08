@@ -30,6 +30,8 @@ namespace Quixotic.Common.Syntax
             new (TokenType.Not , "not"),
             new (TokenType.Function , "function"),
             new (TokenType.Return , "return"),
+            new (TokenType.Type , "type"),
+            new (TokenType.Property , "property"),
         ];
 
         private static Dictionary<string, Keyword> _keywordsByValue = Keywords.ToDictionary(k => k.Value, k => k);

@@ -557,6 +557,32 @@ namespace Quixotic.ParsingTests
         }
 
         [TestMethod]
+        public void Parse_function_declaration_statement_2()
+        {
+            // Setup
+            var source = @"
+                function Greet()
+                    print ""Hello "" + this.Name
+                end function
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+            Assert.HasCount(1, statements);
+
+            AssertFunctionDeclaration(statements[0], "Greet", "void",
+                body: block =>
+                {
+                    AssertPrint(block[0], ("Hello ", "+", new TestMethodCallExpression("Name")));
+                });
+        }
+
+        [TestMethod]
         public void Parse_function_declaration_statement_with_call()
         {
             // Setup
@@ -1293,6 +1319,34 @@ namespace Quixotic.ParsingTests
             var statements = parser.Parse().ToList();
 
             // Assert
+        }
+
+        [TestMethod]
+        public void Parse_type_declaration()
+        {
+            // Setup
+            var source = @"
+                type Person
+
+                    let Name : string := """"
+
+                    let Age : number := 0
+
+                    function Greet()
+                        print ""Hello "" + this.Name
+                    end function
+
+                end type
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+
+            // Execute
+            var statements = parser.Parse().ToList();
+
+            // Assert
+
         }
 
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression[] expression)
