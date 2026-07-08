@@ -1,6 +1,7 @@
 using Quixotic.Common.Contracts;
 using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
@@ -12,6 +13,8 @@ namespace Quixotic.Common.TypeSystem.Types
         private static readonly Regex _rexTypeString = new(@"^([a-zA-Z_][a-zA-Z0-9_\.]+)(\[\])?$", RegexOptions.Compiled);
 
         private readonly FunctionRegistry _methods = new();
+
+        private readonly Dictionary<string, object?> _initialState = new();
 
         public string Name { get; } = name;
 
@@ -75,14 +78,9 @@ namespace Quixotic.Common.TypeSystem.Types
             return $"{{Qx:{Name}}}";
         }
 
-        public Function ResolveMethod(Instance thisInstance, string name, params Instance[] arguments)
+        public void Add(IFunctionProvider functionProvider)
         {
-            Instance[] allArguments = [thisInstance, .. arguments];
-
-            if (!_methods.TryResolve(name, [.. allArguments.Select(a => a.Type)], out var functionSymbol))
-                throw new UndefinedMethodException(this, name);
-
-            return functionSymbol.Function;
+            functionProvider.Register(_methods);
         }
 
         public void AddMethods(IFunctionProvider methodSource)
@@ -121,6 +119,50 @@ namespace Quixotic.Common.TypeSystem.Types
         public void RegisterMethod(string name, Delegate method, QxType returnValue, params Parameter[] parameters)
         {
             _methods.Register(name, method, returnValue, parameters);
+        }
+
+        public void RegisterMethod(string name, Function function)
+        {
+            _methods.Register(name, function);
+        }
+
+        public void RegisterProperty(string name, Instance initialValue)
+        {
+            var type = initialValue.Type;
+            _initialState[name] = initialValue;
+            RegisterProperty(name, type);
+        }
+
+        public void RegisterProperty(string name, QxType type)
+        {
+            RegisterMethod(name, (Instance instance) => instance["name"], type, new Parameter("this", type));
+            RegisterMethod(name, (Instance instance, Instance value) => instance["name"] = value, type, new Parameter("this", type), new Parameter("value", type));
+        }
+
+        public Function ResolveMethod(Instance thisInstance, string name, params Instance[] arguments)
+        {
+            Instance[] allArguments = [thisInstance, .. arguments];
+
+            if (!_methods.TryResolve(name, [.. allArguments.GetTypes()], out var functionSymbol))
+                throw new UndefinedMethodException(this, name);
+
+            return functionSymbol.Function;
+        }
+
+        /// <summary>
+        /// For static methods
+        /// </summary>
+        public Function ResolveMethod(string name, params Instance[] arguments)
+        {
+            if (!_methods.TryResolve(name, [.. arguments.GetTypes()], out var functionSymbol))
+                throw new UndefinedMethodException(this, name);
+
+            return functionSymbol.Function;
+        }
+
+        public bool IsMemberDeclared(string name)
+        {
+            return _methods.Contains(name);
         }
 
         public static bool IsNada(Instance instance)

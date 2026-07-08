@@ -12,6 +12,8 @@ namespace Quixotic.Common.Environment
     {
         private readonly Dictionary<Signature, FunctionSymbol> _functions = [];
 
+        public List<FunctionSymbol> AllFunctions => [.. _functions.Values];
+
         public void Register(string name, Function function)
         {
             var parameterTypes = function.Parameters.GetTypes();

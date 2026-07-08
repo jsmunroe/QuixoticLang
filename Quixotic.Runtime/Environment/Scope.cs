@@ -13,9 +13,19 @@ namespace Quixotic.Runtime.Environment
     // under the System namespace, and it was colliding with this class.
     public class Scope(Scope? parent)
     {
-        private readonly Dictionary<string, Symbol> _values = [];
+        private readonly Dictionary<string, Symbol> _values = new(StringComparer.OrdinalIgnoreCase);
 
         private readonly FunctionRegistry _functionRegistry = new();
+
+        private readonly TypeRegistry _typeRegistry = new();
+
+        public List<Symbol> Symbols => [.. _values.Values];
+
+        public List<FunctionSymbol> Functions => _functionRegistry.AllFunctions;
+
+        public List<VariableSymbol> Variables => [.. _values.Values.OfType<VariableSymbol>()];
+
+        public List<TypeSymbol> Types => [.. _values.Values.OfType<TypeSymbol>()];
 
         public void Add(IFunctionProvider functionProvider)
         {
@@ -34,11 +44,6 @@ namespace Quixotic.Runtime.Environment
             ExpectUndefined(name);
 
             _values[name] = new VariableSymbol(name, type);
-        }
-
-        public bool IsSymbolDeclared(string name)
-        {
-            return _values.ContainsKey(name);
         }
 
         public bool IsFunctionDeclared(string name)
@@ -104,7 +109,26 @@ namespace Quixotic.Runtime.Environment
             throw new UndefinedFunctionException(name);
         }
 
-        private void ExpectUndefined(string name)
+        public void DefineType(string name, QxType type)
+        {
+            ExpectUndefined(name);
+
+            _values[name] = new TypeSymbol(name, type);
+            _typeRegistry.Register(name, type);
+        }
+
+        public QxType GetType(string name)
+        {
+            if (_typeRegistry.TryResolve(name, out var type))
+                return type;
+
+            if (parent is not null)
+                return parent.GetType(name);
+
+            throw new UndefinedTypeException(name);
+        }
+
+        public void ExpectUndefined(string name)
         {
             if (TryGetSymbol(name, out var symbol))
             {
@@ -113,6 +137,9 @@ namespace Quixotic.Runtime.Environment
 
                 if (symbol is FunctionSymbol)
                     throw new FunctionAlreadyDefinedException(name);
+
+                if (symbol is TypeSymbol)
+                    throw new TypeAlreadyDefinedException(name);
 
                 throw new SymbolAlreadyDefinedException(name);
             }

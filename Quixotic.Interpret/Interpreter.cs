@@ -14,7 +14,6 @@ using Quixotic.Common.Utilities;
 using Quixotic.Interpret.FlowControl;
 using Quixotic.Parsing;
 using Quixotic.Runtime.Contracts;
-using Quixotic.Runtime.Environment;
 using Quixotic.Runtime.References;
 using Quixotic.Runtime.Values;
 using QuixoticLang.Lexer;
@@ -89,9 +88,9 @@ namespace Quixotic.Interpret
                 yield return Evaluate(expression);
         }
 
-        public void Execute(Block statements, RuntimeFrameType frameType, List<Argument>? arguments = null)
+        public void Execute(Block statements, List<Argument>? arguments = null)
         {
-            runtime.PushBlock(frameType);
+            runtime.PushBlock();
 
             if (arguments is not null)
 
@@ -282,7 +281,7 @@ namespace Quixotic.Interpret
         {
             if (IsTruthy(Evaluate(statement.Condition)))
             {
-                Execute(statement.ThenBlock, RuntimeFrameType.IfBlock);
+                Execute(statement.ThenBlock);
                 return;
             }
 
@@ -290,12 +289,12 @@ namespace Quixotic.Interpret
             {
                 if (IsTruthy(Evaluate(elseIfClasue.Condition)))
                 {
-                    Execute(elseIfClasue.Block, RuntimeFrameType.IfBlock);
+                    Execute(elseIfClasue.Block);
                     return;
                 }
             }
 
-            Execute(statement.ElseBlock, RuntimeFrameType.IfBlock);
+            Execute(statement.ElseBlock);
         }
 
         public void Execute(QxForStatement statement)
@@ -326,7 +325,7 @@ namespace Quixotic.Interpret
 
                 try
                 {
-                    Execute(statement.Block, RuntimeFrameType.Loop, [new(iterator, new NumberValue(i))]);
+                    Execute(statement.Block, [new(iterator, new NumberValue(i))]);
                 }
                 catch (BreakException)
                 {
@@ -349,7 +348,7 @@ namespace Quixotic.Interpret
                 throw new TypeMismatchException(collection.Type, QxType.Array(QxType.Any));
 
             foreach (var item in array.Elements)
-                Execute(statement.Block, RuntimeFrameType.Loop, [new(iterator, item)]);
+                Execute(statement.Block, [new(iterator, item)]);
         }
 
         public void Execute(QxDoStatement statement)
@@ -361,7 +360,7 @@ namespace Quixotic.Interpret
 
                 try
                 {
-                    Execute(statement.Block, RuntimeFrameType.Loop);
+                    Execute(statement.Block);
                 }
                 catch (BreakException)
                 {
@@ -375,6 +374,30 @@ namespace Quixotic.Interpret
                 if (!statement.EntryControlled && !IsTruthy(Evaluate(statement.Condition)))
                     break;
             }
+        }
+
+        public void Execute(QxTypeDeclarationStatement statement)
+        {
+            runtime.PushBlock();
+
+            Execute(statement.Body);
+
+            var type = new DefinedType(statement.Name);
+
+            foreach (var functionSymbol in runtime.Frame.Scope.Functions)
+                type.RegisterMethod(functionSymbol.Name, functionSymbol.Function);
+
+            foreach (var variableSymbol in runtime.Frame.Scope.Variables)
+            {
+                if (!variableSymbol.Instance.IsNada)
+                    type.RegisterProperty(variableSymbol.Name, variableSymbol.Instance);
+                else
+                    type.RegisterProperty(variableSymbol.Name, variableSymbol.Type);
+            }
+
+            runtime.Pop();
+
+            runtime.Frame.GlobalScope.DefineType(type.Name, type);
         }
 
         protected static Instance Evaluate(QxNumberLiteralExpression expression)

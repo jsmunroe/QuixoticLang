@@ -12,9 +12,7 @@ namespace Quixotic.Runtime.Environment
 
         public IRuntimeFrame? Parent => null;
 
-        public RuntimeFrameType Type => RuntimeFrameType.Global;
-
-        public Scope Scope { get; } = new(null);
+        public Scope Scope { get; } = new Scope(null);
 
         public Scope GlobalScope => Scope;
     }

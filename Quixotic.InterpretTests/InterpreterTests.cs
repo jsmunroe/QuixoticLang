@@ -1384,6 +1384,11 @@ namespace Quixotic.InterpretTests
             interpreter.Execute(parser.Parse());
 
             // Assert
+            runtime.AssertHasPrinted("1");
+            runtime.AssertHasPrinted("2");
+            runtime.AssertHasPrinted("3");
+            runtime.AssertHasPrinted("4");
+            runtime.AssertHasPrinted("5");
 
         }
 
@@ -1407,6 +1412,8 @@ namespace Quixotic.InterpretTests
 
             // Assert
 
+            runtime.AssertHasPrinted("5");
+
         }
 
         [TestMethod]
@@ -1426,10 +1433,37 @@ namespace Quixotic.InterpretTests
 
             // Execute & Assert
             Assert.Throws<UndefinedMethodException>(() => interpreter.Execute(parser.Parse()));
-
-            // Assert
         }
 
+        [TestMethod]
+        public void Execute_type_declaration()
+        {
+            // Setup
+            var source = @"
+                type Person
+
+                    let Name : string := """"
+
+                    let Age : number := 0
+
+                    function Greet()
+                        print ""Hello "" + this.Name
+                    end function
+
+                end type
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Executet
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+
+        }
 
         private Stream GetTestFile(string name)
         {

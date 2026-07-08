@@ -16,9 +16,9 @@ namespace Quixotic.Runtime.Environment
 
         public IRuntimeFrame Frame { get; private set; }
 
-        public virtual IRuntimeFrame PushBlock(RuntimeFrameType type)
+        public virtual IRuntimeFrame PushBlock()
         {
-            var frame = new BlockRuntimeFrame(type, Frame);
+            var frame = new BlockRuntimeFrame(Frame);
 
             _frames.Push(frame);
 

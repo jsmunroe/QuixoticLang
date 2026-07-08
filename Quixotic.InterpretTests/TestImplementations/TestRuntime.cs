@@ -19,9 +19,9 @@ namespace Quixotic.InterpretTests.TestImplementations
 
         public List<string> PrintExecutions { get; } = [];
 
-        public override IRuntimeFrame PushBlock(RuntimeFrameType type)
+        public override IRuntimeFrame PushBlock()
         {
-            var frame = base.PushBlock(type);
+            var frame = base.PushBlock();
             AllFrames.Add(frame);
             return frame;
         }
@@ -89,7 +89,7 @@ namespace Quixotic.InterpretTests.TestImplementations
 
         public void AssertFunctionDeclared(string name)
         {
-            Assert.IsTrue(AllFrames.Any(f => f.Scope.IsFunctionDeclared(name)), $"No function named '{name}' was decleared.");
+            Assert.IsTrue(AllFrames.Any(f => f is Scope scope && scope.IsFunctionDeclared(name)), $"No function named '{name}' was decleared.");
         }
 
         public void AssertFunctionDeclared(int frameIndex, string name)

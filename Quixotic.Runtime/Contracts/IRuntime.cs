@@ -1,5 +1,4 @@
 ﻿using Quixotic.Common.TypeSystem;
-using Quixotic.Runtime.Environment;
 
 namespace Quixotic.Runtime.Contracts
 {
@@ -8,7 +7,7 @@ namespace Quixotic.Runtime.Contracts
         IRuntimeFrame Frame { get; }
         void ExecutePrint(Instance value);
         IRuntimeFrame Pop();
-        IRuntimeFrame PushBlock(RuntimeFrameType type);
+        IRuntimeFrame PushBlock();
         IRuntimeFrame PushFunction();
     }
 }
