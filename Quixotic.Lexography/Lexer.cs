@@ -171,7 +171,7 @@ namespace QuixoticLang.Lexer
             yield return Eof();
         }
 
-        private char Peek() => source.Peek();
+        private char Peek(int offset = 0) => source.Peek(offset);
 
         private char Advance() => source.Advance();
 
@@ -201,6 +201,24 @@ namespace QuixoticLang.Lexer
                 text += next;
                 Advance();
                 next = Peek();
+            }
+
+            if (text.Equals("end") && next == ' ')
+            {
+                ConsumeWhitespace();
+
+                next = Peek();
+                if ("ift".Contains(next, StringComparison.OrdinalIgnoreCase))
+                {
+                    text += " ";
+
+                    while (!IsAtEnd && char.IsLetter(next))
+                    {
+                        text += next;
+                        Advance();
+                        next = Peek();
+                    }
+                }
             }
 
             var tokenType = Keyword.FromValue(text)?.TokenType ?? TokenType.Identifier;

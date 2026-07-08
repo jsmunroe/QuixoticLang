@@ -1578,12 +1578,12 @@ namespace Quixotic.ParsingTests.Context
 
 
         [TestMethod]
-        [DataRow("end if", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.End, "end", null, false, false)]
+        [DataRow("end if", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.EndIf, "end if", null, false, false)]
         [DataRow("loop", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.Loop, "loop", null, false, false)]
         [DataRow("next", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.Next, "next", null, false, false)]
         [DataRow("else\r\nprint 5", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.Else, "else", null, false, false)]
         [DataRow("else if x", StatementType.StandaloneExpression, ActivityType.StandaloneExpression, TokenType.Else, "else", null, false, false)]
-        [DataRow("if x then\r\nelse\r\nelse\r\nend if", StatementType.If, ActivityType.None, TokenType.Else, "else", TokenType.End, false, false)]
+        [DataRow("if x then\r\nelse\r\nelse\r\nend if", StatementType.If, ActivityType.None, TokenType.Else, "else", TokenType.EndIf, false, false)]
         public void Parse_construct_closers_without_construct(string source, StatementType statementType, ActivityType activityType, TokenType encountered, string encounteredValue, TokenType? expected, bool isEndOfLine, bool isSpanEmpty)
         {
             // Execute

@@ -9,6 +9,6 @@ namespace Quixotic.Common.Contracts
 
         char Advance();
         string GetFullText();
-        char Peek();
+        char Peek(int offset = 0);
     }
 }

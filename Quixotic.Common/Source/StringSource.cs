@@ -21,9 +21,12 @@ namespace Quixotic.Common.Source
 
         public string GetFullText() => source;
 
-        public char Peek()
+        public char Peek(int offset = 0)
         {
-            return IsAtEnd ? '\0' : source[_index];
+            if (_index + offset >= source.Length)
+                return '\0';
+
+            return source[_index + offset];
         }
 
         public char Advance()

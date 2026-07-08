@@ -43,9 +43,15 @@ namespace Quixotic.ParsingTests.TestModels
         {
             var identifier = new Regex(@"^\[(.+)\]$");
 
+            var methodCall = new Regex(@"^\.(.+)$");
+
             var match = identifier.Match(value);
             if (match.Success)
                 return new TestIdentifierExpression(match.Groups[1].Value);
+
+            match = methodCall.Match(value);
+            if (match.Success)
+                return new TestMethodCallExpression(match.Groups[1].Value);
 
             return new TestStringExpression(value);
         }

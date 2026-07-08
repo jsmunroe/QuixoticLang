@@ -126,6 +126,17 @@ namespace Quixotic.LexographyTests
             Assert.AreEqual(TokenType.Identifier, tokens[1].Type);
             Assert.AreEqual(TokenType.Type, tokens[2].Type);
         }
+
+        [TestMethod]
+        public void Lex_end_if()
+        {
+            var lexer = new Lexer("end if");
+
+            var tokens = lexer.Tokenize().ToList();
+
+            Assert.AreEqual(TokenType.EndIf, tokens[0].Type);
+        }
+
     }
 
 }

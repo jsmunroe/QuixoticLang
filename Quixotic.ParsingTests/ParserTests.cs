@@ -1347,6 +1347,22 @@ namespace Quixotic.ParsingTests
 
             // Assert
 
+            Assert.HasCount(1, statements);
+
+            AssertType(statements[0], "Person", body =>
+            {
+
+                Assert.HasCount(3, body);
+
+                AssertVariableDeclaration(body[0], "Name", "string", "");
+                AssertVariableDeclaration(body[1], "Age", "number", 0);
+                AssertFunctionDeclaration(body[2], "Greet", "void", body2 =>
+                {
+                    AssertPrint(body2[0], ("Hello ", "+", ".Name"));
+                });
+
+            });
+
         }
 
         private QxVariableDeclarationStatement AssertVariableDeclaration(QxStatement statement, string name, TestExpression[] expression)
@@ -1544,6 +1560,18 @@ namespace Quixotic.ParsingTests
         {
             var continueStatement = Assert.IsInstanceOfType<QxContinueStatement>(statement);
             return continueStatement;
+        }
+
+        private QxTypeDeclarationStatement AssertType(QxStatement statement, string name, Action<Block>? block = null)
+        {
+            var typeStatement = Assert.IsInstanceOfType<QxTypeDeclarationStatement>(statement);
+
+            Assert.AreEqual(name, typeStatement.Name);
+
+            if (block is not null)
+                block(typeStatement.Body);
+
+            return typeStatement;
         }
     }
 }

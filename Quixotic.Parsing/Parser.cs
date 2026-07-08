@@ -207,8 +207,7 @@ namespace Quixotic.Parsing
 
             var body = CaptureActivity(() => ParseBlock(BlockType.Function), ActivityType.FunctionBody);
 
-            Expect(TokenType.End);
-            Expect(TokenType.Function);
+            Expect(TokenType.EndFunction);
 
             return new(name, returnType) { Parameters = [.. parameters], Body = body };
         }
@@ -243,8 +242,7 @@ namespace Quixotic.Parsing
 
             var body = CaptureActivity(() => ParseDeclarationBlock(), ActivityType.TypeBody);
 
-            Expect(TokenType.End);
-            Expect(TokenType.Type);
+            Expect(TokenType.EndType);
 
             return new(name) { Body = body };
         }
@@ -438,7 +436,7 @@ namespace Quixotic.Parsing
             while (Match(TokenType.Else, out var token))
             {
                 if (elseBlock is not null)
-                    throw new UnexpectedTokenException(token, TokenType.End, GetDiagnostic(Issue.UnexpectedToken(token, TokenType.End)));
+                    throw new UnexpectedTokenException(token, TokenType.EndIf, GetDiagnostic(Issue.UnexpectedToken(token, TokenType.EndIf)));
 
                 if (Match(TokenType.If))
                 {
@@ -451,9 +449,7 @@ namespace Quixotic.Parsing
                 }
             }
 
-            Expect(TokenType.End);
-
-            Expect(TokenType.If);
+            Expect(TokenType.EndIf);
 
             return new QxIfStatement(condition)
             {
@@ -747,14 +743,14 @@ namespace Quixotic.Parsing
 
             List<TokenType> terminatingTypes = blockType switch
             {
-                BlockType.If => [TokenType.Else, TokenType.End],
-                BlockType.ElseIf => [TokenType.Else, TokenType.End],
-                BlockType.Else => [TokenType.Else, TokenType.End],
+                BlockType.If => [TokenType.Else, TokenType.EndIf],
+                BlockType.ElseIf => [TokenType.Else, TokenType.EndIf],
+                BlockType.Else => [TokenType.Else, TokenType.EndIf],
                 BlockType.Do => [TokenType.Loop],
                 BlockType.For => [TokenType.Next],
-                BlockType.Function => [TokenType.End],
-                BlockType.Type => [TokenType.End],
-                _ => [TokenType.End]
+                BlockType.Function => [TokenType.EndFunction],
+                BlockType.Type => [TokenType.EndType],
+                _ => []
             };
 
             bool isTerminated()
@@ -798,7 +794,7 @@ namespace Quixotic.Parsing
                 if (IsAtEnd || Match(TokenType.Eof))
                     throw new IncompleteSourceException("Encountered end of file before block is terminated.", GetDiagnostic(Issue.IncompleteSource()));
 
-                if (IsToken(TokenType.End))
+                if (IsToken(TokenType.EndType))
                     return true;
 
                 return false;
