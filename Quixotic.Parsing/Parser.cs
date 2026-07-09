@@ -166,7 +166,7 @@ namespace Quixotic.Parsing
                 var identifierToken = Expect(TokenType.Identifier);
                 var name = identifierToken.Value;
 
-                var typeToken = Allow(TokenType.Type);
+                var typeToken = Allow(TokenType.IdentifierType);
                 var typeName = typeToken?.Value;
 
                 return (name, typeName);
@@ -201,7 +201,7 @@ namespace Quixotic.Parsing
 
             var returnType = CaptureActivity(() =>
             {
-                var identifierToken = Allow(TokenType.Type);
+                var identifierToken = Allow(TokenType.IdentifierType);
                 var returnType = identifierToken?.Value ?? "void";
 
                 return returnType;
@@ -293,7 +293,7 @@ namespace Quixotic.Parsing
                 {
                     if (Match(TokenType.Identifier, out var token))
                     {
-                        var parameterTypeToken = Expect(TokenType.Type);
+                        var parameterTypeToken = Expect(TokenType.IdentifierType);
 
                         parameters.Add(new QxParameter(token.Value, parameterTypeToken.Value));
                     }

@@ -275,7 +275,7 @@ namespace QuixoticLang.Lexer
 
             return new Token
             {
-                Type = TokenType.Type,
+                Type = TokenType.IdentifierType,
                 Value = text,
                 Span = new Span
                 {

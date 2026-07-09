@@ -276,6 +276,10 @@ namespace Quixotic.Analysis.Errors
                 return identifier ?? string.Empty;
             }
 
+            if ((activityType == ActivityType.None || activityType == ActivityType.StandaloneExpression) &&
+                (diagnostic.StatementType == StatementType.Unknown || activityType == ActivityType.StandaloneExpression))
+                return "the expression";
+
             return activityType switch
             {
                 ActivityType.Print => "the print statement",
@@ -309,7 +313,7 @@ namespace Quixotic.Analysis.Errors
                 ActivityType.RightOperand => "the right operand",
                 ActivityType.LeftOperand => "the left operand",
                 ActivityType.FunctionReturnType => "the function return type",
-                _ => "the expression",
+                _ => DescribeStatementType(diagnostic.StatementType, diagnostic),
             };
         }
 
@@ -374,7 +378,7 @@ namespace Quixotic.Analysis.Errors
         private string DescribeToken(TokenType tokenType)
         {
             if (IsKeyword(tokenType))
-                return $"keyword '{tokenType.ToString().ToLower()}'";
+                return $"keyword '{tokenType.ToText().ToLower()}'";
 
             if (TryGetOperatorValue(OperationType.Binary, tokenType, out var value))
                 return $"operator '{value}'";
