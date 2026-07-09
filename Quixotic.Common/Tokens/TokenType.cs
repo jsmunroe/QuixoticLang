@@ -16,7 +16,7 @@ namespace Quixotic.Common.Tokens
         Else,
         EndIf,
         EndFor,
-        EndFunction,
+        EndConstruct,
         EndType,
         Do,
         While,
@@ -64,5 +64,7 @@ namespace Quixotic.Common.Tokens
         OpenBrace,
         CloseBrace,
         Property,
+        Construct,
+        EndFunction,
     }
 }

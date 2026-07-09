@@ -208,7 +208,7 @@ namespace QuixoticLang.Lexer
                 ConsumeWhitespace();
 
                 next = Peek();
-                if ("ift".Contains(next, StringComparison.OrdinalIgnoreCase))
+                if ("cift".Contains(next, StringComparison.OrdinalIgnoreCase))
                 {
                     text += " ";
 

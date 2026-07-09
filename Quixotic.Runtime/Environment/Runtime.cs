@@ -1,5 +1,6 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Runtime.Contracts;
 
 namespace Quixotic.Runtime.Environment
@@ -28,6 +29,15 @@ namespace Quixotic.Runtime.Environment
         public virtual IRuntimeFrame PushFunction()
         {
             var frame = new FunctionRuntimeFrame(Frame);
+
+            _frames.Push(frame);
+
+            return Frame = frame;
+        }
+
+        public virtual IRuntimeFrame PushType(QxType type)
+        {
+            var frame = new TypeRuntimeFrame(Frame, type);
 
             _frames.Push(frame);
 

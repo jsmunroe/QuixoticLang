@@ -16,5 +16,7 @@
         FunctionCall,
         Return,
         StandaloneExpression,
+        ConstructorDeclaration,
+        MethodCall,
     }
 }

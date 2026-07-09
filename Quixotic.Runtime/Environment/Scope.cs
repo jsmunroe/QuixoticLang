@@ -116,13 +116,23 @@ namespace Quixotic.Runtime.Environment
 
         public Function GetFunction(string name, params QxType[] arguments)
         {
+            return TryGetFunction(name, arguments, out var function) ? function : throw new UndefinedFunctionException(name);
+        }
+
+        public bool TryGetFunction(string name, QxType[] arguments, [NotNullWhen(returnValue: true)] out Function? function)
+        {
+            function = null;
+
             if (_functionRegistry.TryResolve(name, arguments, out var functionSymbol))
-                return functionSymbol.Function;
+            {
+                function = functionSymbol.Function;
+                return true;
+            }
 
             if (parent is not null)
-                return parent.GetFunction(name, arguments);
+                return parent.TryGetFunction(name, arguments, out function);
 
-            throw new UndefinedFunctionException(name);
+            return false;
         }
 
         public void DefineType(string name, QxType type)

@@ -1550,14 +1550,14 @@ namespace Quixotic.InterpretTests
             // Setup
             var source = @"
                 type Person
-                    init(name: string, age: number)
+                    construct(name: string, age: number)
                         this.Name := name
                         this.Age := age
-                    end init
+                    end construct
 
-                    let Name : string := ""Meow""
+                    let Name : string
 
-                    let Age : number := 42
+                    let Age : number
 
                     function Greet()
                         print ""Hello "" + this.Name
@@ -1584,9 +1584,8 @@ namespace Quixotic.InterpretTests
             runtime.AssertTypeDeclared("Person");
             runtime.AssertVariableHasValue("me");
 
-            runtime.AssertHasPrinted("Meow");
-            runtime.AssertHasPrinted("42");
-            runtime.AssertHasPrinted("Hello Meow");
+            runtime.AssertHasPrinted("Woof");
+            runtime.AssertHasPrinted("99");
             runtime.AssertHasPrinted("Hello Woof");
         }
 

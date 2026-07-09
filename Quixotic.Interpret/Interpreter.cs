@@ -14,6 +14,7 @@ using Quixotic.Common.Utilities;
 using Quixotic.Interpret.FlowControl;
 using Quixotic.Parsing;
 using Quixotic.Runtime.Contracts;
+using Quixotic.Runtime.Environment;
 using Quixotic.Runtime.References;
 using Quixotic.Runtime.Values;
 using QuixoticLang.Lexer;
@@ -379,12 +380,13 @@ namespace Quixotic.Interpret
 
         public void Execute(QxTypeDeclarationStatement statement)
         {
-            runtime.PushBlock();
+            var type = new DefinedType(statement.Name);
+
+            runtime.PushType(type);
 
             foreach (var childStatement in statement.Body)
                 Execute(childStatement);
 
-            var type = new DefinedType(statement.Name);
 
             foreach (var functionSymbol in runtime.Frame.Scope.Functions)
                 type.RegisterMethod(functionSymbol.Name, functionSymbol.Function);
@@ -400,6 +402,24 @@ namespace Quixotic.Interpret
             runtime.Pop();
 
             runtime.Frame.GlobalScope.DefineType(type.Name, type);
+        }
+
+        public void Execute(QxConstructorDeclarationStatement statement)
+        {
+            if (runtime.Frame is not TypeRuntimeFrame frame)
+                throw new ConstructorOutsideOfTypeException();
+
+            List<Parameter> parameters = [];
+            foreach (var parameter in statement.Parameters)
+            {
+                if (!QxType.TryParse(parameter.TypeName, out var type))
+                    throw new UnrecognizedTypeException(parameter.TypeName);
+
+                parameters.Add(new(parameter.Name, type));
+            }
+
+            var function = new Function(statement.Body, VoidType.Default) { Parameters = parameters };
+            runtime.Frame.Scope.DefineFunction("::constructor", function);
         }
 
         protected static Instance Evaluate(QxNumberLiteralExpression expression)
@@ -525,6 +545,29 @@ namespace Quixotic.Interpret
             return result;
         }
 
+        protected Instance Evaluate(QxConstructorCallExpression expression)
+        {
+            var type = runtime.Frame.Scope.GetType(expression.TypeName);
+
+            var instance = type.Construct();
+
+            Instance[] argumentValues = [.. Evaluate(expression.Arguments)];
+
+            if (!type.TryResolveMethod(instance, "::constructor", argumentValues, out var constructor))
+            {
+                if (argumentValues.Length == 0)
+                    return instance;
+
+                throw new UndefinedMethodException(type, $"{type}::constructor");
+            }
+
+            var arguments = BindArguments($"{type}::constructor", [.. constructor.Parameters], [instance, .. argumentValues]);
+
+            Evaluate(constructor, arguments);
+
+            return instance;
+        }
+
         private static bool IsTruthy(Instance instance)
         {
             return instance.IsTruthy;
@@ -542,7 +585,7 @@ namespace Quixotic.Interpret
         private Instance InvokeOperator(Operator op, QxExpression left)
         {
             if (op == Operator.New)
-                return InvokeTypeConstructor(left);
+                return Evaluate(left);
 
             var name = OperationMetadata.GetOperatorValue(op);
 
@@ -566,9 +609,6 @@ namespace Quixotic.Interpret
             if (op == Operator.Or)
                 return Or(left, right);
 
-            if (op == Operator.Dot)
-                return InvokeMember(left, right);
-
             var name = OperationMetadata.GetOperatorValue(op);
 
             if (string.IsNullOrEmpty(name))
@@ -582,29 +622,6 @@ namespace Quixotic.Interpret
             var arguments = BindArguments(name, [.. function.Parameters], [leftValue, rightValue]);
 
             return Evaluate(function, arguments);
-        }
-
-        private Instance InvokeMember(QxExpression thisExpression, QxExpression memberExpression)
-        {
-            var thisInstance = Evaluate(thisExpression);
-
-            if (memberExpression is QxIdentifierExpression)
-            {
-
-            }
-
-            var member = Evaluate(memberExpression);
-
-            return QxType.Nada;
-        }
-
-        private Instance InvokeTypeConstructor(QxExpression left)
-        {
-            var typeExpression = Evaluate(left);
-
-            var definedType = TypeExpressionType.GetType(typeExpression);
-
-            return definedType.Construct();
         }
 
         private BooleanValue And(QxExpression left, QxExpression right)

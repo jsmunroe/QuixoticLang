@@ -1,4 +1,5 @@
 ﻿using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Runtime.Contracts
 {
@@ -9,5 +10,6 @@ namespace Quixotic.Runtime.Contracts
         IRuntimeFrame Pop();
         IRuntimeFrame PushBlock();
         IRuntimeFrame PushFunction();
+        IRuntimeFrame PushType(QxType type);
     }
 }

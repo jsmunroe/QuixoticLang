@@ -164,6 +164,19 @@ namespace Quixotic.Common.TypeSystem.Types
             return functionSymbol.Function;
         }
 
+        public bool TryResolveMethod(Instance thisInstance, string name, Instance[] arguments, [NotNullWhen(returnValue: true)] out Function? function)
+        {
+            function = null;
+
+            Instance[] allArguments = [thisInstance, .. arguments];
+
+            if (!_methods.TryResolve(name, [.. allArguments.GetTypes()], out var functionSymbol))
+                return false;
+
+            function = functionSymbol.Function;
+            return true;
+        }
+
         /// <summary>
         /// For static methods
         /// </summary>
@@ -174,6 +187,22 @@ namespace Quixotic.Common.TypeSystem.Types
 
             return functionSymbol.Function;
         }
+
+        /// <summary>
+        /// For static methods
+        /// </summary>
+        public bool TryResolveMethod(string name, Instance[] arguments, [NotNullWhen(returnValue: true)] out Function? function)
+        {
+            function = null;
+
+            if (!_methods.TryResolve(name, [.. arguments.GetTypes()], out var functionSymbol))
+                return false;
+
+            function = functionSymbol.Function;
+            return true;
+        }
+
+
 
         public bool IsMemberDeclared(string name)
         {

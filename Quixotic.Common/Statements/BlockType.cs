@@ -9,5 +9,6 @@
         For,
         Function,
         Type,
+        Constructor,
     }
 }

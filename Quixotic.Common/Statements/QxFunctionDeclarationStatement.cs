@@ -13,4 +13,11 @@ namespace Quixotic.Common.Statements
 
         public Block Body { get; init; } = [];
     }
+
+    public class QxConstructorDeclarationStatement() : QxStatement
+    {
+        public List<QxParameter> Parameters { get; init; } = [];
+
+        public Block Body { get; init; } = [];
+    }
 }

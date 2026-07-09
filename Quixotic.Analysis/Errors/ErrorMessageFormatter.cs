@@ -376,7 +376,10 @@ namespace Quixotic.Analysis.Errors
             if (IsKeyword(tokenType))
                 return $"keyword '{tokenType.ToString().ToLower()}'";
 
-            if (TryGetOperatorValue(tokenType, out var value))
+            if (TryGetOperatorValue(OperationType.Binary, tokenType, out var value))
+                return $"operator '{value}'";
+
+            if (TryGetOperatorValue(OperationType.Unary, tokenType, out value))
                 return $"operator '{value}'";
 
             if (tokenType == TokenType.NewLine)
@@ -395,14 +398,14 @@ namespace Quixotic.Analysis.Errors
 
         private static bool IsOperator(TokenType tokenType)
         {
-            var operationMetadata = OperationMetadata.Get(tokenType);
+            var operationMetadata = OperationMetadata.Get(OperationType.Binary, tokenType);
 
             return operationMetadata.Operator != Operator.None;
         }
 
-        private static bool TryGetOperatorValue(TokenType tokenType, [NotNullWhen(returnValue: true)] out string? operatorValue)
+        private static bool TryGetOperatorValue(OperationType operationType, TokenType tokenType, [NotNullWhen(returnValue: true)] out string? operatorValue)
         {
-            var operationMetadata = OperationMetadata.Get(tokenType);
+            var operationMetadata = OperationMetadata.Get(operationType, tokenType);
             if (operationMetadata.Operator != Operator.None)
             {
                 operatorValue = operationMetadata.Value;

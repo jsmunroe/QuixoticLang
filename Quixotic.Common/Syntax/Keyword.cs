@@ -26,6 +26,7 @@ namespace Quixotic.Common.Syntax
             new (TokenType.EndFor , "end for"),
             new (TokenType.EndType , "end type"),
             new (TokenType.EndFunction , "end function"),
+            new (TokenType.EndConstruct , "end construct"),
             new (TokenType.True , "true"),
             new (TokenType.False , "false"),
             new (TokenType.And , "and"),
@@ -35,12 +36,13 @@ namespace Quixotic.Common.Syntax
             new (TokenType.Return , "return"),
             new (TokenType.Type, "type"),
             new (TokenType.New, "new"),
+            new (TokenType.Construct, "construct"),
             new (TokenType.Property , "property"),
         ];
 
-        private static Dictionary<string, Keyword> _keywordsByValue = Keywords.ToDictionary(k => k.Value, k => k);
+        private static readonly Dictionary<string, Keyword> _keywordsByValue = Keywords.ToDictionary(k => k.Value, k => k);
 
-        private static Dictionary<TokenType, Keyword> _keywordsByTokenType = Keywords.ToDictionary(k => k.TokenType, k => k);
+        private static readonly Dictionary<TokenType, Keyword> _keywordsByTokenType = Keywords.ToDictionary(k => k.TokenType, k => k);
 
         public static bool Contains(string value)
         {

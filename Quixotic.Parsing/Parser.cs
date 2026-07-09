@@ -7,7 +7,6 @@ using Quixotic.Common.Statements;
 using Quixotic.Common.Tokens;
 using Quixotic.Parsing.Context;
 using QuixoticLang.Lexer;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Parsing
@@ -119,8 +118,12 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Function))
                 return ParseFunctionDeclaration();
 
+            if (Match(TokenType.Construct))
+                return ParseConstructor();
+
             throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
         }
+
 
         private QxStatement ParseStandalonExpression()
         {
@@ -146,7 +149,7 @@ namespace Quixotic.Parsing
 
             if (expression is QxMethodCallExpression methodCallExpression)
             {
-                _parseContext.AssignStatementType(StatementType.FunctionCall);
+                _parseContext.AssignStatementType(StatementType.MethodCall);
 
                 return new QxMethodCallStatement(methodCallExpression);
             }
@@ -245,6 +248,37 @@ namespace Quixotic.Parsing
             Expect(TokenType.EndType);
 
             return new(name) { Body = body };
+        }
+
+        private QxConstructorDeclarationStatement ParseConstructor()
+        {
+            _parseContext.AssignStatementType(StatementType.ConstructorDeclaration);
+
+            // Parse parameters
+            List<QxParameter> parameters = [];
+            if (Match(TokenType.OpenParen))
+                parameters = ParseParameters();
+
+            var body = CaptureActivity(() => ParseBlock(BlockType.Constructor), ActivityType.FunctionBody);
+
+            Expect(TokenType.EndConstruct);
+
+            return new() { Parameters = [.. parameters], Body = body };
+        }
+
+        private QxConstructorCallExpression ParseTypeInstantiation()
+        {
+            var typeName = ParseIdentifierName();
+
+            // Parse parameters
+            List<QxExpression> arguments = [];
+            if (Match(TokenType.OpenParen))
+                arguments = ParseArguments();
+
+            return new(typeName)
+            {
+                Arguments = arguments
+            };
         }
 
         private List<QxParameter> ParseParameters()
@@ -601,7 +635,7 @@ namespace Quixotic.Parsing
                 if (Match(TokenType.Dot))
                     return ParseMethodCallExpression(left);
 
-                var operationMetadata = OperationMetadata.Get(token.Type);
+                var operationMetadata = OperationMetadata.Get(OperationType.Binary, token.Type);
 
                 var nextPrecedence = operationMetadata.Precedence;
 
@@ -735,7 +769,7 @@ namespace Quixotic.Parsing
                 return CaptureExpression(() => new QxUnaryExpression(Operator.Not, ParseUnary()), ActivityType.UnaryNot);
 
             if (Match(TokenType.New))
-                return CaptureExpression(() => new QxUnaryExpression(Operator.New, ParseUnary()), ActivityType.Instantiation);
+                return CaptureExpression(() => new QxUnaryExpression(Operator.New, ParseTypeInstantiation()), ActivityType.Instantiation);
 
             return ParsePrimary();
         }
@@ -752,6 +786,7 @@ namespace Quixotic.Parsing
                 BlockType.Do => [TokenType.Loop],
                 BlockType.For => [TokenType.Next],
                 BlockType.Function => [TokenType.EndFunction],
+                BlockType.Constructor => [TokenType.EndConstruct],
                 BlockType.Type => [TokenType.EndType],
                 _ => []
             };
@@ -846,7 +881,6 @@ namespace Quixotic.Parsing
             }, ActivityType.NumberLiteral);
         }
 
-        [DebuggerStepThrough]
         private TValue CaptureActivity<TValue>(Func<TValue> activity, ActivityType expressionType)
         {
             _parseContext.BeginActivity(expressionType);
@@ -858,7 +892,6 @@ namespace Quixotic.Parsing
             return value;
         }
 
-        [DebuggerStepThrough]
         private void CaptureActivity(Action activity, ActivityType expressionType)
         {
             _parseContext.BeginActivity(expressionType);
@@ -868,7 +901,6 @@ namespace Quixotic.Parsing
             _parseContext.EndActivity();
         }
 
-        [DebuggerStepThrough]
         private TExpression CaptureExpression<TExpression>(Func<TExpression> expressionFactory, ActivityType expressionType)
             where TExpression : QxExpression
         {

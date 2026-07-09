@@ -1,6 +1,4 @@
-﻿using Quixotic.Common.TypeSystem.Symbols;
-
-namespace Quixotic.Common.TypeSystem.Types
+﻿namespace Quixotic.Common.TypeSystem.Types
 {
     public class CollectionType : QxType
     {
@@ -10,7 +8,7 @@ namespace Quixotic.Common.TypeSystem.Types
         {
             ElementType = elementType;
 
-            RegisterMethod("length", (Instance instance) => Number.Construct(Length(instance)), Number, new Parameter("this", this));
+            RegisterMethod("length", (Instance instance) => Number.Construct(Length(instance)), Number);
         }
         public int Length(Instance instance)
         {

@@ -23,8 +23,8 @@ namespace Quixotic.Runtime.BuiltIn
             registry.Register(">=", IsGreaterThanOrEqualTo, QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
             registry.Register("=", IsEqualTo, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
             registry.Register("!=", IsNotEqualTo, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
-            registry.Register("+", Negate, QxType.Number, Param("left", QxType.Number));
-            registry.Register("+", Not, QxType.Boolean, Param("left", QxType.Any));
+            registry.Register("-", Negate, QxType.Number, Param("left", QxType.Number));
+            registry.Register("not", Not, QxType.Boolean, Param("left", QxType.Any));
             registry.Register("+", CollectionAppend, QxType.Collection(QxType.Any), Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Any));
             registry.Register("+", CollectionConcat, QxType.Collection(QxType.Any), Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Collection(QxType.Any)));
             registry.Register("in", CollectionContains, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Collection(QxType.Any)));
