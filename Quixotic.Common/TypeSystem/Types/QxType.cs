@@ -18,6 +18,16 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public string Name { get; } = name;
 
+        public virtual Instance Construct()
+        {
+            var instance = new Instance(this);
+
+            foreach (var (name, value) in _initialState)
+                instance[name] = value;
+
+            return instance;
+        }
+
         public override int GetHashCode()
         {
             return HashCode.Combine(Name);
@@ -118,12 +128,13 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public void RegisterMethod(string name, Delegate method, QxType returnValue, params Parameter[] parameters)
         {
+            parameters = [new Parameter("this", this), .. parameters];
             _methods.Register(name, method, returnValue, parameters);
         }
 
         public void RegisterMethod(string name, Function function)
         {
-            _methods.Register(name, function);
+            _methods.Register(name, function.AddThis(this));
         }
 
         public void RegisterProperty(string name, Instance initialValue)
@@ -135,9 +146,13 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public void RegisterProperty(string name, QxType type)
         {
-            RegisterMethod(name, (Instance instance) => instance["name"], type, new Parameter("this", type));
-            RegisterMethod(name, (Instance instance, Instance value) => instance["name"] = value, type, new Parameter("this", type), new Parameter("value", type));
+            RegisterMethod(name, PropertyGetter(name), type);
+            RegisterMethod(name, PropertySetter(name), type, new Parameter("value", type));
         }
+
+        private Func<Instance, Instance> PropertyGetter(string name) => (Instance instance) => (Instance)instance[name]!;
+
+        private Action<Instance, Instance> PropertySetter(string name) => (Instance instance, Instance value) => instance[name] = value;
 
         public Function ResolveMethod(Instance thisInstance, string name, params Instance[] arguments)
         {

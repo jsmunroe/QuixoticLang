@@ -1462,7 +1462,132 @@ namespace Quixotic.InterpretTests
             interpreter.Execute(parser.Parse());
 
             // Assert
+            runtime.AssertTypeDeclared("Person");
+        }
 
+        [TestMethod]
+        public void Execute_type_instantiation()
+        {
+            // Setup
+            var source = @"
+                type Person
+
+                    let Name : string := ""Meow""
+
+                    let Age : number := 42
+
+                    function Greet()
+                        print ""Hello "" + this.Name
+                    end function
+
+                end type
+
+                let me := new Person
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Executet
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertTypeDeclared("Person");
+            runtime.AssertVariableHasValue("me");
+        }
+
+        [TestMethod]
+        public void Execute_type_instance_get_member()
+        {
+            // Setup
+            var source = @"
+                type Person
+
+                    let Name : string := ""Meow""
+
+                    let Age : number := 42
+
+                    function Greet()
+                        print ""Hello "" + this.Name
+                    end function
+
+                end type
+
+                let me := new Person
+
+                print me.Name
+                print me.Age
+                me.Greet()
+
+
+                me.Name := ""Woof""
+                me.Greet()
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Executet
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertTypeDeclared("Person");
+            runtime.AssertVariableHasValue("me");
+
+            runtime.AssertHasPrinted("Meow");
+            runtime.AssertHasPrinted("42");
+            runtime.AssertHasPrinted("Hello Meow");
+            runtime.AssertHasPrinted("Hello Woof");
+        }
+
+        [TestMethod]
+        public void Execute_type_construct()
+        {
+            // Setup
+            var source = @"
+                type Person
+                    init(name: string, age: number)
+                        this.Name := name
+                        this.Age := age
+                    end init
+
+                    let Name : string := ""Meow""
+
+                    let Age : number := 42
+
+                    function Greet()
+                        print ""Hello "" + this.Name
+                    end function
+
+                end type
+
+                let me := new Person(""Woof"", 99)
+
+                print me.Name
+                print me.Age
+                me.Greet()
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Executet
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertTypeDeclared("Person");
+            runtime.AssertVariableHasValue("me");
+
+            runtime.AssertHasPrinted("Meow");
+            runtime.AssertHasPrinted("42");
+            runtime.AssertHasPrinted("Hello Meow");
+            runtime.AssertHasPrinted("Hello Woof");
         }
 
         private Stream GetTestFile(string name)

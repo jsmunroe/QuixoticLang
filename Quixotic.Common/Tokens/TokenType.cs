@@ -58,6 +58,7 @@ namespace Quixotic.Common.Tokens
         In,
         Comment,
         Type,
+        New,
         OpenBracket,
         CloseBracket,
         OpenBrace,

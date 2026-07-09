@@ -734,6 +734,9 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Not))
                 return CaptureExpression(() => new QxUnaryExpression(Operator.Not, ParseUnary()), ActivityType.UnaryNot);
 
+            if (Match(TokenType.New))
+                return CaptureExpression(() => new QxUnaryExpression(Operator.New, ParseUnary()), ActivityType.Instantiation);
+
             return ParsePrimary();
         }
 

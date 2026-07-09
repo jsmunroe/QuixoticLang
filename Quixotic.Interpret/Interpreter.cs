@@ -93,9 +93,10 @@ namespace Quixotic.Interpret
             runtime.PushBlock();
 
             if (arguments is not null)
-
+            {
                 foreach (var argument in arguments)
                     runtime.Frame.Scope.DefineVariable(argument.Name, argument.Value);
+            }
 
             try
             {
@@ -380,7 +381,8 @@ namespace Quixotic.Interpret
         {
             runtime.PushBlock();
 
-            Execute(statement.Body);
+            foreach (var childStatement in statement.Body)
+                Execute(childStatement);
 
             var type = new DefinedType(statement.Name);
 
@@ -436,9 +438,14 @@ namespace Quixotic.Interpret
         protected Instance Evaluate(QxIdentifierExpression expression)
         {
             var name = expression.Name;
-            var value = runtime.Frame.Scope.GetInstance(name);
 
-            return value;
+            if (runtime.Frame.Scope.TryGetInstance(name, out var instance))
+                return instance;
+
+            if (runtime.Frame.Scope.TryGetType(name, out var type) && type is DefinedType definedType)
+                return new TypeExpressionType().Construct(definedType);
+
+            throw new UndefinedIdentifierException(name);
         }
 
         protected Instance Evaluate(QxIndexerExpression expression)
@@ -460,17 +467,9 @@ namespace Quixotic.Interpret
 
         protected Instance Evaluate(QxUnaryExpression expression)
         {
-            var operand = Evaluate(expression.Operand);
+            var op = expression.Operator;
 
-            var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator);
-
-            return expression.Operator switch
-            {
-                Operator.Not => new BooleanValue(!IsTruthy(operand)),
-                Operator.Subtract when operand is NumberValue number => new NumberValue(-number.Value),
-                Operator.Subtract when operand is not NumberValue => throw new UnaryOperatorException($"Cannot apply negative operator to operand that is type {operand.Type}."),
-                _ => throw new UnaryOperatorException($"{operatorValue} is not supported as a unary operator."),
-            };
+            return InvokeOperator(op, expression.Operand);
         }
 
         protected Instance Evaluate(QxBinaryExpression expression)
@@ -540,6 +539,25 @@ namespace Quixotic.Interpret
             return expectedValue;
         }
 
+        private Instance InvokeOperator(Operator op, QxExpression left)
+        {
+            if (op == Operator.New)
+                return InvokeTypeConstructor(left);
+
+            var name = OperationMetadata.GetOperatorValue(op);
+
+            if (string.IsNullOrEmpty(name))
+                throw new NotSupportedException($"Operator {op} is not supported.");
+
+            var leftValue = Evaluate(left);
+
+            var function = runtime.Frame.Scope.GetFunction(name, leftValue.Type);
+
+            var arguments = BindArguments(name, [.. function.Parameters], [leftValue]);
+
+            return Evaluate(function, arguments);
+        }
+
         private Instance InvokeOperator(Operator op, QxExpression left, QxExpression right)
         {
             if (op == Operator.And)
@@ -578,6 +596,15 @@ namespace Quixotic.Interpret
             var member = Evaluate(memberExpression);
 
             return QxType.Nada;
+        }
+
+        private Instance InvokeTypeConstructor(QxExpression left)
+        {
+            var typeExpression = Evaluate(left);
+
+            var definedType = TypeExpressionType.GetType(typeExpression);
+
+            return definedType.Construct();
         }
 
         private BooleanValue And(QxExpression left, QxExpression right)

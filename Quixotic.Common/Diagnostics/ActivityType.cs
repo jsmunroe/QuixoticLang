@@ -39,5 +39,6 @@
         ArrayElement,
         StandaloneExpression,
         TypeBody,
+        Instantiation,
     }
 }

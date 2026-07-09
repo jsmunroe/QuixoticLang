@@ -23,9 +23,11 @@ namespace Quixotic.Runtime.BuiltIn
             registry.Register(">=", IsGreaterThanOrEqualTo, QxType.Boolean, Param("left", QxType.Number), Param("right", QxType.Number));
             registry.Register("=", IsEqualTo, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
             registry.Register("!=", IsNotEqualTo, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Any));
-            registry.Register("+", ArrayAppend, QxType.Collection(QxType.Any), Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Any));
-            registry.Register("+", ArrayConcat, QxType.Collection(QxType.Any), Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Collection(QxType.Any)));
-            registry.Register("in", Contains, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Collection(QxType.Any)));
+            registry.Register("+", Negate, QxType.Number, Param("left", QxType.Number));
+            registry.Register("+", Not, QxType.Boolean, Param("left", QxType.Any));
+            registry.Register("+", CollectionAppend, QxType.Collection(QxType.Any), Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Any));
+            registry.Register("+", CollectionConcat, QxType.Collection(QxType.Any), Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Collection(QxType.Any)));
+            registry.Register("in", CollectionContains, QxType.Boolean, Param("left", QxType.Any), Param("right", QxType.Collection(QxType.Any)));
         }
 
         public static Instance Concat(StringValue left, Instance right)
@@ -83,7 +85,17 @@ namespace Quixotic.Runtime.BuiltIn
             return new BooleanValue(!left.Equals(right));
         }
 
-        public static Instance ArrayAppend(CollectionReference array, Instance element)
+        public static Instance Negate(NumberValue left)
+        {
+            return new NumberValue(-left.Value);
+        }
+
+        public static Instance Not(Instance left)
+        {
+            return new BooleanValue(!left.IsTruthy);
+        }
+
+        public static Instance CollectionAppend(CollectionReference array, Instance element)
         {
             if (array.Type is not CollectionType collectionType)
                 throw new ArgumentException("Argument is not a CollectionType", nameof(array));
@@ -91,7 +103,7 @@ namespace Quixotic.Runtime.BuiltIn
             return collectionType.Append(array, element);
         }
 
-        public static Instance ArrayConcat(CollectionReference array, CollectionReference element)
+        public static Instance CollectionConcat(CollectionReference array, CollectionReference element)
         {
             if (array.Type is not CollectionType collectionType)
                 throw new ArgumentException("Argument is not a CollectionType", nameof(array));
@@ -99,7 +111,7 @@ namespace Quixotic.Runtime.BuiltIn
             return collectionType.Concat(array, element);
         }
 
-        public static Instance Contains(Instance element, CollectionReference array)
+        public static Instance CollectionContains(Instance element, CollectionReference array)
         {
             if (array.Type is not CollectionType collectionType)
                 throw new ArgumentException("Argument is not a CollectionType", nameof(array));

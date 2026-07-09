@@ -56,6 +56,11 @@ namespace Quixotic.Runtime.Environment
             return _values.TryGetValue(name, out var symbol) && symbol is VariableSymbol;
         }
 
+        public bool IsTypeDeclared(string name)
+        {
+            return _values.TryGetValue(name, out var symbol) && symbol is TypeSymbol;
+        }
+
         private bool TryGetSymbol(string name, [NotNullWhen(returnValue: true)] out Symbol? symbol)
         {
             if (_values.TryGetValue(name, out var localSymbol))
@@ -84,10 +89,21 @@ namespace Quixotic.Runtime.Environment
 
         public Instance GetInstance(string name)
         {
-            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
-                throw new UndefinedSymbolException(name);
+            if (TryGetInstance(name, out var instance))
+                return instance;
 
-            return variableSymbol.Instance;
+            throw new UndefinedSymbolException(name);
+        }
+
+        public bool TryGetInstance(string name, [NotNullWhen(returnValue: true)] out Instance? instance)
+        {
+            instance = null;
+
+            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableSymbol variableSymbol)
+                return false;
+
+            instance = variableSymbol.Instance;
+            return true;
         }
 
         public void DefineFunction(string name, Function function)
@@ -126,6 +142,15 @@ namespace Quixotic.Runtime.Environment
                 return parent.GetType(name);
 
             throw new UndefinedTypeException(name);
+        }
+
+        public bool TryGetType(string name, [NotNullWhen(returnValue: true)] out QxType? type)
+        {
+            if (_typeRegistry.TryResolve(name, out type))
+                return true;
+
+            type = parent?.GetType(name);
+            return type is not null;
         }
 
         public void ExpectUndefined(string name)

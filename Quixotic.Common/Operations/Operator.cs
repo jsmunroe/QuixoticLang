@@ -20,5 +20,6 @@
         GreaterThanOrEqualTo,
         Indexer,
         Dot,
+        New,
     }
 }

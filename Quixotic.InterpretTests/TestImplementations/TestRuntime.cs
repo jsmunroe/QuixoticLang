@@ -1,7 +1,6 @@
 ﻿using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Runtime.Contracts;
-using Quixotic.Runtime.Environment;
 using Quixotic.Runtime.References;
 using Quixotic.Runtime.Values;
 using System.Collections;
@@ -85,11 +84,24 @@ namespace Quixotic.InterpretTests.TestImplementations
             Assert.AreNotEqual(expected, actual, $"'{expected}' was printed at index {index}.");
         }
 
+        public void AssertTypeDeclared(string name)
+        {
+            Assert.IsTrue(AllFrames.Any(f => f.Scope.IsTypeDeclared(name)), $"No type named '{name}' was decleared.");
+        }
 
+        public void AssertTypeDeclared(int frameIndex, string name)
+        {
+            if (frameIndex < 0)
+                throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
 
+            if (frameIndex >= AllFrames.Count)
+                throw new AssertFailedException($"There frames executions at index {frameIndex}.");
+
+            Assert.IsTrue(AllFrames[frameIndex].Scope.IsTypeDeclared(name), $"No type named '{name}' was decleared.");
+        }
         public void AssertFunctionDeclared(string name)
         {
-            Assert.IsTrue(AllFrames.Any(f => f is Scope scope && scope.IsFunctionDeclared(name)), $"No function named '{name}' was decleared.");
+            Assert.IsTrue(AllFrames.Any(f => f.Scope.IsFunctionDeclared(name)), $"No function named '{name}' was decleared.");
         }
 
         public void AssertFunctionDeclared(int frameIndex, string name)
@@ -146,6 +158,41 @@ namespace Quixotic.InterpretTests.TestImplementations
                 throw new AssertFailedException($"A variable named '{name}' was {variableValue.Type.Name} type and has a value of {variableValue}.");
         }
 
+
+        public void AssertVariableHasValue(string name)
+        {
+            List<string> otherFrameValues = [];
+
+            for (var i = 0; i < AllFrames.Count; i++)
+            {
+                var frame = AllFrames[i];
+
+                if (!frame.Scope.IsVariableDeclared(name))
+                    continue;
+
+                if (frame.Scope.TryGetInstance(name, out var instance))
+                    return;
+            }
+
+            throw new AssertFailedException($"In no frame was a variable named '{name}' defined.");
+        }
+
+        public void AssertVariableHasValue(int frameIndex, string name)
+        {
+            if (frameIndex < 0)
+                throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
+
+            if (frameIndex >= AllFrames.Count)
+                throw new AssertFailedException($"There frames executions at index {frameIndex}.");
+
+            var frame = AllFrames[frameIndex];
+
+            if (frame.Scope.IsVariableDeclared(name))
+                return;
+
+
+            throw new AssertFailedException($"A variable named '{name}' has not been defined.");
+        }
 
         public void AssertVariableHasValue(string name, string value)
         {

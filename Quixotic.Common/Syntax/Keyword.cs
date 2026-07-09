@@ -33,7 +33,8 @@ namespace Quixotic.Common.Syntax
             new (TokenType.Not , "not"),
             new (TokenType.Function , "function"),
             new (TokenType.Return , "return"),
-            new (TokenType.Type , "type"),
+            new (TokenType.Type, "type"),
+            new (TokenType.New, "new"),
             new (TokenType.Property , "property"),
         ];
 

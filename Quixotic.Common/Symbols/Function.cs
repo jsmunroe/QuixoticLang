@@ -10,5 +10,15 @@ namespace Quixotic.Common.TypeSystem.Symbols
         public Block Body { get; } = body;
 
         public QxType ReturnType { get; internal set; } = returnType;
+
+        public Function AddThis(Instance @this) => AddThis(@this.Type);
+
+        public Function AddThis(QxType thisType)
+        {
+            return new(Body, ReturnType)
+            {
+                Parameters = [new Parameter("this", thisType), .. Parameters]
+            };
+        }
     }
 }
