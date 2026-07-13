@@ -2,6 +2,7 @@
 using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
+using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
@@ -13,57 +14,70 @@ namespace Quixotic.Runtime.Environment
     // under the System namespace, and it was colliding with this class.
     public class Scope(Scope? parent)
     {
-        private readonly Dictionary<string, Symbol> _values = new(StringComparer.OrdinalIgnoreCase);
+        private readonly VariableRegistry _veraiableRegistry = new();
 
         private readonly FunctionRegistry _functionRegistry = new();
 
         private readonly TypeRegistry _typeRegistry = new();
 
-        public List<Symbol> Symbols => [.. _values.Values];
-
         public List<FunctionSymbol> Functions => _functionRegistry.AllFunctions;
 
-        public List<VariableSymbol> Variables => [.. _values.Values.OfType<VariableSymbol>()];
+        public List<VariableSymbol> Variables => _veraiableRegistry.AllVariables;
 
-        public List<TypeSymbol> Types => [.. _values.Values.OfType<TypeSymbol>()];
+        public List<TypeSymbol> Types => _typeRegistry.AllTypes;
 
         public void Add(IFunctionProvider functionProvider)
         {
             functionProvider.Register(_functionRegistry);
         }
 
+        public void Add(ITypeProvider typeProvider)
+        {
+            typeProvider.Register(_typeRegistry);
+        }
+
+        public void Add(ScopeState scopeState)
+        {
+            _functionRegistry.Add(scopeState.Functions);
+            _typeRegistry.Add(scopeState.Types);
+            _veraiableRegistry.Add(scopeState.Variables);
+        }
+
         public void DefineVariable(string name, Instance instance)
         {
-            ExpectUndefined(name);
+            if (IsVariableDeclared(name))
+                throw new VariableAlreadyDefinedException(name);
 
-            _values[name] = new VariableSymbol(name, instance);
+
+            _veraiableRegistry.Register(name, instance);
         }
 
         public void DefineVariable(string name, QxType type)
         {
-            ExpectUndefined(name);
+            if (IsVariableDeclared(name))
+                throw new VariableAlreadyDefinedException(name);
 
-            _values[name] = new VariableSymbol(name, type);
+            _veraiableRegistry.Register(name, type);
         }
 
-        public bool IsFunctionDeclared(string name)
+        public bool IsFunctionDeclared(string name, params QxType[] parameters)
         {
-            return _values.TryGetValue(name, out var symbol) && symbol is FunctionSymbol;
+            return _functionRegistry.Contains(name, parameters);
         }
 
         public bool IsVariableDeclared(string name)
         {
-            return _values.TryGetValue(name, out var symbol) && symbol is VariableSymbol;
+            return _veraiableRegistry.Contains(name);
         }
 
         public bool IsTypeDeclared(string name)
         {
-            return _values.TryGetValue(name, out var symbol) && symbol is TypeSymbol;
+            return _typeRegistry.Contains(name);
         }
 
         private bool TryGetSymbol(string name, [NotNullWhen(returnValue: true)] out Symbol? symbol)
         {
-            if (_values.TryGetValue(name, out var localSymbol))
+            if (_veraiableRegistry.TryResolve(name, out var localSymbol))
             {
                 symbol = localSymbol;
                 return true;
@@ -108,9 +122,11 @@ namespace Quixotic.Runtime.Environment
 
         public void DefineFunction(string name, Function function)
         {
-            ExpectUndefined(name);
+            var signature = new Signature(name, [.. function.Parameters.GetTypes()]);
 
-            _values[name] = new FunctionSymbol(name, function);
+            if (_functionRegistry.Contains(signature))
+                throw new FunctionAlreadyDefinedException(signature);
+
             _functionRegistry.Register(name, function);
         }
 
@@ -137,9 +153,9 @@ namespace Quixotic.Runtime.Environment
 
         public void DefineType(string name, QxType type)
         {
-            ExpectUndefined(name);
+            if (IsTypeDeclared(name))
+                throw new TypeAlreadyDefinedException(name);
 
-            _values[name] = new TypeSymbol(name, type);
             _typeRegistry.Register(name, type);
         }
 
@@ -162,25 +178,5 @@ namespace Quixotic.Runtime.Environment
             type = parent?.GetType(name);
             return type is not null;
         }
-
-        public void ExpectUndefined(string name)
-        {
-            if (TryGetSymbol(name, out var symbol))
-            {
-                if (symbol is VariableSymbol)
-                    throw new VariableAlreadyDefinedException(name);
-
-                if (symbol is FunctionSymbol)
-                    throw new FunctionAlreadyDefinedException(name);
-
-                if (symbol is TypeSymbol)
-                    throw new TypeAlreadyDefinedException(name);
-
-                throw new SymbolAlreadyDefinedException(name);
-            }
-
-            parent?.ExpectUndefined(name);
-        }
-
     }
 }

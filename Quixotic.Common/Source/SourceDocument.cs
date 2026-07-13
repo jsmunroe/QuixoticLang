@@ -154,10 +154,10 @@ namespace Quixotic.Common.Source
             {
                 var line = GetLine(i);
 
-                linesText += $"{i}: {line?.Text ?? string.Empty}\r\n";
+                linesText += $"{i}: {line?.Text ?? string.Empty}";
             }
 
-            return linesText.TrimEnd('\r', '\n');
+            return linesText;
         }
     }
 }

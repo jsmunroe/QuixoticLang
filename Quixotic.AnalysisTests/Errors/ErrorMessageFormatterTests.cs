@@ -275,7 +275,6 @@ namespace Quixotic.AnalysisTests.Errors
             WriteDiagnostic(exception.Diagnostic);
 
             Assert.AreEqual("An unexpected keyword 'next' was encountered while parsing the expression. Keyword 'next' is an invalid operand in the expression 'i := next'.", result);
-            Assert.AreEqual("An unexpected keyword 'next' was encountered while parsing the expression. Keyword 'next' is an invalid operand in the expression 'i := next'.", result);
         }
 
         [TestMethod]
@@ -1216,7 +1215,7 @@ namespace Quixotic.AnalysisTests.Errors
             Console.WriteLine(result);
             WriteDiagnostic(exception.Diagnostic);
 
-            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the parameter expression. The parser expected an identifier type.", result);
+            Assert.AreEqual("An unexpected close parenthesis ')' was encountered while parsing the parameter expression. The parser expected a colon.", result);
         }
 
         [TestMethod]

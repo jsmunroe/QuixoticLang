@@ -124,7 +124,8 @@ namespace Quixotic.LexographyTests
 
             Assert.AreEqual(TokenType.Let, tokens[0].Type);
             Assert.AreEqual(TokenType.Identifier, tokens[1].Type);
-            Assert.AreEqual(TokenType.IdentifierType, tokens[2].Type);
+            Assert.AreEqual(TokenType.Colon, tokens[2].Type);
+            Assert.AreEqual(TokenType.Identifier, tokens[3].Type);
         }
 
         [TestMethod]

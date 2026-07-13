@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.TypeSystem.Symbols;
+﻿using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
 
@@ -6,9 +7,15 @@ namespace Quixotic.Common.Environment
 {
     public class TypeRegistry
     {
-        private readonly Dictionary<string, TypeSymbol> _types = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<TypeName, TypeSymbol> _types = []; // case-insensitivity is handles by TypeName class
 
         public List<TypeSymbol> AllTypes => [.. _types.Values];
+
+        public void Add(TypeRegistry other)
+        {
+            foreach (var type in other.AllTypes)
+                _types[type.Name] = new(type);
+        }
 
         public void Register(string name, QxType type)
         {
@@ -22,20 +29,34 @@ namespace Quixotic.Common.Environment
 
         public QxType? Resolve(string name)
         {
-            _types.TryGetValue(name, out var type);
-            return type?.Type;
+            return TryResolve(name, out var type) ? type : null;
         }
 
         public bool TryResolve(string name, [NotNullWhen(returnValue: true)] out QxType? type)
         {
-            if (!_types.TryGetValue(name, out var typeSymbol))
+            type = null;
+
+            if (_types.TryGetValue(name, out var typeSymbol))
             {
-                type = null;
-                return false;
+                type = typeSymbol.Type;
+
+                if (!type.HasGenerics)
+                    return true;
             }
 
-            type = typeSymbol.Type;
-            return true;
+            var match = _types.FirstOrDefault(kvp => kvp.Key.IsMatch(name));
+
+            if (match.Key is not null)
+            {
+                var typeName = match.Key;
+
+                var bindings = typeName.GetGenericBindings(name, this);
+                type = match.Value.Type.Substitute(bindings);
+
+                return true;
+            }
+
+            return false;
         }
     }
 }

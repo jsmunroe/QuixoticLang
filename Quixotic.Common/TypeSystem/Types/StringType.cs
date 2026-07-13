@@ -5,7 +5,7 @@ namespace Quixotic.Common.TypeSystem.Types
     [Description("string")]
     public class StringType : QxValueType
     {
-        public static StringType Instance { get; } = new();
+        public static StringType Default { get; } = new();
 
         protected StringType()
             : base("string", typeof(string))
@@ -23,5 +23,11 @@ namespace Quixotic.Common.TypeSystem.Types
         {
             return !string.IsNullOrEmpty(instance["value"] as string);
         }
+
+        public override bool Match(QxType actual, GenericBindings bindings)
+        {
+            return actual is StringType;
+        }
+
     }
 }

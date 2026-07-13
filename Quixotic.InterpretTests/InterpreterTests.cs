@@ -1,4 +1,5 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.TypeSystem.Types;
 using Quixotic.InterpretTests.TestImplementations;
 using Quixotic.Parsing;
 using QuixoticLang.Lexer;
@@ -224,6 +225,27 @@ namespace Quixotic.InterpretTests
             // Assert 
             runtime.AssertVariableIsNull("windmills");
             runtime.AssertHasPrinted("nada");
+        }
+
+        [TestMethod]
+        public void Execute_identifier_statement_with_operator_series()
+        {
+            // Setup
+            var source = @"
+                let windmills: number := 5 + 5 + 5
+                print windmills
+            ";
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(parser.Parse());
+
+            // Assert 
+            runtime.AssertVariableHasValue("windmills", 15);
+            runtime.AssertHasPrinted("15");
         }
 
         [TestMethod]
@@ -480,7 +502,7 @@ namespace Quixotic.InterpretTests
             interpreter.Execute(parser.Parse());
 
             // Assert
-            runtime.AssertFunctionDeclared("sayHello");
+            runtime.AssertFunctionDeclared("sayHello", QxType.Number, QxType.Number, QxType.Number);
             runtime.AssertHasPrinted("6");
         }
 
@@ -505,7 +527,7 @@ namespace Quixotic.InterpretTests
             interpreter.Execute(parser.Parse());
 
             // Assert
-            runtime.AssertFunctionDeclared("sayHello");
+            runtime.AssertFunctionDeclared("sayHello", QxType.Number, QxType.Number, QxType.Number);
             runtime.AssertHasPrinted("6");
         }
 
@@ -533,7 +555,7 @@ namespace Quixotic.InterpretTests
             // Execute & Assert
             interpreter.Execute(parser.Parse());
 
-            runtime.AssertFunctionDeclared("sayHello");
+            runtime.AssertFunctionDeclared("sayHello", QxType.Number, QxType.Number, QxType.Number);
             runtime.AssertHasPrinted("6");
 
         }
@@ -1570,6 +1592,209 @@ namespace Quixotic.InterpretTests
                 print me.Name
                 print me.Age
                 me.Greet()
+            ";
+
+            var lexer = new Lexer(source);
+            var parser = new Parser(lexer);
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Executet
+            interpreter.Execute(parser.Parse());
+
+            // Assert
+            runtime.AssertTypeDeclared("Person");
+            runtime.AssertVariableHasValue("me");
+
+            runtime.AssertHasPrinted("Woof");
+            runtime.AssertHasPrinted("99");
+            runtime.AssertHasPrinted("Hello Woof");
+        }
+
+        [TestMethod]
+        public void Execute_type_inheritance()
+        {
+            // Setup
+            var source = @"
+                type Animal 
+                    let noise: string
+
+                    function makeNoise() 
+                        print this.noise + ""!""
+                    end function
+
+                end type
+
+
+                type Dog is Animal
+                    construct
+                        this.noise := ""woof""
+                    end construct
+
+                end type
+
+                let dog: Dog := new Dog()
+
+                dog.makeNoise()
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Executet
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertTypeDeclared("Animal");
+            runtime.AssertTypeDeclared("Dog");
+
+            runtime.AssertHasPrinted("woof!");
+        }
+
+
+        [TestMethod]
+        public void Execute_type_inheritance_with_construction()
+        {
+            // Setup
+            var source = @"
+                type Animal 
+                    construct(name: string, noise: string)
+                        this.name := name
+                        this.noise := noise
+                    end construct
+
+                    let noise: string
+                    let name: string
+
+                    function makeNoise() 
+                        print this.noise + ""!""
+                    end function
+
+                end type
+
+
+                type Dog is Animal
+                    construct(name: string)
+                        base(name, ""woof"")
+                    end construct
+                end type
+
+                let dog: Animal := new Dog(""Rover"")
+
+                print dog.name
+                dog.makeNoise()
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Executet
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertTypeDeclared("Animal");
+            runtime.AssertTypeDeclared("Dog");
+
+            runtime.AssertHasPrinted("Rover");
+            runtime.AssertHasPrinted("woof!");
+        }
+
+        [TestMethod]
+        public void Execute_type_inheritance_base_method_call()
+        {
+            // Setup
+            var source = @"
+                type Animal 
+                    construct(name: string, noise: string)
+                        this.name := name
+                        this.noise := noise
+                    end construct
+
+                    let noise: string
+                    let name: string
+
+                    function makeNoise() 
+                        print this.noise + ""!""
+                    end function
+
+                end type
+
+
+                type Dog is Animal
+                    construct(name: string)
+                        base(name, ""woof"")
+                    end construct
+
+                    function makeNoise()
+                        print ""The dog "" + this.name + "" says...""
+                        base.makeNoise()
+                    end function
+
+                end type
+
+                let dog: Animal := new Dog(""Rover"")
+
+                print dog.name
+                dog.makeNoise()
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Executet
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertTypeDeclared("Animal");
+            runtime.AssertTypeDeclared("Dog");
+
+            runtime.AssertHasPrinted("Rover");
+            runtime.AssertHasPrinted("The dog Rover says...");
+            runtime.AssertHasPrinted("woof!");
+        }
+
+        [TestMethod]
+        public void Execute_type_complete_inheritance()
+        {
+            // Setup
+            var source = @"
+                type Animal 
+                    construct(noise: string)
+                        this.noise := noise
+                    end construct
+
+                    let noise: string
+
+                    function makeNoise() 
+                        print this.noise + ""!""
+                    end function
+
+                end type
+
+
+                type Dog is Animal
+                    construct(noise: string, name: string) :base(noise)
+                        this.name = name
+                    end construct
+
+                    let name: string
+
+                    function makeNoise()
+                        print ""The dog "" + this.name + "" says...""
+                        base.makeNoise()
+                    end function
+                end type
+
+                let animal: Animal := new Dog(""woof"", ""Fido"")
+
+                animal.makeNoise() ' prints ""The dog Fido says...\nwoof!""
+
+                if animal is Dog dog
+                    dog.name := ""Penny""
+                    dog.makeNoise() ' prints ""The dog Penny says...\nwoof!""
+                end if
+
+                animal.makeNoise() ' prints ""The dog Penny says...\nwoof!""
             ";
 
             var lexer = new Lexer(source);

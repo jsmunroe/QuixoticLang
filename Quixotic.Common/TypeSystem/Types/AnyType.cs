@@ -2,22 +2,26 @@ using System.ComponentModel;
 
 namespace Quixotic.Common.TypeSystem.Types
 {
-    [Description("nada")]
-    public class NadaType : QxValueType
+    [Description("any")]
+    public class AnyType : QxType
     {
-        public static NadaType Default { get; } = new();
+        public static AnyType Default { get; } = new();
         public static Instance Value { get; } = new Instance(Default);
 
         public override bool HasGenerics => false;
 
 
-        protected NadaType()
-            : base("nada", typeof(object))
+        protected AnyType() : base("any")
         { }
+
+        public override bool IsAssignableFrom(QxType other)
+        {
+            return true;
+        }
 
         public override bool Match(QxType actual, GenericBindings bindings)
         {
-            return actual is NadaType;
+            return true;
         }
     }
 }

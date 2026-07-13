@@ -1393,7 +1393,7 @@ namespace Quixotic.ParsingTests.Context
             Assert.AreEqual(ActivityType.Parameter, diagnostic.ActivityType);
             var issue = Assert.IsInstanceOfType<UnexpectedToken>(diagnostic.Issue);
             Assert.AreEqual(TokenType.CloseParen, issue.Encountered.Type);
-            Assert.AreEqual(TokenType.IdentifierType, issue.Expected);
+            Assert.AreEqual(TokenType.Colon, issue.Expected);
             Assert.IsFalse(diagnostic.IsEndOfLine);
             Assert.IsFalse(diagnostic.Span.IsEmpty);
         }

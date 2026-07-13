@@ -4,35 +4,21 @@ namespace Quixotic.Common.TypeSystem.Types
     {
         public string Key { get; } = key;
 
-        public static void GetKeyValues(QxType type, QxType replacement, Dictionary<string, QxType> genericTypes)
-        {
-            if (type is Generic generic)
-                genericTypes[generic.Key] = replacement;
+        public override bool HasGenerics => true;
 
-            if (type is ArrayType array && replacement is ArrayType arrayReplacement)
-                GetKeyValues(array.ElementType, arrayReplacement.ElementType, genericTypes);
+        public override QxType Substitute(GenericBindings bindings)
+        {
+            return bindings.TryGet(Key, out var type) ? type : this;
         }
 
-        public static QxType SetKeyValues(QxType type, Dictionary<string, QxType> keyValues)
+        public override bool Match(QxType actual, GenericBindings bindings)
         {
-            if (type is Generic generic)
-            {
-                if (keyValues.TryGetValue(generic.Key, out var replacement))
-                    return replacement;
-                else
-                    return type;
-            }
+            return bindings.TryBind(Key, actual);
+        }
 
-            if (type is ArrayType array)
-            {
-                var newElementType = SetKeyValues(array.ElementType, keyValues);
-                if (newElementType != array.ElementType)
-                    return Array(newElementType);
-                else
-                    return type;
-            }
-
-            return type;
+        public override bool IsAssignableFrom(QxType other)
+        {
+            return true;
         }
     }
 }

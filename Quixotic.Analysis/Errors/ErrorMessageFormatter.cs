@@ -37,6 +37,7 @@ namespace Quixotic.Analysis.Errors
 
             description.WriteLine();
             description.WriteLine(sourceLines);
+            description.WriteLine();
 
             return description;
         }

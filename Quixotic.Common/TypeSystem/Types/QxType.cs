@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace Quixotic.Common.TypeSystem.Types
 {
-    public class QxType(string name)
+    public abstract class QxType(string name, QxType? baseType = null)
     {
         private static readonly Regex _rexTypeString = new(@"^([a-zA-Z_][a-zA-Z0-9_\.]+)(\[\])?$", RegexOptions.Compiled);
 
@@ -16,7 +16,9 @@ namespace Quixotic.Common.TypeSystem.Types
 
         private readonly Dictionary<string, object?> _initialState = new();
 
-        public string Name { get; } = name;
+        public TypeName Name { get; } = name;
+
+        public QxType? BaseType { get; } = baseType;
 
         public virtual Instance Construct()
         {
@@ -28,21 +30,31 @@ namespace Quixotic.Common.TypeSystem.Types
             return instance;
         }
 
+        public Instance As(Instance instance)
+        {
+            if (!IsAssignableFrom(instance.Type))
+                throw new CastMismatchException(instance.Type, this);
+
+            return new UpcastInstance(instance, this);
+        }
+
+        public abstract bool Match(QxType actual, GenericBindings bindings);
+
         public override int GetHashCode()
         {
             return HashCode.Combine(Name);
         }
 
-        public virtual bool IsAssignableFrom(QxType subtype)
+        public virtual bool IsAssignableFrom(QxType other)
         {
-            if (this == Any || this is Generic)
+            if (other == Any)
                 return true;
 
-            if (ReferenceEquals(this, Any))
-                return true;
-
-            if (Equals(subtype))
-                return true;
+            for (QxType? current = other; current is not null; current = current.BaseType)
+            {
+                if (Equals(current))
+                    return true;
+            }
 
             return false;
         }
@@ -150,18 +162,16 @@ namespace Quixotic.Common.TypeSystem.Types
             RegisterMethod(name, PropertySetter(name), type, new Parameter("value", type));
         }
 
-        private Func<Instance, Instance> PropertyGetter(string name) => (Instance instance) => (Instance)instance[name]!;
+        private Func<Instance, Instance> PropertyGetter(string name) => (Instance instance) => (Instance)instance[name]! ?? NadaType.Value;
 
         private Action<Instance, Instance> PropertySetter(string name) => (Instance instance, Instance value) => instance[name] = value;
 
         public Function ResolveMethod(Instance thisInstance, string name, params Instance[] arguments)
         {
-            Instance[] allArguments = [thisInstance, .. arguments];
-
-            if (!_methods.TryResolve(name, [.. allArguments.GetTypes()], out var functionSymbol))
+            if (!TryResolveMethod(thisInstance, name, arguments, out var function))
                 throw new UndefinedMethodException(this, name);
 
-            return functionSymbol.Function;
+            return function;
         }
 
         public bool TryResolveMethod(Instance thisInstance, string name, Instance[] arguments, [NotNullWhen(returnValue: true)] out Function? function)
@@ -170,11 +180,14 @@ namespace Quixotic.Common.TypeSystem.Types
 
             Instance[] allArguments = [thisInstance, .. arguments];
 
-            if (!_methods.TryResolve(name, [.. allArguments.GetTypes()], out var functionSymbol))
-                return false;
+            if (_methods.TryResolve(name, [.. allArguments.GetTypes()], out var functionSymbol))
+            {
+                function = functionSymbol.Function;
+                return true;
+            }
 
-            function = functionSymbol.Function;
-            return true;
+            return BaseType?.TryResolveMethod(thisInstance, name, arguments, out function) ?? false;
+
         }
 
         /// <summary>
@@ -182,10 +195,10 @@ namespace Quixotic.Common.TypeSystem.Types
         /// </summary>
         public Function ResolveMethod(string name, params Instance[] arguments)
         {
-            if (!_methods.TryResolve(name, [.. arguments.GetTypes()], out var functionSymbol))
+            if (!TryResolveMethod(name, arguments, out var function))
                 throw new UndefinedMethodException(this, name);
 
-            return functionSymbol.Function;
+            return function;
         }
 
         /// <summary>
@@ -195,18 +208,30 @@ namespace Quixotic.Common.TypeSystem.Types
         {
             function = null;
 
-            if (!_methods.TryResolve(name, [.. arguments.GetTypes()], out var functionSymbol))
-                return false;
+            if (_methods.TryResolve(name, [.. arguments.GetTypes()], out var functionSymbol))
+            {
+                function = functionSymbol.Function;
+                return true;
+            }
 
-            function = functionSymbol.Function;
-            return true;
+            return BaseType?.TryResolveMethod(name, arguments, out function) ?? false;
         }
 
-
+        public IEnumerable<Function> ResolveMethods(string name)
+        {
+            return _methods.Resolve(name).Select(f => f.Function);
+        }
 
         public bool IsMemberDeclared(string name)
         {
             return _methods.Contains(name);
+        }
+
+        public abstract bool HasGenerics { get; }
+
+        public virtual QxType Substitute(GenericBindings bindings)
+        {
+            return this;
         }
 
         public static bool IsNada(Instance instance)
@@ -214,50 +239,11 @@ namespace Quixotic.Common.TypeSystem.Types
             return (instance == Nada);
         }
 
-        public static QxType Parse(string typeName)
-        {
-            return TryParse(typeName, out var type) ? type : throw new InvalidOperationException($"Unrecognized type: {typeName}");
-        }
+        public static QxType Any { get; } = AnyType.Default;
 
-        public static bool TryParse(string? typeName, [NotNullWhen(returnValue: true)] out QxType? type)
-        {
-            type = null;
-
-            if (typeName is null)
-                return false;
-
-            var match = _rexTypeString.Match(typeName);
-
-            if (!match.Success)
-                return false;
-
-            typeName = match.Groups[1].Value;
-            var isArray = match.Groups[2].Success;
-
-            type = typeName?.ToLower() switch
-            {
-                "number" => Number,
-                "string" => String,
-                "boolean" => Boolean,
-                "nada" => Nada.Type,
-                "void" => Void.Type,
-                _ => null
-            };
-
-            if (type is null)
-                return false;
-
-            if (isArray)
-                type = new ArrayType(type);
-
-            return true;
-        }
-
-        public static QxType Any { get; } = new("any");
-
-        public static NumberType Number { get; } = NumberType.Instance;
-        public static StringType String { get; } = StringType.Instance;
-        public static BooleanType Boolean { get; } = BooleanType.Instance;
+        public static NumberType Number { get; } = NumberType.Default;
+        public static StringType String { get; } = StringType.Default;
+        public static BooleanType Boolean { get; } = BooleanType.Default;
         public static Instance Nada { get; } = NadaType.Value;
         public static Instance Void { get; } = VoidType.Value;
 

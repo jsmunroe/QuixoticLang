@@ -16,6 +16,11 @@ namespace Quixotic.Common.TypeSystem.Types
             return set;
         }
 
+        public override CollectionType Create(QxType elementType)
+        {
+            return new ArrayType(elementType);
+        }
+
         public void Assign(Instance set, Instance[] elements)
         {
             if (!set.Type.Equals(this))
@@ -30,9 +35,9 @@ namespace Quixotic.Common.TypeSystem.Types
             set["elements"] = (Instance[])[.. elements];
         }
 
-        public override bool IsAssignableFrom(QxType subtype)
+        public override bool IsAssignableFrom(QxType other)
         {
-            if (subtype is not SetType setType)
+            if (other is not SetType setType)
                 return false;
 
             if (!ElementType.IsAssignableFrom(setType.ElementType))

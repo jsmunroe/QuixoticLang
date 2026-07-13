@@ -3,8 +3,20 @@ using Quixotic.Common.Types;
 
 namespace Quixotic.Common.TypeSystem.Symbols
 {
-    public class FunctionSymbol(string name, Function function) : SignatureSymbol(name, function.ReturnType, [.. function.Parameters.GetTypes()])
+    public class FunctionSymbol : SignatureSymbol
     {
-        public Function Function { get; } = function;
+        public FunctionSymbol(string name, Function function)
+            : base(name, function.ReturnType, [.. function.Parameters.GetTypes()])
+        {
+            Function = function;
+        }
+
+        public FunctionSymbol(FunctionSymbol other)
+            : base(other)
+        {
+            Function = other.Function;
+        }
+
+        public Function Function { get; }
     }
 }

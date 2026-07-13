@@ -1,6 +1,6 @@
 namespace Quixotic.Common.TypeSystem.Types
 {
-    public class QxValueType : QxType
+    public abstract class QxValueType : QxType
     {
         private readonly Type _typeOfValue;
 
@@ -9,6 +9,8 @@ namespace Quixotic.Common.TypeSystem.Types
         {
             _typeOfValue = typeOfValue;
         }
+
+        public override bool HasGenerics => false;
 
         public override string ToString(Instance instance)
         {

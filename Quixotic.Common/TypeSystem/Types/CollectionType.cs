@@ -2,14 +2,35 @@
 {
     public class CollectionType : QxType
     {
-        public QxType ElementType { get; }
-
         public CollectionType(string name, QxType elementType) : base(name)
         {
             ElementType = elementType;
 
             RegisterMethod("length", (Instance instance) => Number.Construct(Length(instance)), Number);
         }
+
+        public QxType ElementType { get; }
+
+        public override bool HasGenerics => ElementType is Generic;
+
+        public override bool Match(QxType actual, GenericBindings bindings)
+        {
+            if (actual is not CollectionType collection || collection.GetType() != GetType())
+                return false;
+
+            return ElementType.Match(collection.ElementType, bindings);
+        }
+
+        public override QxType Substitute(GenericBindings bindings)
+        {
+            return Create(ElementType.Substitute(bindings));
+        }
+
+        public virtual CollectionType Create(QxType elementType)
+        {
+            return new CollectionType($"colleciton<{elementType}>", elementType);
+        }
+
         public int Length(Instance instance)
         {
             if (instance["elements"] is not Instance[] elements)
@@ -83,9 +104,9 @@
             return false;
         }
 
-        public override bool IsAssignableFrom(QxType subtype)
+        public override bool IsAssignableFrom(QxType other)
         {
-            if (subtype is not CollectionType collectionType)
+            if (other is not CollectionType collectionType)
                 return false;
 
             if (!ElementType.IsAssignableFrom(collectionType.ElementType))

@@ -1,0 +1,105 @@
+﻿using Quixotic.Common.Environment;
+using System.Text.RegularExpressions;
+
+namespace Quixotic.Common.TypeSystem
+{
+    public class TypeName(string name)
+    {
+        private static readonly Regex _genericNames = new(@"{([a-z0-9_]+)}", RegexOptions.Compiled);
+
+        private readonly string _name = name;
+
+        public override string ToString()
+        {
+            return _name;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is TypeName typeName && Equals(typeName);
+        }
+
+        public bool Equals(TypeName typeName)
+        {
+            return IsMatch(typeName._name);
+        }
+
+        public override int GetHashCode()
+        {
+            return _name.ToLower().GetHashCode();
+        }
+
+        public static implicit operator TypeName(string name)
+        {
+            return new TypeName(name);
+        }
+
+        public static implicit operator string(TypeName typeName)
+        {
+            return typeName._name;
+        }
+
+        public static bool IsGeneric(TypeName name)
+        {
+            return _genericNames.IsMatch(name);
+        }
+
+        public bool IsMatch(string second)
+        {
+            if (_name.Equals(second, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var match = _genericNames.Match(this);
+            if (match.Success)
+            {
+                var schema = CleanForRegex(this);
+                var pattern = $"^{_genericNames.Replace(schema, "(.*)")}$";
+
+                return Regex.IsMatch(second, pattern, RegexOptions.IgnoreCase);
+            }
+
+            match = _genericNames.Match(second);
+            if (match.Success)
+            {
+                var pattern = $"^{_genericNames.Replace(Regex.Escape(this), "(.*)")}$";
+
+                return Regex.IsMatch(this, pattern, RegexOptions.IgnoreCase);
+            }
+
+            return false;
+        }
+
+        private string CleanForRegex(string text)
+        {
+            return Regex.Escape(text).Replace("\\{", "{");
+        }
+
+        public GenericBindings GetGenericBindings(TypeName absolute, TypeRegistry typeRegistry)
+        {
+            var matches = _genericNames.Matches(this);
+
+            GenericBindings bindings = new();
+
+            foreach (Match match in matches)
+            {
+                var key = match.Groups[1].Value;
+
+                var pattern = $"^{CleanForRegex(this).Replace(CleanForRegex($"{{{key}}}"), "(.*)")}$";
+
+                var valueMatch = Regex.Match(absolute, pattern);
+                if (!valueMatch.Success)
+                    throw new Exception($"A type name could not be extracted from '{absolute}' using the schema '{this}'.");
+
+                var value = valueMatch.Groups[1].Value;
+
+                if (!typeRegistry.TryResolve(value, out var type))
+                    throw new Exception($"A type name could not be resolved for the type name '{value}'.");
+
+                if (!bindings.TryBind(key, type))
+                    throw new Exception($"The generic key '{key}' already references a type other than '{value}'.");
+            }
+
+            return bindings;
+        }
+    }
+}

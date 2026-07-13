@@ -1,6 +1,7 @@
 ﻿using Quixotic.Analysis.Errors;
 using Quixotic.Analysis.Semantics;
 using Quixotic.Common.Contracts;
+using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
@@ -32,6 +33,8 @@ namespace Quixotic.Interpret
         public Interpreter(IConsoleWriter? consoleWriter = null)
             : this(new Runtime.Environment.Runtime(), consoleWriter)
         { }
+
+        public Scope Scope => runtime.Frame.Scope;
 
         public void Execute(string source)
         {
@@ -72,6 +75,8 @@ namespace Quixotic.Interpret
             {
                 var message = formatter.Describe(ex, source);
                 message.Output(_consoleWriter);
+
+                throw new ExecutionException(message.ToString(), ex);
             }
         }
 
@@ -96,7 +101,7 @@ namespace Quixotic.Interpret
             if (arguments is not null)
             {
                 foreach (var argument in arguments)
-                    runtime.Frame.Scope.DefineVariable(argument.Name, argument.Value);
+                    Scope.DefineVariable(argument.Name, argument.Value);
             }
 
             try
@@ -113,12 +118,15 @@ namespace Quixotic.Interpret
             runtime.Pop();
         }
 
-        public Instance Evaluate(Function function, List<Argument> arguments)
+        public Instance Evaluate(Function function, List<Argument> arguments, ScopeState? scopeState = null)
         {
             runtime.PushFunction();
 
             foreach (var argument in arguments)
-                runtime.Frame.Scope.DefineVariable(argument.Name, argument.Value);
+                Scope.DefineVariable(argument.Name, argument.Value);
+
+            if (scopeState is not null)
+                Scope.Add(scopeState);
 
             try
             {
@@ -174,7 +182,7 @@ namespace Quixotic.Interpret
             QxType? type = null;
             if (statement.TypeName is not null)
             {
-                if (!QxType.TryParse(statement.TypeName, out type))
+                if (!Scope.TryGetType(statement.TypeName, out type))
                     throw new UnrecognizedTypeException(statement.TypeName);
             }
 
@@ -183,15 +191,15 @@ namespace Quixotic.Interpret
                 if (!type.IsAssignableFrom(value.Type))
                     throw new TypeMismatchException(value.Type, type);
 
-                runtime.Frame.Scope.DefineVariable(statement.Name, value);
+                Scope.DefineVariable(statement.Name, value);
             }
             else if (!QxType.IsNada(value))
             {
-                runtime.Frame.Scope.DefineVariable(statement.Name, value);
+                Scope.DefineVariable(statement.Name, value);
             }
             else if (type is not null)
             {
-                runtime.Frame.Scope.DefineVariable(statement.Name, type);
+                Scope.DefineVariable(statement.Name, type);
             }
             else
             {
@@ -204,16 +212,16 @@ namespace Quixotic.Interpret
             List<Parameter> parameters = [];
             foreach (var parameter in statement.Parameters)
             {
-                if (!QxType.TryParse(parameter.TypeName, out var type))
+                if (!Scope.TryGetType(parameter.TypeName, out var type))
                     throw new UnrecognizedTypeException(parameter.TypeName);
 
                 parameters.Add(new(parameter.Name, type));
             }
 
-            var returnType = QxType.Parse(statement.ReturnType);
+            var returnType = Scope.GetType(statement.ReturnType);
 
             var function = new Function(statement.Body, returnType) { Parameters = [.. parameters] };
-            runtime.Frame.Scope.DefineFunction(statement.Name, function);
+            Scope.DefineFunction(statement.Name, function);
         }
 
         public void Execute(QxFunctionCallStatement statement)
@@ -253,7 +261,7 @@ namespace Quixotic.Interpret
             {
                 var name = identifierExpression.Name;
 
-                runtime.Frame.Scope.AssignVariable(name, value);
+                Scope.AssignVariable(name, value);
             }
             else if (statement.Target is QxIndexerExpression indexerExpression)
             {
@@ -380,18 +388,21 @@ namespace Quixotic.Interpret
 
         public void Execute(QxTypeDeclarationStatement statement)
         {
-            var type = new DefinedType(statement.Name);
+            var baseName = statement.BaseName;
+
+            var baseType = runtime.Frame.GlobalScope.GetType(baseName) ?? QxType.Any;
+
+            var type = new DefinedType(statement.Name, baseType);
 
             runtime.PushType(type);
 
             foreach (var childStatement in statement.Body)
                 Execute(childStatement);
 
-
-            foreach (var functionSymbol in runtime.Frame.Scope.Functions)
+            foreach (var functionSymbol in Scope.Functions)
                 type.RegisterMethod(functionSymbol.Name, functionSymbol.Function);
 
-            foreach (var variableSymbol in runtime.Frame.Scope.Variables)
+            foreach (var variableSymbol in Scope.Variables)
             {
                 if (!variableSymbol.Instance.IsNada)
                     type.RegisterProperty(variableSymbol.Name, variableSymbol.Instance);
@@ -404,6 +415,25 @@ namespace Quixotic.Interpret
             runtime.Frame.GlobalScope.DefineType(type.Name, type);
         }
 
+        public void Execute(QxBaseConstructorCallStatement statement)
+        {
+            var argumentValues = Evaluate(statement.Arguments);
+
+            var thisInstance = Scope.GetInstance("this");
+
+            var thisType = thisInstance.Type;
+            var baseType = thisType.BaseType;
+
+            if (baseType is null)
+                throw new BaseCallOnTypeWithoutBaseTypeException(thisType);
+
+            var baseConstructor = baseType.ResolveMethod(thisInstance, "::constructor", [.. argumentValues]);
+
+            var arguments = BindArguments($"{thisType}::base", [.. baseConstructor.Parameters], [thisInstance, .. argumentValues]);
+
+            Evaluate(baseConstructor, arguments);
+        }
+
         public void Execute(QxConstructorDeclarationStatement statement)
         {
             if (runtime.Frame is not TypeRuntimeFrame frame)
@@ -412,14 +442,14 @@ namespace Quixotic.Interpret
             List<Parameter> parameters = [];
             foreach (var parameter in statement.Parameters)
             {
-                if (!QxType.TryParse(parameter.TypeName, out var type))
+                if (!Scope.TryGetType(parameter.TypeName, out var type))
                     throw new UnrecognizedTypeException(parameter.TypeName);
 
                 parameters.Add(new(parameter.Name, type));
             }
 
             var function = new Function(statement.Body, VoidType.Default) { Parameters = parameters };
-            runtime.Frame.Scope.DefineFunction("::constructor", function);
+            Scope.DefineFunction("::constructor", function);
         }
 
         protected static Instance Evaluate(QxNumberLiteralExpression expression)
@@ -459,11 +489,11 @@ namespace Quixotic.Interpret
         {
             var name = expression.Name;
 
-            if (runtime.Frame.Scope.TryGetInstance(name, out var instance))
+            if (Scope.TryGetInstance(name, out var instance))
                 return instance;
 
-            if (runtime.Frame.Scope.TryGetType(name, out var type) && type is DefinedType definedType)
-                return new TypeExpressionType().Construct(definedType);
+            if (Scope.TryGetType(name, out var type) && type is DefinedType definedType)
+                return definedType.Construct();
 
             throw new UndefinedIdentifierException(name);
         }
@@ -497,16 +527,8 @@ namespace Quixotic.Interpret
             var left = expression.Left;
             var right = expression.Right;
 
-            try
-            {
-                var result = InvokeOperator(expression.Operator, left, right);
-                return result;
-            }
-            catch
-            {
-                var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator) ?? "unknown";
-                throw new BinaryOperatorException(left, operatorValue, right);
-            }
+            var result = InvokeOperator(expression.Operator, left, right);
+            return result;
         }
 
         protected Instance Evaluate(QxFunctionCallExpression expression)
@@ -515,7 +537,7 @@ namespace Quixotic.Interpret
 
             var argumentValues = Evaluate(expression.Arguments);
 
-            var function = runtime.Frame.Scope.GetFunction(name, [.. argumentValues.GetTypes()]);
+            var function = Scope.GetFunction(name, [.. argumentValues.GetTypes()]);
 
             var arguments = BindArguments(name, [.. function.Parameters], [.. argumentValues]);
 
@@ -534,7 +556,13 @@ namespace Quixotic.Interpret
 
             var arguments = BindArguments(name, [.. method.Parameters], [target, .. argumentValues]);
 
-            return Evaluate(method, arguments);
+            var scopeState = new ScopeState();
+            if (target.Type.BaseType is not null)
+            {
+                scopeState.Variables.Register("base", target);
+            }
+
+            return Evaluate(method, arguments, scopeState);
         }
 
         protected Instance Evaluate(QxExternalCallExpression expression)
@@ -547,7 +575,7 @@ namespace Quixotic.Interpret
 
         protected Instance Evaluate(QxConstructorCallExpression expression)
         {
-            var type = runtime.Frame.Scope.GetType(expression.TypeName);
+            var type = Scope.GetType(expression.TypeName);
 
             var instance = type.Construct();
 
@@ -561,9 +589,11 @@ namespace Quixotic.Interpret
                 throw new UndefinedMethodException(type, $"{type}::constructor");
             }
 
+            var scopeState = new ScopeState();
+
             var arguments = BindArguments($"{type}::constructor", [.. constructor.Parameters], [instance, .. argumentValues]);
 
-            Evaluate(constructor, arguments);
+            Evaluate(constructor, arguments, scopeState);
 
             return instance;
         }
@@ -594,7 +624,7 @@ namespace Quixotic.Interpret
 
             var leftValue = Evaluate(left);
 
-            var function = runtime.Frame.Scope.GetFunction(name, leftValue.Type);
+            var function = Scope.GetFunction(name, leftValue.Type);
 
             var arguments = BindArguments(name, [.. function.Parameters], [leftValue]);
 
@@ -617,11 +647,20 @@ namespace Quixotic.Interpret
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
 
-            var function = runtime.Frame.Scope.GetFunction(name, leftValue.Type, rightValue.Type);
+            try
+            {
 
-            var arguments = BindArguments(name, [.. function.Parameters], [leftValue, rightValue]);
+                var function = Scope.GetFunction(name, leftValue.Type, rightValue.Type);
 
-            return Evaluate(function, arguments);
+                var arguments = BindArguments(name, [.. function.Parameters], [leftValue, rightValue]);
+
+                return Evaluate(function, arguments);
+            }
+            catch
+            {
+                var operatorValue = OperationMetadata.GetOperatorValue(op) ?? "unknown";
+                throw new BinaryOperatorException(leftValue.Type, operatorValue, rightValue.Type);
+            }
         }
 
         private BooleanValue And(QxExpression left, QxExpression right)
@@ -650,6 +689,9 @@ namespace Quixotic.Interpret
 
         public List<Argument> BindArguments(string name, Parameter[] parameters, Instance[] instances)
         {
+            List<Parameter> parametersList = [.. parameters];
+            List<Instance> argumentsList = [.. instances];
+
             if (parameters.Length != instances.Length)
                 throw new ParameterCountException(name, parameters.Length, instances.Length);
 

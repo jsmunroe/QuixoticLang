@@ -40,5 +40,7 @@
         StandaloneExpression,
         TypeBody,
         Instantiation,
+        MethodCall,
+        IdentifierType,
     }
 }

@@ -275,7 +275,7 @@ namespace QuixoticLang.Lexer
 
             return new Token
             {
-                Type = TokenType.IdentifierType,
+                Type = TokenType.Identifier,
                 Value = text,
                 Span = new Span
                 {
@@ -385,16 +385,7 @@ namespace QuixoticLang.Lexer
                 return Simple(TokenType.Assignment, ":=", position);
             }
 
-            ConsumeWhitespace();
-
-            c = Peek();
-
-            if (char.IsLetter(c))
-            {
-                return ReadType();
-            }
-
-            throw new LexerUnexpectedCharacterException(c, position);
+            return Simple(TokenType.Colon, ":", position);
         }
 
         private Token ReadGreaterThanOperator()

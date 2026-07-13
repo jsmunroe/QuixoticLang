@@ -17,7 +17,7 @@ namespace Quixotic.Common.TypeSystem.Symbols
         {
             return new(Body, ReturnType)
             {
-                Parameters = [new Parameter("this", thisType), .. Parameters]
+                Parameters = [new Parameter("this", thisType), .. Parameters],
             };
         }
     }

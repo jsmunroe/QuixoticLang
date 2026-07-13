@@ -14,6 +14,12 @@ namespace Quixotic.Common.Environment
 
         public List<FunctionSymbol> AllFunctions => [.. _functions.Values];
 
+        public void Add(FunctionRegistry other)
+        {
+            foreach (var function in other.AllFunctions)
+                _functions[function.Signature] = new(function);
+        }
+
         public void Register(string name, Function function)
         {
             var parameterTypes = function.Parameters.GetTypes();
@@ -51,6 +57,16 @@ namespace Quixotic.Common.Environment
             return TryResolve(name, arguments, out _);
         }
 
+        public bool Contains(Signature signature)
+        {
+            return TryResolve(signature, out _);
+        }
+
+        public IEnumerable<FunctionSymbol> Resolve(string name)
+        {
+            return _functions.Values.Where(f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        }
+
         public FunctionSymbol? Resolve(string name, params QxType[] parameterTypes)
         {
             return TryResolve(name, parameterTypes, out var functionSymbol) ? functionSymbol : null;
@@ -76,5 +92,10 @@ namespace Quixotic.Common.Environment
 
             return false;
         }
+
+        public FunctionSymbol? Resolve(Signature signature) => Resolve(signature.Name, [.. signature.Parameters]);
+
+        public bool TryResolve(Signature signature, [NotNullWhen(returnValue: true)] out FunctionSymbol? functionSymbol) => TryResolve(signature.Name, [.. signature.Parameters], out functionSymbol);
+
     }
 }

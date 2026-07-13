@@ -66,6 +66,8 @@ namespace Quixotic.Common.Tokens
         Property,
         Construct,
         EndFunction,
-        IdentifierType,
+        Is,
+        Base,
+        Colon,
     }
 }

@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.TypeSystem;
+﻿using Quixotic.Common.Symbols;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Runtime.Contracts;
 using Quixotic.Runtime.References;
@@ -99,12 +100,13 @@ namespace Quixotic.InterpretTests.TestImplementations
 
             Assert.IsTrue(AllFrames[frameIndex].Scope.IsTypeDeclared(name), $"No type named '{name}' was decleared.");
         }
-        public void AssertFunctionDeclared(string name)
+
+        public void AssertFunctionDeclared(string name, params QxType[] parameters)
         {
-            Assert.IsTrue(AllFrames.Any(f => f.Scope.IsFunctionDeclared(name)), $"No function named '{name}' was decleared.");
+            Assert.IsTrue(AllFrames.Any(f => f.Scope.IsFunctionDeclared(name, parameters)), $"No function named '{new Signature(name, parameters)}' was decleared.");
         }
 
-        public void AssertFunctionDeclared(int frameIndex, string name)
+        public void AssertFunctionDeclared(int frameIndex, string name, params QxType[] parameters)
         {
             if (frameIndex < 0)
                 throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");
@@ -112,7 +114,7 @@ namespace Quixotic.InterpretTests.TestImplementations
             if (frameIndex >= AllFrames.Count)
                 throw new AssertFailedException($"There frames executions at index {frameIndex}.");
 
-            Assert.IsTrue(AllFrames[frameIndex].Scope.IsFunctionDeclared(name), $"No function named '{name}' was decleared.");
+            Assert.IsTrue(AllFrames[frameIndex].Scope.IsFunctionDeclared(name, parameters), $"No function named '{new Signature(name, parameters)}' was decleared.");
         }
 
         public void AssertVariableIsNull(string name)

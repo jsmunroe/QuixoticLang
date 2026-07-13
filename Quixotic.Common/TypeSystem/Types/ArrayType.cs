@@ -15,6 +15,11 @@ namespace Quixotic.Common.TypeSystem.Types
             return array;
         }
 
+        public override CollectionType Create(QxType elementType)
+        {
+            return new ArrayType(elementType);
+        }
+
         public void Assign(Instance array, Instance[] elements)
         {
             if (!array.Type.Equals(this))
@@ -67,9 +72,9 @@ namespace Quixotic.Common.TypeSystem.Types
             Set((int)indexValue, instance, value);
         }
 
-        public override bool IsAssignableFrom(QxType subtype)
+        public override bool IsAssignableFrom(QxType other)
         {
-            if (subtype is not ArrayType arrayType)
+            if (other is not ArrayType arrayType)
                 return false;
 
             if (!ElementType.IsAssignableFrom(arrayType.ElementType))

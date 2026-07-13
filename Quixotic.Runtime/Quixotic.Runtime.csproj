@@ -10,4 +10,8 @@
     <ProjectReference Include="..\Quixotic.Common\Quixotic.Common.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Symbols\" />
+  </ItemGroup>
+
 </Project>

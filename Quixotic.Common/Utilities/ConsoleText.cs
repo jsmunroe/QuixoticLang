@@ -71,7 +71,7 @@ namespace Quixotic.Common.Utilities
 
         public override string ToString()
         {
-            return string.Join("", _nodes.Select(n => n.Text)).Trim();
+            return string.Join("", _nodes.Select(n => n.Text)).TrimEnd(' ');
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
-using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.TypeSystem.Symbols
@@ -19,6 +18,12 @@ namespace Quixotic.Common.TypeSystem.Symbols
             : base(name, type)
         {
             Instance = NadaType.Value;
+        }
+
+        public VariableSymbol(VariableSymbol other)
+            : base(other)
+        {
+            Instance = other.Instance;
         }
 
         public void Assign(Instance instance)

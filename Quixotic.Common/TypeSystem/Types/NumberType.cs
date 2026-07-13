@@ -5,7 +5,7 @@ namespace Quixotic.Common.TypeSystem.Types
     [Description("number")]
     public class NumberType : QxValueType
     {
-        public static NumberType Instance { get; } = new();
+        public static NumberType Default { get; } = new();
 
         protected NumberType()
             : base("number", typeof(double))
@@ -22,6 +22,11 @@ namespace Quixotic.Common.TypeSystem.Types
         public override bool IsTruthy(Instance instance)
         {
             return instance["value"] is double d && d != 0;
+        }
+
+        public override bool Match(QxType actual, GenericBindings bindings)
+        {
+            return actual is NumberType;
         }
     }
 }

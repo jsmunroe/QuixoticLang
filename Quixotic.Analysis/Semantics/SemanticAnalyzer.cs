@@ -164,7 +164,7 @@ namespace Quixotic.Analysis.Semantics
             QxType? declaredType = null;
             if (statement.TypeName is not null)
             {
-                if (!QxType.TryParse(statement.TypeName, out declaredType))
+                if (!Frame.Symbols.TryGetType(statement.TypeName, out declaredType))
                     throw new UnrecognizedTypeException(statement.TypeName, statement.Span);
             }
 
@@ -249,9 +249,9 @@ namespace Quixotic.Analysis.Semantics
         {
             var name = statement.Name;
 
-            var returnType = QxType.Parse(statement.ReturnType);
+            var returnType = Frame.Symbols.GetType(statement.ReturnType);
 
-            var parameters = statement.Parameters.Select(p => QxType.Parse(p.TypeName));
+            var parameters = statement.Parameters.Select(p => Frame.Symbols.GetType(p.TypeName));
 
             if (!Frame.Symbols.TryDefineSignature(name, returnType, [.. parameters]))
                 throw new AlreadyDefinedSignatureException(name, statement.Span);
@@ -322,7 +322,7 @@ namespace Quixotic.Analysis.Semantics
 
             var signature = Frame.Symbols.GetSignature(operatorValue, leftType, rightType) ?? throw new UnrecognizedFunctionSignatureException(new Signature(operatorValue, leftType, rightType), expression.Span);
 
-            signature = signature.ReplaceGenerics(leftType, rightType);
+            signature = signature.Substitute(leftType, rightType);
 
             return signature.ReturnType;
         }

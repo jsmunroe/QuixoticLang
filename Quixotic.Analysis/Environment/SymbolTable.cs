@@ -1,4 +1,6 @@
 ﻿using Quixotic.Analysis.Contracts;
+using Quixotic.Common.Contracts;
+using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.TypeSystem.Types;
@@ -12,11 +14,18 @@ namespace Quixotic.Analysis.Environment
 
         private readonly SignatureRegistry _signatureRegistry = new();
 
+        private readonly TypeRegistry _typeRegistry = new();
+
         public SymbolTable? Parent { get; } = parent;
 
         public void Add(ISignatureProvider signatureProvider)
         {
             signatureProvider.Register(_signatureRegistry);
+        }
+
+        public void Add(ITypeProvider typeProvider)
+        {
+            typeProvider.Register(_typeRegistry);
         }
 
         public bool TryDefineVariable(string name, QxType type)
@@ -41,6 +50,11 @@ namespace Quixotic.Analysis.Environment
         public bool IsVariableDeclared(string name)
         {
             return _variables.ContainsKey(name);
+        }
+
+        public bool IsTypeDeclared(string name)
+        {
+            return _typeRegistry.Contains(name);
         }
 
         private bool TryGetSymbol(string name, [NotNullWhen(returnValue: true)] out Symbol? symbol)
@@ -95,6 +109,31 @@ namespace Quixotic.Analysis.Environment
                 return Parent.GetSignature(name, arguments);
 
             return null;
+        }
+
+        public void DefineType(string name, QxType type)
+        {
+            _typeRegistry.Register(name, type);
+        }
+
+        public QxType GetType(string name)
+        {
+            if (_typeRegistry.TryResolve(name, out var type))
+                return type;
+
+            if (Parent is not null)
+                return Parent.GetType(name);
+
+            throw new UndefinedTypeException(name);
+        }
+
+        public bool TryGetType(string name, [NotNullWhen(returnValue: true)] out QxType? type)
+        {
+            if (_typeRegistry.TryResolve(name, out type))
+                return true;
+
+            type = Parent?.GetType(name);
+            return type is not null;
         }
 
         public bool IsDefined(string name)

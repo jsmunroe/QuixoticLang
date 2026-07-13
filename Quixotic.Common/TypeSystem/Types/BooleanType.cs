@@ -5,7 +5,7 @@ namespace Quixotic.Common.TypeSystem.Types
     [Description("boolean")]
     public class BooleanType : QxValueType
     {
-        public static BooleanType Instance { get; } = new();
+        public static BooleanType Default { get; } = new();
 
         protected BooleanType()
             : base("boolean", typeof(bool))
@@ -13,7 +13,7 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public static Instance Construct(bool value)
         {
-            return new Instance(Instance)
+            return new Instance(Default)
             {
                 ["value"] = value
             };
@@ -40,5 +40,11 @@ namespace Quixotic.Common.TypeSystem.Types
 
             return false;
         }
+
+        public override bool Match(QxType actual, GenericBindings bindings)
+        {
+            return actual is BooleanType;
+        }
+
     }
 }

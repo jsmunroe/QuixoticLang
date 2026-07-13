@@ -7,5 +7,13 @@ namespace Quixotic.Common.TypeSystem.Types
 
         protected VoidType() : base("void")
         { }
+
+        public override bool HasGenerics => false;
+
+
+        public override bool Match(QxType actual, GenericBindings bindings)
+        {
+            return actual is VoidType;
+        }
     }
 }

@@ -1,7 +1,7 @@
 ﻿namespace Quixotic.Common.Symbols
 {
-    public class Symbol
+    public class Symbol(string id)
     {
-
+        public string Id { get; } = id;
     }
 }

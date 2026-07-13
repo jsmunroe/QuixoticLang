@@ -2,7 +2,7 @@
 using Quixotic.Common.Environment;
 using Quixotic.Common.TypeSystem.Types;
 
-namespace Quixotic.Runtime.BuiltIn
+namespace Quixotic.Analysis.BuiltIn
 {
     public class BuiltInTypes : ITypeProvider
     {

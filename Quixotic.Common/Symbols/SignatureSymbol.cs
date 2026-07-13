@@ -1,29 +1,37 @@
-﻿using Quixotic.Common.TypeSystem.Types;
+﻿using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.Symbols
 {
-    public class SignatureSymbol(string name, QxType returnType, params QxType[] parameterTypes) : Symbol
+    public class SignatureSymbol(Signature signature, QxType returnType) : Symbol($"{nameof(SignatureSymbol)}:{signature}")
     {
-        public string Name { get; } = name;
+        public SignatureSymbol(string name, QxType returnType, params QxType[] parameters)
+            : this(new Signature(name, parameters), returnType)
+        { }
 
-        public Signature Signature { get; } = new(name, parameterTypes);
+        public SignatureSymbol(SignatureSymbol other)
+            : this(other.Signature, other.ReturnType)
+        { }
+
+        public string Name { get; } = signature.Name;
+
+        public Signature Signature { get; } = signature;
 
         public QxType ReturnType { get; } = returnType;
 
-        public List<QxType> ParameterTypes { get; init; } = [.. parameterTypes];
+        public List<QxType> ParameterTypes { get; init; } = [.. signature.Parameters];
 
-        public SignatureSymbol ReplaceGenerics(params QxType[] arguments)
+        public SignatureSymbol Substitute(params QxType[] arguments)
         {
-            var genericTypes = new Dictionary<string, QxType>();
+            GenericBindings bindings = new();
 
             foreach (var (parameter, argument) in ParameterTypes.Zip(arguments))
-                Generic.GetKeyValues(parameter, argument, genericTypes);
+            {
+                if (!parameter.Match(argument, bindings))
+                    throw new Exception("Type inference failed");
+            }
 
-            var replacedParameters = ParameterTypes.Select(p => Generic.SetKeyValues(p, genericTypes));
-
-            var replacedReturnType = Generic.SetKeyValues(ReturnType, genericTypes);
-
-            return new SignatureSymbol(Name, replacedReturnType, [.. replacedParameters]);
+            return new SignatureSymbol(Name, ReturnType.Substitute(bindings), [.. ParameterTypes.Substitute(bindings)]);
         }
 
         public override string ToString()

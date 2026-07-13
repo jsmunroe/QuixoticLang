@@ -8,6 +8,7 @@ namespace Quixotic.Analysis.Environment
         public GlobalFrame()
         {
             Symbols.Add(new BuiltInSignatures());
+            Symbols.Add(new BuiltInTypes());
         }
 
         public IFrame? Parent => null;

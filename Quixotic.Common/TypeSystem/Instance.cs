@@ -10,9 +10,15 @@ namespace Quixotic.Common.TypeSystem
             Fields = new Dictionary<string, object?>(other.Fields);
         }
 
+        protected Instance(QxType type, Instance instance)
+            : this(type)
+        {
+            Fields = instance.Fields;
+        }
+
         public QxType Type { get; } = type;
 
-        private Dictionary<string, object?> Fields { get; } = [];
+        protected Dictionary<string, object?> Fields { get; } = [];
 
         public object? this[string name]
         {

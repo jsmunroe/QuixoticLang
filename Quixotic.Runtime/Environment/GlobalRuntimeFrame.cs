@@ -8,12 +8,15 @@ namespace Quixotic.Runtime.Environment
         public GlobalRuntimeFrame()
         {
             Scope.Add(new BuiltInFunctions());
+            Scope.Add(new BuiltInTypes());
+
+            GlobalScope = Scope;
         }
 
         public IRuntimeFrame? Parent => null;
 
         public Scope Scope { get; } = new Scope(null);
 
-        public Scope GlobalScope => Scope;
+        public Scope GlobalScope { get; }
     }
 }
