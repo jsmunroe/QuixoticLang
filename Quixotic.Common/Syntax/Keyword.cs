@@ -38,7 +38,6 @@ namespace Quixotic.Common.Syntax
             new (TokenType.Is, "is"),
             new (TokenType.New, "new"),
             new (TokenType.Construct, "construct"),
-            new (TokenType.Base, "base"),
             new (TokenType.Property , "property"),
         ];
 

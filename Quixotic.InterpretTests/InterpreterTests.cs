@@ -1674,8 +1674,7 @@ namespace Quixotic.InterpretTests
 
 
                 type Dog is Animal
-                    construct(name: string)
-                        base(name, ""woof"")
+                    construct(name: string) : base(name, ""woof"")
                     end construct
                 end type
 
@@ -1721,8 +1720,7 @@ namespace Quixotic.InterpretTests
 
 
                 type Dog is Animal
-                    construct(name: string)
-                        base(name, ""woof"")
+                    construct(name: string) : base(name, ""woof"")
                     end construct
 
                     function makeNoise()
@@ -1773,7 +1771,7 @@ namespace Quixotic.InterpretTests
 
 
                 type Dog is Animal
-                    construct(noise: string, name: string) :base(noise)
+                    construct(noise: string, name: string) : base(noise)
                         this.name = name
                     end construct
 
@@ -1797,13 +1795,11 @@ namespace Quixotic.InterpretTests
                 animal.makeNoise() ' prints ""The dog Penny says...\nwoof!""
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Executet
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertTypeDeclared("Person");

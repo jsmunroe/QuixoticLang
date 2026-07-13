@@ -2,7 +2,7 @@
 
 namespace Quixotic.Common.Statements
 {
-    public class QxBaseConstructorCallStatement : QxStatement
+    public class QxBaseConstructorCallExpression : QxExpression
     {
         public List<QxExpression> Arguments { get; init; } = [];
     }

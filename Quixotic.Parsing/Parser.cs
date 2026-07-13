@@ -110,9 +110,6 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Type))
                 return ParseTypeDeclaration();
 
-            if (Match(TokenType.Base))
-                return ParseBase();
-
             return ParseStandalonExpression();
 
             throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
@@ -285,13 +282,16 @@ namespace Quixotic.Parsing
             if (Match(TokenType.OpenParen))
                 parameters = ParseParameters();
 
+            QxBaseConstructorCallExpression? baseCall = null;
 
+            if (Match(TokenType.Colon))
+                baseCall = ParseBaseConstructorCall();
 
             var body = CaptureActivity(() => ParseBlock(BlockType.Constructor), ActivityType.FunctionBody);
 
             Expect(TokenType.EndConstruct);
 
-            return new() { Parameters = [.. parameters], Body = body };
+            return new(baseCall) { Parameters = [.. parameters], Body = body };
         }
 
         private QxConstructorCallExpression ParseTypeInstantiation()
@@ -309,21 +309,13 @@ namespace Quixotic.Parsing
             };
         }
 
-        private QxStatement ParseBase()
+        private QxBaseConstructorCallExpression ParseBaseConstructorCall()
         {
+            Expect(TokenType.Identifier); // base
+
+            List<QxExpression>? arguments = [];
             if (Match(TokenType.OpenParen))
-                return ParseBaseConstructorCall();
-
-            var identifierExpression = new QxIdentifierExpression("base");
-
-            var expression = ParseExpression(identifierExpression);
-
-            return ParseStandalonExpression(expression);
-        }
-
-        private QxBaseConstructorCallStatement ParseBaseConstructorCall()
-        {
-            var arguments = ParseArguments();
+                arguments = ParseArguments();
 
             return new()
             {

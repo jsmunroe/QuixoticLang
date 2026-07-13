@@ -415,7 +415,7 @@ namespace Quixotic.Interpret
             runtime.Frame.GlobalScope.DefineType(type.Name, type);
         }
 
-        public void Execute(QxBaseConstructorCallStatement statement)
+        public void Execute(QxBaseConstructorCallExpression statement)
         {
             var argumentValues = Evaluate(statement.Arguments);
 
