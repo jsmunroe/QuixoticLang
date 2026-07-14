@@ -1,9 +1,10 @@
 ﻿using Quixotic.Common.Statements;
+using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 
-namespace Quixotic.Common.TypeSystem.Symbols
+namespace Quixotic.Common.Symbols.Functions
 {
-    public class Constructor(Block body) : Function(body, QxType.Void.Type)
+    public class Constructor(Block body) : Function(body, QxType.Void.Type, FunctionCallType.Call)
     {
         public Constructor(Constructor other)
             : this(other.Body)

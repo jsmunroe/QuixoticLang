@@ -1,5 +1,6 @@
 ﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.Environment;
+using Quixotic.Common.Symbols;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
@@ -12,7 +13,7 @@ namespace Quixotic.Runtime.BuiltIn
     {
         public void Register(FunctionRegistry registry)
         {
-            registry.Register("length", GetLength, QxType.Number, Param("array", QxType.Array(QxType.Any)));
+            registry.Register("length", GetLength, QxType.Number, FunctionCallType.Getter, Param("array", QxType.Array(QxType.Any)));
         }
 
         public static Instance GetLength(Instance instance)

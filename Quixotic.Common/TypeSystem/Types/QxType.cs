@@ -1,6 +1,8 @@
 using Quixotic.Common.Contracts;
 using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.Symbols;
+using Quixotic.Common.Symbols.Functions;
 using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;
@@ -142,7 +144,7 @@ namespace Quixotic.Common.TypeSystem.Types
         public void RegisterMethod(string name, Delegate method, QxType returnValue, params Parameter[] parameters)
         {
             parameters = [new Parameter("this", this), .. parameters];
-            _methods.Register(name, method, returnValue, parameters);
+            _methods.Register(name, method, returnValue, FunctionCallType.Call, parameters);
         }
 
         public void RegisterMethod(string name, Function function)
@@ -159,13 +161,20 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public void RegisterProperty(string name, QxType type)
         {
-            RegisterMethod(name, PropertyGetter(name), type);
-            RegisterMethod(name, PropertySetter(name), type, new Parameter("value", type));
+            _methods.Register(name, PropertyGetter(name), type, FunctionCallType.Getter);
+            _methods.Register(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("value", type));
         }
 
-        private Func<Instance, Instance> PropertyGetter(string name) => (Instance instance) => (Instance)instance[name]! ?? NadaType.Value;
+        protected Func<Instance, Instance> PropertyGetter(string name) => (Instance instance) =>
+        {
+            return (Instance)instance[name]! ?? NadaType.Value;
+        };
 
-        private Action<Instance, Instance> PropertySetter(string name) => (Instance instance, Instance value) => instance[name] = value;
+        protected Func<Instance, Instance, Instance> PropertySetter(string name) => (Instance instance, Instance value) =>
+        {
+            instance[name] = value;
+            return value;
+        };
 
         public Function ResolveMethod(Instance thisInstance, string name, params Instance[] arguments)
         {

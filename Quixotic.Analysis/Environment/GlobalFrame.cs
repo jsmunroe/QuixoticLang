@@ -1,5 +1,6 @@
 ﻿using Quixotic.Analysis.BuiltIn;
 using Quixotic.Analysis.Contracts;
+using Quixotic.Common.TypeSystem.BuiltIn;
 
 namespace Quixotic.Analysis.Environment
 {

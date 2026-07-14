@@ -4,6 +4,7 @@ using Quixotic.Common.Exceptions.Parsing;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
 using Quixotic.Common.Statements;
+using Quixotic.Common.Symbols;
 using Quixotic.Common.Tokens;
 using Quixotic.Parsing.Context;
 using QuixoticLang.Lexer;
@@ -376,16 +377,16 @@ namespace Quixotic.Parsing
             {
                 var assigned = ParseExpression();
 
-                return new(target, name) { Arguments = [assigned] };
+                return new(target, name, FunctionCallType.Setter) { Arguments = [assigned] };
             }
             else if (Match(TokenType.OpenParen))
             {
                 // Parse arguments
                 var arguments = ParseArguments();
-                return new(target, name) { Arguments = [.. arguments] };
+                return new(target, name, FunctionCallType.Call) { Arguments = [.. arguments] };
             }
 
-            return new(target, name) { Arguments = [] };
+            return new(target, name, FunctionCallType.Getter) { Arguments = [] };
         }
 
         private List<QxExpression> ParseArguments()

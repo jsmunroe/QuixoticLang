@@ -2,7 +2,7 @@
 using Quixotic.Common.Tokens;
 using Quixotic.Common.TypeSystem.Types;
 
-namespace Quixotic.Common.TypeSystem.Symbols
+namespace Quixotic.Common.Symbols.Functions
 {
     public class BaseConstructor(QxType type, Span span)
     {

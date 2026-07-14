@@ -1,6 +1,5 @@
-﻿using Quixotic.Common.Expressions;
-using Quixotic.Common.Statements;
-using Quixotic.Common.Symbols;
+﻿using Quixotic.Common.Symbols;
+using Quixotic.Common.Symbols.Functions;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
@@ -31,17 +30,13 @@ namespace Quixotic.Common.Environment
             _functions[signature] = functionSymbol;
         }
 
-        public void Register(string name, Delegate implementation, QxType returnType, params Parameter[] parameters)
+        public void Register(string name, Delegate implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
         {
-            var parameterTypes = parameters.Select(p => p.Type);
+            var function = Function.FromDelegate(implementation, returnType, callType, parameters);
 
-            var parameterExpressions = parameters.Select(p => new QxIdentifierExpression(p.Name));
+            var parameterTypes = function.Parameters.Select(p => p.Type);
 
             var signature = new Signature(name, [.. parameterTypes]);
-            var externalCall = new QxExternalCallExpression(implementation) { Arguments = [.. parameterExpressions] };
-            var returnStatement = new QxReturnStatement(externalCall);
-
-            var function = new Function([returnStatement], returnType) { Parameters = [.. parameters] };
             var functionSymbol = new FunctionSymbol(name, function);
 
             Register(signature, functionSymbol);

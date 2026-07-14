@@ -1517,7 +1517,7 @@ namespace Quixotic.InterpretTests
 
             // Assert
             runtime.AssertTypeDeclared("Person");
-            runtime.AssertVariableHasValue("me");
+            runtime.AssertVariableIsDefined("me");
         }
 
         [TestMethod]
@@ -1558,7 +1558,7 @@ namespace Quixotic.InterpretTests
 
             // Assert
             runtime.AssertTypeDeclared("Person");
-            runtime.AssertVariableHasValue("me");
+            runtime.AssertVariableIsDefined("me");
 
             runtime.AssertHasPrinted("Meow");
             runtime.AssertHasPrinted("42");
@@ -1604,7 +1604,7 @@ namespace Quixotic.InterpretTests
 
             // Assert
             runtime.AssertTypeDeclared("Person");
-            runtime.AssertVariableHasValue("me");
+            runtime.AssertVariableIsDefined("me");
 
             runtime.AssertHasPrinted("Woof");
             runtime.AssertHasPrinted("99");
@@ -1804,13 +1804,79 @@ namespace Quixotic.InterpretTests
             // Assert
             runtime.AssertTypeDeclared("Animal");
             runtime.AssertTypeDeclared("Dog");
-            runtime.AssertVariableHasValue("dog");
+            runtime.AssertVariableIsDefined("dog");
 
             runtime.AssertHasPrinted("The dog Fido says...");
             runtime.AssertHasPrinted("woof!");
 
             runtime.AssertHasPrinted("The dog Penny says...");
             runtime.AssertHasPrinted("woof!");
+        }
+
+        [TestMethod]
+        public void Execute_declare_dynamic()
+        {
+            // Setup
+            var source = @"
+                let thing := new dynamic
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute & Assert
+            interpreter.Execute(source);
+        }
+
+        [TestMethod]
+        public void Execute_dynamic_assign_member()
+        {
+            // Setup
+            var source = @"
+                let thing := new dynamic
+
+                thing.fish := ""Salmon""
+
+                print thing.fish
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertVariableIsDefined("thing");
+
+            runtime.AssertHasPrinted("Salmon");
+        }
+
+        [TestMethod]
+        public void Execute_dynamic_assign_member_and_check_if_only_that_member_is_assigned()
+        {
+            // Setup
+            var source = @"
+                let thingA := new dynamic
+                let thingB := new dynamic
+
+                thingA.fish := ""Salmon""
+
+                print thingB.fish
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertVariableIsDefined("thingA");
+            runtime.AssertVariableIsDefined("thingB");
+
+            runtime.AssertHasNotPrinted("Salmon");
+            runtime.AssertHasPrinted("nada");
         }
 
         private Stream GetTestFile(string name)

@@ -1,4 +1,5 @@
 ﻿using Quixotic.Common.Symbols;
+using Quixotic.Common.Symbols.Functions;
 using Quixotic.Common.Types;
 
 namespace Quixotic.Common.TypeSystem.Symbols

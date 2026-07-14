@@ -7,6 +7,8 @@ using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
 using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
+using Quixotic.Common.Symbols;
+using Quixotic.Common.Symbols.Functions;
 using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem;
@@ -254,7 +256,7 @@ namespace Quixotic.Interpret
 
             var returnType = Scope.GetType(statement.ReturnType);
 
-            var function = new Function(statement.Body, returnType) { Parameters = [.. parameters] };
+            var function = new Function(statement.Body, returnType, FunctionCallType.Call) { Parameters = [.. parameters] };
             Scope.DefineFunction(statement.Name, function);
         }
 
@@ -617,7 +619,27 @@ namespace Quixotic.Interpret
 
             Instance[] argumentValues = [.. Evaluate(expression.Arguments)];
 
-            var method = target.Type.ResolveMethod(target, name, argumentValues);
+            var type = target.Type;
+
+            Function? method = null;
+
+            if (type is DynamicType dynamicType && ((FunctionCallType[])[FunctionCallType.Getter, FunctionCallType.Setter]).Contains(expression.Type))
+            {
+                if (expression.Type == FunctionCallType.Getter)
+                    method = dynamicType.BuildPropertyGetter(target, name);
+                else
+                    method = dynamicType.BuildPropertySetter(target, name, argumentValues[0].Type);
+
+            }
+            else if (!type.TryResolveMethod(target, name, argumentValues, out method))
+            {
+                if (expression.Type == FunctionCallType.Call)
+                    throw new UndefinedMethodException(target.Type, name);
+                else if (expression.Type == FunctionCallType.OperatorCall)
+                    throw new UndefinedOperatorException(target.Type, name);
+                else
+                    throw new UndefinedPropertyException(target.Type, name);
+            }
 
             var arguments = BindArguments(name, [.. method.Parameters], [target, .. argumentValues], expression.Span);
 

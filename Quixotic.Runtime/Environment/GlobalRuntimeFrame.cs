@@ -1,4 +1,5 @@
-﻿using Quixotic.Runtime.BuiltIn;
+﻿using Quixotic.Common.TypeSystem.BuiltIn;
+using Quixotic.Runtime.BuiltIn;
 using Quixotic.Runtime.Contracts;
 
 namespace Quixotic.Runtime.Environment

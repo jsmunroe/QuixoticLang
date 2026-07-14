@@ -161,7 +161,7 @@ namespace Quixotic.InterpretTests.TestImplementations
         }
 
 
-        public void AssertVariableHasValue(string name)
+        public void AssertVariableIsDefined(string name)
         {
             List<string> otherFrameValues = [];
 
@@ -179,7 +179,7 @@ namespace Quixotic.InterpretTests.TestImplementations
             throw new AssertFailedException($"In no frame was a variable named '{name}' defined.");
         }
 
-        public void AssertVariableHasValue(int frameIndex, string name)
+        public void AssertVariableIsDefined(int frameIndex, string name)
         {
             if (frameIndex < 0)
                 throw new AssertFailedException($"The {nameof(frameIndex)} cannot be negative.");

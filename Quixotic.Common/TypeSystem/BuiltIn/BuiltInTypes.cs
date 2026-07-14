@@ -2,7 +2,7 @@
 using Quixotic.Common.Environment;
 using Quixotic.Common.TypeSystem.Types;
 
-namespace Quixotic.Runtime.BuiltIn
+namespace Quixotic.Common.TypeSystem.BuiltIn
 {
     public class BuiltInTypes : ITypeProvider
     {
@@ -13,6 +13,7 @@ namespace Quixotic.Runtime.BuiltIn
             registry.Register("number", QxType.Number);
             registry.Register("string", QxType.String);
             registry.Register("boolean", QxType.Boolean);
+            registry.Register("dynamic", new DynamicType());
             registry.Register("{element}[]", QxType.Array(QxType.Generic("element")));
             registry.Register("set<{element}>", QxType.Set(QxType.Generic("element")));
         }
