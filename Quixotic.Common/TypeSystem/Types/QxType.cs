@@ -39,6 +39,11 @@ namespace Quixotic.Common.TypeSystem.Types
             return new TypedInstanceView(instance, this);
         }
 
+        public bool Is(Instance instance)
+        {
+            return IsAssignableFrom(instance.Type);
+        }
+
         public abstract bool Match(QxType actual, GenericBindings bindings);
 
         public override int GetHashCode()
@@ -89,11 +94,6 @@ namespace Quixotic.Common.TypeSystem.Types
         public static QxType GetCommonBase(IEnumerable<Instance> instances)
         {
             return GetCommonBase(instances.Select(i => i.Type));
-        }
-
-        public bool Is(Instance instance)
-        {
-            return Equals(instance.Type);
         }
 
         public virtual string ToString(Instance instance)

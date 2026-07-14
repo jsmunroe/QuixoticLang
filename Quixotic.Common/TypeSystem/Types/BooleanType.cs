@@ -46,5 +46,9 @@ namespace Quixotic.Common.TypeSystem.Types
             return actual is BooleanType;
         }
 
+        public static Instance True { get; } = Construct(true);
+
+        public static Instance False { get; } = Construct(false);
+
     }
 }

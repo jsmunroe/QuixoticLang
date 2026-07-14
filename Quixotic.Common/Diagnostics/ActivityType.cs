@@ -42,5 +42,6 @@
         Instantiation,
         MethodCall,
         IdentifierType,
+        IsComparison,
     }
 }

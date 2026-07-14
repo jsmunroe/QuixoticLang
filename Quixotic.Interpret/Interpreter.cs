@@ -570,6 +570,32 @@ namespace Quixotic.Interpret
             return result;
         }
 
+        protected Instance Evaluate(QxIsComparisonExpression expression)
+        {
+            var instance = Evaluate(expression.Instance);
+
+            var type = Scope.GetType(expression.TypeName);
+
+            if (instance.Is(type))
+            {
+                if (expression.PatternIdentifier is not null)
+                {
+                    Scope.DefineVariable(expression.PatternIdentifier, type);
+                    Scope.AssignVariable(expression.PatternIdentifier, instance);
+                }
+
+                return BooleanType.True;
+            }
+
+            if (expression.PatternIdentifier is not null)
+            {
+                Scope.DefineVariable(expression.PatternIdentifier, type);
+                Scope.AssignVariable(expression.PatternIdentifier, QxType.Nada);
+            }
+
+            return BooleanType.False;
+        }
+
         protected Instance Evaluate(QxFunctionCallExpression expression)
         {
             var name = expression.Name;

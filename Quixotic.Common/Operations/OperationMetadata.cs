@@ -28,6 +28,7 @@ namespace Quixotic.Common.Operations
             [(OperationType.Binary, TokenType.LessThanOrEqualTo)] = new(Comparison, "<=", Operator.LessThanOrEqualTo, Associativity.Left),
             [(OperationType.Binary, TokenType.GreaterThan)] = new(Comparison, ">", Operator.GreaterThan, Associativity.Left),
             [(OperationType.Binary, TokenType.GreaterThanOrEqualTo)] = new(Comparison, ">=", Operator.GreaterThanOrEqualTo, Associativity.Left),
+            [(OperationType.Binary, TokenType.Is)] = new(Comparison, "is", Operator.Is, Associativity.Left),
             [(OperationType.Binary, TokenType.In)] = new(Comparison, "in", Operator.In, Associativity.Left),
             [(OperationType.Binary, TokenType.And)] = new(Logical, "and", Operator.And, Associativity.Left),
             [(OperationType.Binary, TokenType.Or)] = new(Logical, "or", Operator.Or, Associativity.Left),

@@ -25,6 +25,11 @@ namespace Quixotic.Common.TypeSystem
             return type.Upcast(this);
         }
 
+        public bool Is(QxType type)
+        {
+            return type.Is(this);
+        }
+
         public object? this[string name]
         {
             get => Fields.TryGetValue(name, out var value) ? value : null;

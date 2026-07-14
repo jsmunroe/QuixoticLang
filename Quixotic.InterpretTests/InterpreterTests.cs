@@ -1772,7 +1772,7 @@ namespace Quixotic.InterpretTests
 
                 type Dog is Animal
                     construct(noise: string, name: string) : base(noise)
-                        this.name = name
+                        this.name := name
                     end construct
 
                     let name: string
@@ -1802,12 +1802,15 @@ namespace Quixotic.InterpretTests
             interpreter.Execute(source);
 
             // Assert
-            runtime.AssertTypeDeclared("Person");
-            runtime.AssertVariableHasValue("me");
+            runtime.AssertTypeDeclared("Animal");
+            runtime.AssertTypeDeclared("Dog");
+            runtime.AssertVariableHasValue("dog");
 
-            runtime.AssertHasPrinted("Woof");
-            runtime.AssertHasPrinted("99");
-            runtime.AssertHasPrinted("Hello Woof");
+            runtime.AssertHasPrinted("The dog Fido says...");
+            runtime.AssertHasPrinted("woof!");
+
+            runtime.AssertHasPrinted("The dog Penny says...");
+            runtime.AssertHasPrinted("woof!");
         }
 
         private Stream GetTestFile(string name)

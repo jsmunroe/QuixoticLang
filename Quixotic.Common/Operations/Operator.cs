@@ -21,5 +21,6 @@
         Indexer,
         Dot,
         New,
+        Is,
     }
 }

@@ -699,6 +699,11 @@ namespace Quixotic.Parsing
                     left = CaptureExpression(() => ParseMethodCallExpression(left), ActivityType.MethodCall);
                     continue;
                 }
+                if (operationMetadata.Operator == Operator.Is)
+                {
+                    left = CaptureExpression(() => ParseIsComparison(left), ActivityType.IsComparison);
+                    continue;
+                }
                 else
                 {
                     right = CaptureExpression(() => ParseExpression(operationMetadata.Precedence), ActivityType.RightOperand);
@@ -821,6 +826,15 @@ namespace Quixotic.Parsing
             }
 
             return typeName;
+        }
+
+        private QxIsComparisonExpression ParseIsComparison(QxExpression instance)
+        {
+            var typeName = ParseTypeName();
+
+            string? patternIdentifier = Match(TokenType.Identifier, out var token) ? token.Value : null;
+
+            return new(instance, typeName, patternIdentifier);
         }
 
         private QxExpression ParseUnary()
