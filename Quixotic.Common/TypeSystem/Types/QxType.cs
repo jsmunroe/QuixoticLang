@@ -7,21 +7,26 @@ using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
 
 namespace Quixotic.Common.TypeSystem.Types
 {
-    public abstract class QxType(string name, QxType? baseType = null)
+    public abstract class QxType
     {
-        private static readonly Regex _rexTypeString = new(@"^([a-zA-Z_][a-zA-Z0-9_\.]+)(\[\])?$", RegexOptions.Compiled);
+        private readonly MethodRegistry _methods;
 
-        private readonly FunctionRegistry _methods = new();
+        private readonly Dictionary<string, object?> _initialState = new(StringComparer.OrdinalIgnoreCase);
 
-        private readonly Dictionary<string, object?> _initialState = new();
+        public QxType(string name, QxType? baseType = null)
+        {
+            Name = name;
+            BaseType = baseType;
 
-        public TypeName Name { get; } = name;
+            _methods = new(this);
+        }
 
-        public QxType? BaseType { get; } = baseType;
+        public TypeName Name { get; }
+
+        public QxType? BaseType { get; }
 
         public virtual Instance Construct()
         {
@@ -66,6 +71,8 @@ namespace Quixotic.Common.TypeSystem.Types
 
             return false;
         }
+
+        public bool IsAssignableFrom(Instance instance) => IsAssignableFrom(instance.Type);
 
         public virtual QxType GetCommonBase(QxType other)
         {
@@ -143,13 +150,12 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public void RegisterMethod(string name, Delegate method, QxType returnValue, params Parameter[] parameters)
         {
-            parameters = [new Parameter("this", this), .. parameters];
-            _methods.Register(name, method, returnValue, FunctionCallType.Call, parameters);
+            _methods.RegisterBindable(name, method, returnValue, FunctionCallType.Call, parameters);
         }
 
         public void RegisterMethod(string name, Function function)
         {
-            _methods.Register(name, function.AddThis(this));
+            _methods.RegisterBindable(name, function);
         }
 
         public void RegisterProperty(string name, Instance initialValue)
@@ -161,8 +167,8 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public void RegisterProperty(string name, QxType type)
         {
-            _methods.Register(name, PropertyGetter(name), type, FunctionCallType.Getter, new Parameter("this", this));
-            _methods.Register(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("this", this), new Parameter("value", type));
+            _methods.RegisterBindable(name, PropertyGetter(name), type, FunctionCallType.Getter);
+            _methods.RegisterBindable(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("value", type));
         }
 
         protected Func<Instance, Instance> PropertyGetter(string name) => (Instance instance) =>
@@ -188,9 +194,7 @@ namespace Quixotic.Common.TypeSystem.Types
         {
             function = null;
 
-            Instance[] allArguments = [thisInstance, .. arguments];
-
-            if (_methods.TryResolve(name, [.. allArguments.GetTypes()], out var functionSymbol))
+            if (_methods.TryResolve(name, [.. arguments.GetTypes()], out var functionSymbol))
             {
                 function = functionSymbol.Function;
                 return true;
@@ -239,7 +243,7 @@ namespace Quixotic.Common.TypeSystem.Types
         {
             constructor = null;
 
-            if (_methods.TryResolve("::constructor", [this, .. arguments.GetTypes()], out var functionSymbol))
+            if (_methods.TryResolve("::constructor", [.. arguments.GetTypes()], out var functionSymbol))
             {
                 constructor = functionSymbol.Function as Constructor;
                 return constructor is not null;

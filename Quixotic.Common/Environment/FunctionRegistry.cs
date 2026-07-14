@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Common.Environment
 {
+
     public class FunctionRegistry
     {
         private readonly Dictionary<Signature, FunctionSymbol> _functions = [];

@@ -121,7 +121,7 @@ namespace Quixotic.Interpret
             runtime.Pop();
         }
 
-        public void Evaluate(Constructor constructor, List<Argument> arguments, Instance instance, ScopeState? scopeState = null)
+        public void Evaluate(BoundConstructor constructor, List<Argument> arguments, Instance instance, ScopeState? scopeState = null)
         {
             runtime.PushFunction();
 
@@ -149,13 +149,18 @@ namespace Quixotic.Interpret
             if (!type.TryResolveConstructor(argumentValues, out var constructor))
                 throw new UndefinedMethodException(type, $"{type}::constructor");
 
-            var arguments = BindArguments($"{type}::constructor", [.. constructor.Parameters], [instance, .. argumentValues], baseConstructor.Span);
+            var boundConstructor = constructor.Bind(instance);
 
-            Evaluate(constructor, arguments);
+            var arguments = BindArguments($"{type}::constructor", [.. boundConstructor.Parameters], [instance, .. argumentValues], baseConstructor.Span);
+
+            Evaluate(boundConstructor, arguments);
         }
 
         public Instance Evaluate(Function function, List<Argument> arguments, ScopeState? scopeState = null)
         {
+            if (function is BindableFunction)
+                throw new UnboundFunctionException(function);
+
             runtime.PushFunction();
 
             foreach (var argument in arguments)
@@ -469,7 +474,7 @@ namespace Quixotic.Interpret
             if (statement.BaseCall is QxBaseConstructorCallExpression baseConstructorCallExpression)
                 baseConstructorCall = Evaluate(baseConstructorCallExpression);
 
-            var constructor = new Constructor(statement.Body)
+            var constructor = new Constructor(frame.Type, statement.Body)
             {
                 Parameters = parameters,
                 Base = baseConstructorCall,
@@ -641,6 +646,8 @@ namespace Quixotic.Interpret
                     throw new UndefinedPropertyException(target.Type, name);
             }
 
+            method = method is BindableFunction bindableFunction ? bindableFunction.Bind(target) : method;
+
             var arguments = BindArguments(name, [.. method.Parameters], [target, .. argumentValues], expression.Span);
 
             var scopeState = new ScopeState();
@@ -677,9 +684,11 @@ namespace Quixotic.Interpret
                 throw new UndefinedMethodException(type, $"{type}::constructor");
             }
 
-            var arguments = BindArguments($"{type}::constructor", [.. constructor.Parameters], [instance, .. argumentValues], expression.Span);
+            var boundConstructor = constructor.Bind(instance);
 
-            Evaluate(constructor, arguments, instance);
+            var arguments = BindArguments($"{type}::constructor", [.. boundConstructor.Parameters], [instance, .. argumentValues], expression.Span);
+
+            Evaluate(boundConstructor, arguments, instance);
 
             return instance;
         }
