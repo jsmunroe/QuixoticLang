@@ -2,7 +2,7 @@
 
 namespace Quixotic.Common.TypeSystem
 {
-    public class UpcastInstance(Instance instance, QxType asType) : Instance(asType, instance)
+    public class TypedInstanceView(Instance instance, QxType asType) : Instance(asType, instance)
     {
         private readonly Instance _instance = instance;
     }

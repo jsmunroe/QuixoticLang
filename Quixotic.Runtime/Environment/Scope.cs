@@ -130,6 +130,11 @@ namespace Quixotic.Runtime.Environment
             _functionRegistry.Register(name, function);
         }
 
+        public void DefineConstructor(Constructor constructor)
+        {
+            DefineFunction("::constructor", constructor);
+        }
+
         public Function GetFunction(string name, params QxType[] arguments)
         {
             return TryGetFunction(name, arguments, out var function) ? function : throw new UndefinedFunctionException(name);

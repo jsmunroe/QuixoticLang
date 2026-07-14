@@ -580,7 +580,7 @@ namespace Quixotic.InterpretTests
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute & Assert
-            Assert.Throws<TypeMismatchException>(() => interpreter.Execute(parser.Parse()));
+            Assert.Throws<VariableTypeMismatchException>(() => interpreter.Execute(parser.Parse()));
         }
 
         [TestMethod]

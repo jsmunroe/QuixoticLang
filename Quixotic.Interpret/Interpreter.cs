@@ -119,6 +119,39 @@ namespace Quixotic.Interpret
             runtime.Pop();
         }
 
+        public void Evaluate(Constructor constructor, List<Argument> arguments, Instance instance, ScopeState? scopeState = null)
+        {
+            runtime.PushFunction();
+
+            foreach (var argument in arguments)
+                Scope.DefineVariable(argument.Name, argument.Value);
+
+            if (scopeState is not null)
+                Scope.Add(scopeState);
+
+            if (constructor.Base is BaseConstructor baseConstructor)
+                Evaluate(baseConstructor, instance);
+
+            foreach (var statement in constructor.Body)
+                Execute(statement);
+
+            runtime.Pop();
+        }
+
+        public void Evaluate(BaseConstructor baseConstructor, Instance instance)
+        {
+            var type = baseConstructor.Type;
+
+            Instance[] argumentValues = [.. Evaluate(baseConstructor.Arguments)];
+
+            if (!type.TryResolveConstructor(argumentValues, out var constructor))
+                throw new UndefinedMethodException(type, $"{type}::constructor");
+
+            var arguments = BindArguments($"{type}::constructor", [.. constructor.Parameters], [instance, .. argumentValues], baseConstructor.Span);
+
+            Evaluate(constructor, arguments);
+        }
+
         public Instance Evaluate(Function function, List<Argument> arguments, ScopeState? scopeState = null)
         {
             runtime.PushFunction();
@@ -416,25 +449,6 @@ namespace Quixotic.Interpret
             runtime.Frame.GlobalScope.DefineType(type.Name, type);
         }
 
-        public void Execute(QxBaseConstructorCallExpression statement)
-        {
-            var argumentValues = Evaluate(statement.Arguments);
-
-            var thisInstance = Scope.GetInstance("this");
-
-            var thisType = thisInstance.Type;
-            var baseType = thisType.BaseType;
-
-            if (baseType is null)
-                throw new BaseCallOnTypeWithoutBaseTypeException(thisType, statement.Span);
-
-            var baseConstructor = baseType.ResolveMethod(thisInstance, "::constructor", [.. argumentValues]);
-
-            var arguments = BindArguments($"{thisType}::base", [.. baseConstructor.Parameters], [thisInstance, .. argumentValues], statement.Span);
-
-            Evaluate(baseConstructor, arguments);
-        }
-
         public void Execute(QxConstructorDeclarationStatement statement)
         {
             if (runtime.Frame is not TypeRuntimeFrame frame)
@@ -443,15 +457,39 @@ namespace Quixotic.Interpret
             List<Parameter> parameters = [];
             foreach (var parameter in statement.Parameters)
             {
-                if (!Scope.TryGetType(parameter.TypeName, out var type))
+                if (!Scope.TryGetType(parameter.TypeName, out var parameterType))
                     throw new UnrecognizedTypeException(parameter.TypeName, statement.Span);
 
-                parameters.Add(new(parameter.Name, type));
+                parameters.Add(new(parameter.Name, parameterType));
             }
 
-            var function = new Function(statement.Body, VoidType.Default) { Parameters = parameters };
-            Scope.DefineFunction("::constructor", function);
+            BaseConstructor? baseConstructorCall = null;
+            if (statement.BaseCall is QxBaseConstructorCallExpression baseConstructorCallExpression)
+                baseConstructorCall = Evaluate(baseConstructorCallExpression);
+
+            var constructor = new Constructor(statement.Body)
+            {
+                Parameters = parameters,
+                Base = baseConstructorCall,
+            };
+
+            Scope.DefineConstructor(constructor);
         }
+
+        public BaseConstructor Evaluate(QxBaseConstructorCallExpression expression)
+        {
+            if (runtime.Frame is not TypeRuntimeFrame frame)
+                throw new ConstructorOutsideOfTypeException();
+
+            var thisType = frame.Type;
+            var baseType = thisType.BaseType ?? throw new BaseCallOnTypeWithoutBaseTypeException(thisType, expression.Span);
+
+            return new BaseConstructor(baseType, expression.Span)
+            {
+                Arguments = expression.Arguments,
+            };
+        }
+
 
         protected static Instance Evaluate(QxNumberLiteralExpression expression)
         {
@@ -560,7 +598,8 @@ namespace Quixotic.Interpret
             var scopeState = new ScopeState();
             if (target.Type.BaseType is not null)
             {
-                scopeState.Variables.Register("base", target);
+                var baseType = target.Type.BaseType;
+                scopeState.Variables.Register("base", target.As(baseType));
             }
 
             return Evaluate(method, arguments, scopeState);
@@ -582,7 +621,7 @@ namespace Quixotic.Interpret
 
             Instance[] argumentValues = [.. Evaluate(expression.Arguments)];
 
-            if (!type.TryResolveMethod(instance, "::constructor", argumentValues, out var constructor))
+            if (!type.TryResolveConstructor(argumentValues, out var constructor))
             {
                 if (argumentValues.Length == 0)
                     return instance;
@@ -590,11 +629,9 @@ namespace Quixotic.Interpret
                 throw new UndefinedMethodException(type, $"{type}::constructor");
             }
 
-            var scopeState = new ScopeState();
-
             var arguments = BindArguments($"{type}::constructor", [.. constructor.Parameters], [instance, .. argumentValues], expression.Span);
 
-            Evaluate(constructor, arguments, scopeState);
+            Evaluate(constructor, arguments, instance);
 
             return instance;
         }

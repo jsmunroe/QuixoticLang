@@ -20,6 +20,11 @@ namespace Quixotic.Common.TypeSystem
 
         protected Dictionary<string, object?> Fields { get; } = [];
 
+        public Instance As(QxType type)
+        {
+            return type.Upcast(this);
+        }
+
         public object? this[string name]
         {
             get => Fields.TryGetValue(name, out var value) ? value : null;

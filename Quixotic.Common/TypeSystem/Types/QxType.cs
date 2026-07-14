@@ -31,12 +31,12 @@ namespace Quixotic.Common.TypeSystem.Types
             return instance;
         }
 
-        public Instance As(Instance instance)
+        public Instance Upcast(Instance instance)
         {
             if (!IsAssignableFrom(instance.Type))
                 throw new CastMismatchException(instance.Type, this, Span.Empty);
 
-            return new UpcastInstance(instance, this);
+            return new TypedInstanceView(instance, this);
         }
 
         public abstract bool Match(QxType actual, GenericBindings bindings);
@@ -216,6 +216,27 @@ namespace Quixotic.Common.TypeSystem.Types
             }
 
             return BaseType?.TryResolveMethod(name, arguments, out function) ?? false;
+        }
+
+        public Constructor ResolveConstructor(params Instance[] arguments)
+        {
+            if (!TryResolveConstructor(arguments, out var constructor))
+                throw new UndefinedConstructorException(this);
+
+            return constructor;
+        }
+
+        public bool TryResolveConstructor(Instance[] arguments, [NotNullWhen(returnValue: true)] out Constructor? constructor)
+        {
+            constructor = null;
+
+            if (_methods.TryResolve("::constructor", [this, .. arguments.GetTypes()], out var functionSymbol))
+            {
+                constructor = functionSymbol.Function as Constructor;
+                return constructor is not null;
+            }
+
+            return false;
         }
 
         public IEnumerable<Function> ResolveMethods(string name)
