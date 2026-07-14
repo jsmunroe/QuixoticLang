@@ -1,4 +1,9 @@
-﻿namespace Quixotic.Common.Exceptions.Interpret
+﻿using Quixotic.Common.Tokens;
+
+namespace Quixotic.Common.Exceptions.Interpret
 {
-    public class EnvironmentException(string message) : Exception(message);
+    public class EnvironmentException(string message, Span span) : Exception(message)
+    {
+        public Span Span { get; } = span;
+    }
 }

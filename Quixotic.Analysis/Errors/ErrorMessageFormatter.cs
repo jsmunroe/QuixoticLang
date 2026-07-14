@@ -22,6 +22,9 @@ namespace Quixotic.Analysis.Errors
 
             var span = Span.Empty;
 
+            if (exception is IHasSpan hasSpan)
+                span = hasSpan.Span;
+
             if (exception is IHasDiagnostic hasDiagnostic)
                 span = hasDiagnostic.Diagnostic.Span;
 

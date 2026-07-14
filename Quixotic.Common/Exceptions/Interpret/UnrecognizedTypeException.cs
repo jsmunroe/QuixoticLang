@@ -1,4 +1,6 @@
-﻿namespace Quixotic.Common.Exceptions.Interpret
+﻿using Quixotic.Common.Tokens;
+
+namespace Quixotic.Common.Exceptions.Interpret
 {
-    public class UnrecognizedTypeException(object type) : EnvironmentException($"The type '{type}' is not recognized.");
+    public class UnrecognizedTypeException(object type, Span span) : EnvironmentException($"The type '{type}' is not recognized.", span);
 }

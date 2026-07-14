@@ -11,6 +11,15 @@
 
         public static Span operator +(Span left, Span right)
         {
+            if (left.IsEmpty && right.IsEmpty)
+                return Empty;
+
+            if (left.IsEmpty)
+                return right;
+
+            if (right.IsEmpty)
+                return left;
+
             var start = left.Start.Index < right.Start.Index ? left.Start : right.Start;
             var end = left.End.Index > right.End.Index ? left.End : right.End;
 

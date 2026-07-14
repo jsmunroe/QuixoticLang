@@ -29,7 +29,7 @@ namespace Quixotic.Common.TypeSystem.Symbols
         public void Assign(Instance instance)
         {
             if (Type != QxType.Nada.Type && !instance.Type.Equals(Type))
-                throw new TypeMismatchException(instance.Type.Name, Type.Name);
+                throw new VariableTypeMismatchException(instance.Type.Name, Type.Name);
 
             Instance = instance;
         }

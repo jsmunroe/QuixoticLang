@@ -1,4 +1,6 @@
-﻿namespace Quixotic.Common.Exceptions.Interpret
+﻿using Quixotic.Common.Tokens;
+
+namespace Quixotic.Common.Exceptions.Interpret
 {
-    public class OutOfRangeException(string name) : InterpreterException($"Value {name} is out of range.");
+    public class OutOfRangeException(string name, Span span) : InterpreterException($"Value {name} is out of range.", span);
 }

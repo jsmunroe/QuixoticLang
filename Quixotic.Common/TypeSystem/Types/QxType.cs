@@ -1,6 +1,7 @@
 using Quixotic.Common.Contracts;
 using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;
 using System.Diagnostics.CodeAnalysis;
@@ -33,7 +34,7 @@ namespace Quixotic.Common.TypeSystem.Types
         public Instance As(Instance instance)
         {
             if (!IsAssignableFrom(instance.Type))
-                throw new CastMismatchException(instance.Type, this);
+                throw new CastMismatchException(instance.Type, this, Span.Empty);
 
             return new UpcastInstance(instance, this);
         }

@@ -175,8 +175,10 @@ namespace Quixotic.Runtime.Environment
             if (_typeRegistry.TryResolve(name, out type))
                 return true;
 
-            type = parent?.GetType(name);
-            return type is not null;
+            if (parent is null)
+                return false;
+
+            return parent.TryGetType(name, out type);
         }
     }
 }

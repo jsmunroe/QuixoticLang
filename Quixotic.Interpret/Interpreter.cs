@@ -7,6 +7,7 @@ using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
 using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
+using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
@@ -183,13 +184,13 @@ namespace Quixotic.Interpret
             if (statement.TypeName is not null)
             {
                 if (!Scope.TryGetType(statement.TypeName, out type))
-                    throw new UnrecognizedTypeException(statement.TypeName);
+                    throw new UnrecognizedTypeException(statement.TypeName, statement.Span);
             }
 
             if (!QxType.IsNada(value) && type is not null)
             {
                 if (!type.IsAssignableFrom(value.Type))
-                    throw new TypeMismatchException(value.Type, type);
+                    throw new TypeMismatchException(value.Type, type, statement.Value?.Span ?? statement.Span);
 
                 Scope.DefineVariable(statement.Name, value);
             }
@@ -213,7 +214,7 @@ namespace Quixotic.Interpret
             foreach (var parameter in statement.Parameters)
             {
                 if (!Scope.TryGetType(parameter.TypeName, out var type))
-                    throw new UnrecognizedTypeException(parameter.TypeName);
+                    throw new UnrecognizedTypeException(parameter.TypeName, statement.Span);
 
                 parameters.Add(new(parameter.Name, type));
             }
@@ -270,12 +271,12 @@ namespace Quixotic.Interpret
 
                 if (targetValue is not ArrayReference array || indexValue is not NumberValue indexNumber)
                 {
-                    throw new IndexerTargetException(targetValue.Type);
+                    throw new IndexerTargetException(targetValue.Type, indexerExpression.Span);
                 }
                 else
                 {
                     if (!array.ElementType.IsAssignableFrom(value.Type))
-                        throw new TypeMismatchException(value.Type, array.ElementType);
+                        throw new TypeMismatchException(value.Type, array.ElementType, indexerExpression.Span);
 
                     array.Set((int)indexNumber.Value, value);
                 }
@@ -283,7 +284,7 @@ namespace Quixotic.Interpret
             else
             {
                 var target = Evaluate(statement.Target);
-                throw new InvalidAssignmentTargetException(target.Type.Name);
+                throw new InvalidAssignmentTargetException(target.Type.Name, statement.Span);
             }
         }
 
@@ -311,8 +312,8 @@ namespace Quixotic.Interpret
         {
             var iterator = statement.Iterator;
 
-            var from = ExpectType<NumberValue>(Evaluate(statement.From));
-            var to = ExpectType<NumberValue>(Evaluate(statement.To));
+            var from = ExpectType<NumberValue>(statement.From);
+            var to = ExpectType<NumberValue>(statement.To);
 
             double start() => from.Value;
 
@@ -329,9 +330,9 @@ namespace Quixotic.Interpret
 
             for (var i = start(); check(i); i = iterate(i))
             {
-                from = ExpectType<NumberValue>(Evaluate(statement.From));
-                to = ExpectType<NumberValue>(Evaluate(statement.To));
-                step = ExpectType<NumberValue>(Evaluate(statement.Step));
+                from = ExpectType<NumberValue>(statement.From);
+                to = ExpectType<NumberValue>(statement.To);
+                step = ExpectType<NumberValue>(statement.Step);
 
                 try
                 {
@@ -355,7 +356,7 @@ namespace Quixotic.Interpret
             var collection = Evaluate(statement.Collection);
 
             if (collection is not CollectionReference array)
-                throw new TypeMismatchException(collection.Type, QxType.Array(QxType.Any));
+                throw new TypeMismatchException(collection.Type, QxType.Array(QxType.Any), statement.Collection.Span);
 
             foreach (var item in array.Elements)
                 Execute(statement.Block, [new(iterator, item)]);
@@ -425,11 +426,11 @@ namespace Quixotic.Interpret
             var baseType = thisType.BaseType;
 
             if (baseType is null)
-                throw new BaseCallOnTypeWithoutBaseTypeException(thisType);
+                throw new BaseCallOnTypeWithoutBaseTypeException(thisType, statement.Span);
 
             var baseConstructor = baseType.ResolveMethod(thisInstance, "::constructor", [.. argumentValues]);
 
-            var arguments = BindArguments($"{thisType}::base", [.. baseConstructor.Parameters], [thisInstance, .. argumentValues]);
+            var arguments = BindArguments($"{thisType}::base", [.. baseConstructor.Parameters], [thisInstance, .. argumentValues], statement.Span);
 
             Evaluate(baseConstructor, arguments);
         }
@@ -443,7 +444,7 @@ namespace Quixotic.Interpret
             foreach (var parameter in statement.Parameters)
             {
                 if (!Scope.TryGetType(parameter.TypeName, out var type))
-                    throw new UnrecognizedTypeException(parameter.TypeName);
+                    throw new UnrecognizedTypeException(parameter.TypeName, statement.Span);
 
                 parameters.Add(new(parameter.Name, type));
             }
@@ -495,7 +496,7 @@ namespace Quixotic.Interpret
             if (Scope.TryGetType(name, out var type) && type is DefinedType definedType)
                 return definedType.Construct();
 
-            throw new UndefinedIdentifierException(name);
+            throw new UndefinedIdentifierException(name, expression.Span);
         }
 
         protected Instance Evaluate(QxIndexerExpression expression)
@@ -507,12 +508,12 @@ namespace Quixotic.Interpret
             if (target is ArrayReference array)
             {
                 if (index is not NumberValue number)
-                    throw new IndexTypeException(array.Type, index.Type);
+                    throw new IndexTypeException(array.Type, index.Type, expression.Target.Span);
 
                 return array.Get(number);
             }
 
-            throw new IndexerTargetException(target.Type);
+            throw new IndexerTargetException(target.Type, expression.Span);
         }
 
         protected Instance Evaluate(QxUnaryExpression expression)
@@ -539,7 +540,7 @@ namespace Quixotic.Interpret
 
             var function = Scope.GetFunction(name, [.. argumentValues.GetTypes()]);
 
-            var arguments = BindArguments(name, [.. function.Parameters], [.. argumentValues]);
+            var arguments = BindArguments(name, [.. function.Parameters], [.. argumentValues], expression.Span);
 
             return Evaluate(function, arguments);
         }
@@ -554,7 +555,7 @@ namespace Quixotic.Interpret
 
             var method = target.Type.ResolveMethod(target, name, argumentValues);
 
-            var arguments = BindArguments(name, [.. method.Parameters], [target, .. argumentValues]);
+            var arguments = BindArguments(name, [.. method.Parameters], [target, .. argumentValues], expression.Span);
 
             var scopeState = new ScopeState();
             if (target.Type.BaseType is not null)
@@ -591,7 +592,7 @@ namespace Quixotic.Interpret
 
             var scopeState = new ScopeState();
 
-            var arguments = BindArguments($"{type}::constructor", [.. constructor.Parameters], [instance, .. argumentValues]);
+            var arguments = BindArguments($"{type}::constructor", [.. constructor.Parameters], [instance, .. argumentValues], expression.Span);
 
             Evaluate(constructor, arguments, scopeState);
 
@@ -603,11 +604,13 @@ namespace Quixotic.Interpret
             return instance.IsTruthy;
         }
 
-        private TValue ExpectType<TValue>(Instance instance)
+        private TValue ExpectType<TValue>(QxExpression expression)
             where TValue : Instance
         {
+            var instance = Evaluate(expression);
+
             if (instance is not TValue expectedValue)
-                throw new UnexpectedTypeException(typeof(TValue).Describe(), instance.Type);
+                throw new UnexpectedTypeException(typeof(TValue).Describe(), instance.Type, expression.Span);
 
             return expectedValue;
         }
@@ -626,7 +629,7 @@ namespace Quixotic.Interpret
 
             var function = Scope.GetFunction(name, leftValue.Type);
 
-            var arguments = BindArguments(name, [.. function.Parameters], [leftValue]);
+            var arguments = BindArguments(name, [.. function.Parameters], [leftValue], left.Span);
 
             return Evaluate(function, arguments);
         }
@@ -652,14 +655,14 @@ namespace Quixotic.Interpret
 
                 var function = Scope.GetFunction(name, leftValue.Type, rightValue.Type);
 
-                var arguments = BindArguments(name, [.. function.Parameters], [leftValue, rightValue]);
+                var arguments = BindArguments(name, [.. function.Parameters], [leftValue, rightValue], left.Span + right.Span);
 
                 return Evaluate(function, arguments);
             }
             catch
             {
                 var operatorValue = OperationMetadata.GetOperatorValue(op) ?? "unknown";
-                throw new BinaryOperatorException(leftValue.Type, operatorValue, rightValue.Type);
+                throw new BinaryOperatorException(leftValue.Type, operatorValue, rightValue.Type, left.Span + right.Span);
             }
         }
 
@@ -687,7 +690,7 @@ namespace Quixotic.Interpret
             return IsTruthy(rightValue) ? BooleanValue.True : BooleanValue.False;
         }
 
-        public List<Argument> BindArguments(string name, Parameter[] parameters, Instance[] instances)
+        public List<Argument> BindArguments(string name, Parameter[] parameters, Instance[] instances, Span span)
         {
             List<Parameter> parametersList = [.. parameters];
             List<Instance> argumentsList = [.. instances];
@@ -701,7 +704,7 @@ namespace Quixotic.Interpret
             foreach (var (parameter, instance) in parameters.Zip(instances))
             {
                 if (!parameter.Type.IsAssignableFrom(instance.Type))
-                    throw new TypeMismatchException(instance.Type, parameter.Type);
+                    throw new TypeMismatchException(instance.Type, parameter.Type, span);
 
                 arguments.Add(new Argument(parameter.Name, instance));
             }

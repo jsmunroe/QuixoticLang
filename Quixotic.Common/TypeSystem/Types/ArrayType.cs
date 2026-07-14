@@ -28,7 +28,7 @@ namespace Quixotic.Common.TypeSystem.Types
             foreach (var element in elements)
             {
                 if (!ElementType.IsAssignableFrom(element.Type))
-                    throw new TypeMismatchException(element.Type, ElementType);
+                    throw new VariableTypeMismatchException(element.Type, ElementType);
             }
 
             array["elements"] = elements;
