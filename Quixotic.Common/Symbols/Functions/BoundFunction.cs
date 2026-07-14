@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.TypeSystem;
+﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 
 namespace Quixotic.Common.Symbols.Functions
@@ -13,5 +14,27 @@ namespace Quixotic.Common.Symbols.Functions
         }
 
         public Instance BoundInstance { get; }
+
+        public override List<Argument> BindArguments(string name, Instance[] instances)
+        {
+            instances = [BoundInstance, .. instances];
+
+            if (Parameters.Count != instances.Length)
+                throw new ParameterCountException(name, Parameters.Count, instances.Length);
+
+            List<Argument> arguments = [];
+
+            // Push function parameters into 
+            foreach (var (parameter, instance) in Parameters.Zip(instances))
+            {
+                if (!parameter.Type.IsAssignableFrom(instance.Type))
+                    throw new TypeMismatchException(instance.Type, parameter.Type);
+
+                arguments.Add(new Argument(parameter.Name, instance));
+            }
+
+            return arguments;
+        }
+
     }
 }

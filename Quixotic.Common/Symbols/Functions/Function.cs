@@ -1,5 +1,7 @@
-﻿using Quixotic.Common.Expressions;
+﻿using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.Expressions;
 using Quixotic.Common.Statements;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 
@@ -21,12 +23,23 @@ namespace Quixotic.Common.Symbols.Functions
 
         public FunctionCallType CallType { get; } = callType;
 
-        public virtual Function AddThis(QxType thisType)
+        public virtual List<Argument> BindArguments(string name, Instance[] instances)
         {
-            return new(Body, ReturnType, CallType)
+            if (Parameters.Count != instances.Length)
+                throw new ParameterCountException(name, Parameters.Count, instances.Length);
+
+            List<Argument> arguments = [];
+
+            // Push function parameters into 
+            foreach (var (parameter, instance) in Parameters.Zip(instances))
             {
-                Parameters = [new Parameter("this", thisType), .. Parameters],
-            };
+                if (!parameter.Type.IsAssignableFrom(instance.Type))
+                    throw new TypeMismatchException(instance.Type, parameter.Type);
+
+                arguments.Add(new Argument(parameter.Name, instance));
+            }
+
+            return arguments;
         }
 
         public static Function FromDelegate(Delegate implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)

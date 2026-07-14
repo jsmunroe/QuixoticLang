@@ -9,7 +9,6 @@ using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
-using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
@@ -151,7 +150,7 @@ namespace Quixotic.Interpret
 
             var boundConstructor = constructor.Bind(instance);
 
-            var arguments = BindArguments($"{type}::constructor", [.. boundConstructor.Parameters], [instance, .. argumentValues], baseConstructor.Span);
+            var arguments = boundConstructor.BindArguments($"{type}::constructor", argumentValues);
 
             Evaluate(boundConstructor, arguments);
         }
@@ -611,7 +610,7 @@ namespace Quixotic.Interpret
 
             var function = Scope.GetFunction(name, [.. argumentValues.GetTypes()]);
 
-            var arguments = BindArguments(name, [.. function.Parameters], [.. argumentValues], expression.Span);
+            var arguments = function.BindArguments(name, [.. argumentValues]);
 
             return Evaluate(function, arguments);
         }
@@ -648,7 +647,7 @@ namespace Quixotic.Interpret
 
             method = method is BindableFunction bindableFunction ? bindableFunction.Bind(target) : method;
 
-            var arguments = BindArguments(name, [.. method.Parameters], [target, .. argumentValues], expression.Span);
+            var arguments = method.BindArguments(name, argumentValues);
 
             var scopeState = new ScopeState();
             if (target.Type.BaseType is not null)
@@ -686,7 +685,7 @@ namespace Quixotic.Interpret
 
             var boundConstructor = constructor.Bind(instance);
 
-            var arguments = BindArguments($"{type}::constructor", [.. boundConstructor.Parameters], [instance, .. argumentValues], expression.Span);
+            var arguments = boundConstructor.BindArguments($"{type}::constructor", argumentValues);
 
             Evaluate(boundConstructor, arguments, instance);
 
@@ -723,7 +722,7 @@ namespace Quixotic.Interpret
 
             var function = Scope.GetFunction(name, leftValue.Type);
 
-            var arguments = BindArguments(name, [.. function.Parameters], [leftValue], left.Span);
+            var arguments = function.BindArguments(name, [leftValue]);
 
             return Evaluate(function, arguments);
         }
@@ -749,7 +748,7 @@ namespace Quixotic.Interpret
 
                 var function = Scope.GetFunction(name, leftValue.Type, rightValue.Type);
 
-                var arguments = BindArguments(name, [.. function.Parameters], [leftValue, rightValue], left.Span + right.Span);
+                var arguments = function.BindArguments(name, [leftValue, rightValue]);
 
                 return Evaluate(function, arguments);
             }
@@ -782,28 +781,6 @@ namespace Quixotic.Interpret
             var rightValue = Evaluate(right);
 
             return IsTruthy(rightValue) ? BooleanValue.True : BooleanValue.False;
-        }
-
-        public List<Argument> BindArguments(string name, Parameter[] parameters, Instance[] instances, Span span)
-        {
-            List<Parameter> parametersList = [.. parameters];
-            List<Instance> argumentsList = [.. instances];
-
-            if (parameters.Length != instances.Length)
-                throw new ParameterCountException(name, parameters.Length, instances.Length);
-
-            List<Argument> arguments = [];
-
-            // Push function parameters into 
-            foreach (var (parameter, instance) in parameters.Zip(instances))
-            {
-                if (!parameter.Type.IsAssignableFrom(instance.Type))
-                    throw new TypeMismatchException(instance.Type, parameter.Type, span);
-
-                arguments.Add(new Argument(parameter.Name, instance));
-            }
-
-            return arguments;
         }
     }
 }

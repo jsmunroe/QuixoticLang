@@ -18,12 +18,12 @@ namespace Quixotic.Common.TypeSystem.Types
             var getter = PropertyGetter(name);
             var instance = getter.Invoke(target);
 
-            return Function.FromDelegate(getter, instance.Type, FunctionCallType.Getter, [new Parameter("this", target.Type)]);
+            return BindableFunction.FromDelegate(this, getter, instance.Type, FunctionCallType.Getter);
         }
 
         public Function BuildPropertySetter(Instance target, string name, QxType type)
         {
-            return Function.FromDelegate(PropertySetter(name), type, FunctionCallType.Getter, [new Parameter("this", target.Type), new Parameter("value", type)]);
+            return BindableFunction.FromDelegate(this, PropertySetter(name), type, FunctionCallType.Setter, new Parameter("value", type));
         }
     }
 }
