@@ -1244,7 +1244,7 @@ namespace Quixotic.InterpretTests
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            Assert.Throws<UndefinedMethodException>(() => interpreter.Execute(parser.Parse()));
+            Assert.Throws<UndefinedPropertyException>(() => interpreter.Execute(parser.Parse()));
         }
 
 
@@ -1454,7 +1454,7 @@ namespace Quixotic.InterpretTests
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute & Assert
-            Assert.Throws<UndefinedMethodException>(() => interpreter.Execute(parser.Parse()));
+            Assert.Throws<UndefinedPropertyException>(() => interpreter.Execute(parser.Parse()));
         }
 
         [TestMethod]

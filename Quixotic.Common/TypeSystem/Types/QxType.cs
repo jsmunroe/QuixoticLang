@@ -161,8 +161,8 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public void RegisterProperty(string name, QxType type)
         {
-            _methods.Register(name, PropertyGetter(name), type, FunctionCallType.Getter);
-            _methods.Register(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("value", type));
+            _methods.Register(name, PropertyGetter(name), type, FunctionCallType.Getter, new Parameter("this", this));
+            _methods.Register(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("this", this), new Parameter("value", type));
         }
 
         protected Func<Instance, Instance> PropertyGetter(string name) => (Instance instance) =>
