@@ -1889,6 +1889,66 @@ namespace Quixotic.InterpretTests
             runtime.AssertHasPrinted("Hello, Bob!");
         }
 
+
+        [TestMethod]
+        public void Execute_function_as_variable_with_closure()
+        {
+            // Setup
+            var source = @"
+                let hello :function
+
+                if true then
+                    let greeting := ""Hi""
+
+                    hello := function(name: string)
+                        print greeting + "", "" + name + ""!""
+                    end function
+                end if
+
+                hello(""Bob"")
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertVariableIsDefined("hello");
+
+            runtime.AssertHasPrinted("Hi, Bob!");
+        }
+
+        [TestMethod]
+        public void Execute_function_as_variable_without_closure()
+        {
+            // Setup
+            var source = @"
+                let hello :function
+
+                if true then
+                    let greeting := ""Hi""
+
+                    function hi(name: string)
+                        print greeting + "", "" + name + ""!""
+                    end function
+
+                    hello := hi
+                end if
+
+                hello(""Bob"")
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute && Assert
+            AssertThrows<UndefinedIdentifierException>(() => interpreter.Execute(source));
+
+        }
+
+
         [TestMethod]
         public void Execute_function_stored_in_variable()
         {

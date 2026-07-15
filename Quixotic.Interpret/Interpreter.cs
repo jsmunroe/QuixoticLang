@@ -122,7 +122,7 @@ namespace Quixotic.Interpret
 
         public void Evaluate(BoundConstructor constructor, List<Argument> arguments, Instance instance, ScopeState? scopeState = null)
         {
-            runtime.PushFunction();
+            runtime.PushFunction(constructor);
 
             foreach (var argument in arguments)
                 Scope.DefineVariable(argument.Name, argument.Value);
@@ -160,7 +160,7 @@ namespace Quixotic.Interpret
             if (function is BindableFunction)
                 throw new UnboundFunctionException(function);
 
-            runtime.PushFunction();
+            runtime.PushFunction(function);
 
             foreach (var argument in arguments)
                 Scope.DefineVariable(argument.Name, argument.Value);
@@ -617,7 +617,25 @@ namespace Quixotic.Interpret
             return BooleanType.False;
         }
 
-        protected FunctionReference Evaluate(QxFunctionDeclarationExpression expression)
+        protected FunctionReference Evaluate(QxFunctionExpression expression)
+        {
+            var function = EvaluateFunction(expression);
+
+            var functionInstance = new FunctionReference(QxType.Function.Construct(function));
+
+            return functionInstance;
+        }
+
+        protected FunctionReference Evaluate(QxLambdaFunctionExpression expression)
+        {
+            var function = new LambdaFunction(EvaluateFunction(expression), Scope);
+
+            var functionInstance = new FunctionReference(QxType.Function.Construct(function));
+
+            return functionInstance;
+        }
+
+        private Function EvaluateFunction(QxFunctionExpression expression)
         {
             List<Parameter> parameters = [];
             foreach (var parameter in expression.Parameters)
@@ -632,9 +650,7 @@ namespace Quixotic.Interpret
 
             var function = new Function(expression.Body, returnType, FunctionCallType.Call) { Parameters = [.. parameters] };
 
-            var functionInstance = new FunctionReference(QxType.Function.Construct(function));
-
-            return functionInstance;
+            return function;
         }
 
         protected Instance Evaluate(QxFunctionCallExpression expression)

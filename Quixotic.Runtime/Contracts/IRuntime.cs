@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.TypeSystem;
+﻿using Quixotic.Common.Symbols.Functions;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Runtime.Contracts
@@ -9,7 +10,7 @@ namespace Quixotic.Runtime.Contracts
         void ExecutePrint(Instance value);
         IRuntimeFrame Pop();
         IRuntimeFrame PushBlock();
-        IRuntimeFrame PushFunction();
+        IRuntimeFrame PushFunction(Function function);
         IRuntimeFrame PushType(QxType type);
     }
 }

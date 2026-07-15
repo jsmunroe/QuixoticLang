@@ -1,5 +1,4 @@
 ﻿using Quixotic.Common.Contracts;
-using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
@@ -10,7 +9,7 @@ using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Quixotic.Runtime.Environment
+namespace Quixotic.Common.Environment
 {
     // I changed this to scope because C# already has a static Environment object
     // under the System namespace, and it was colliding with this class.

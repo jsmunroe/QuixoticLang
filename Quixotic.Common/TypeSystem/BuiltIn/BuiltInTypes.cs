@@ -13,6 +13,7 @@ namespace Quixotic.Common.TypeSystem.BuiltIn
             registry.Register("number", QxType.Number);
             registry.Register("string", QxType.String);
             registry.Register("boolean", QxType.Boolean);
+            registry.Register("function", QxType.Function);
             registry.Register("dynamic", new DynamicType());
             registry.Register("{element}[]", QxType.Array(QxType.Generic("element")));
             registry.Register("set<{element}>", QxType.Set(QxType.Generic("element")));

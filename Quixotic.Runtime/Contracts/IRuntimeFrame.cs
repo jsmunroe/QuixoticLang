@@ -1,4 +1,4 @@
-﻿using Quixotic.Runtime.Environment;
+﻿using Quixotic.Common.Environment;
 
 namespace Quixotic.Runtime.Contracts
 {

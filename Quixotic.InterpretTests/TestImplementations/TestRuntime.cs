@@ -1,4 +1,5 @@
 ﻿using Quixotic.Common.Symbols;
+using Quixotic.Common.Symbols.Functions;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Runtime.Contracts;
@@ -26,9 +27,9 @@ namespace Quixotic.InterpretTests.TestImplementations
             return frame;
         }
 
-        public override IRuntimeFrame PushFunction()
+        public override IRuntimeFrame PushFunction(Function function)
         {
-            var frame = base.PushFunction();
+            var frame = base.PushFunction(function);
             AllFrames.Add(frame);
             return frame;
         }

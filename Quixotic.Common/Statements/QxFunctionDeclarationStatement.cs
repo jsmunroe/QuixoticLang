@@ -3,10 +3,10 @@
 namespace Quixotic.Common.Statements
 {
 
-    public class QxFunctionDeclarationStatement(string name, QxFunctionDeclarationExpression expression) : QxStatement
+    public class QxFunctionDeclarationStatement(string name, QxFunctionExpression expression) : QxStatement
     {
         public string Name { get; } = name;
 
-        public QxFunctionDeclarationExpression Expression { get; } = expression;
+        public QxFunctionExpression Expression { get; } = expression;
     }
 }

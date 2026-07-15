@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿using Quixotic.Common.Environment;
+using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Runtime.Contracts;
 
 namespace Quixotic.Runtime.Environment

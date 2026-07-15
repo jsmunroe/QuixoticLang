@@ -214,12 +214,12 @@ namespace Quixotic.Parsing
 
             }, ActivityType.FunctionName);
 
-            var expression = ParseFunctionDeclarationExpression();
+            var expression = ParseFunctionExpression();
 
             return new(name, expression);
         }
 
-        private QxFunctionDeclarationExpression ParseFunctionDeclarationExpression()
+        private QxFunctionExpression ParseFunctionExpression()
         {
             // Parse parameters
             List<QxParameter> parameters = [];
@@ -240,6 +240,11 @@ namespace Quixotic.Parsing
             Expect(TokenType.EndFunction);
 
             return new(returnType) { Parameters = [.. parameters], Body = body };
+        }
+
+        private QxLambdaFunctionExpression ParseLambdaFunctionExpression()
+        {
+            return new(ParseFunctionExpression());
         }
 
         private QxReturnStatement ParseReturn()
@@ -802,7 +807,7 @@ namespace Quixotic.Parsing
             if (token.Type == TokenType.Function)
             {
                 Advance();
-                return ParseFunctionDeclarationExpression();
+                return ParseLambdaFunctionExpression();
             }
 
             Advance(); // Consume current token
