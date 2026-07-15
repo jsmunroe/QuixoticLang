@@ -1,8 +1,6 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.InterpretTests.TestImplementations;
-using Quixotic.Parsing;
-using QuixoticLang.Lexer;
 
 namespace Quixotic.InterpretTests
 {
@@ -17,13 +15,12 @@ namespace Quixotic.InterpretTests
             var source = @"
                 print ""Hello, windmill!""
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("Hello, windmill!");
@@ -36,13 +33,12 @@ namespace Quixotic.InterpretTests
             var source = @"
                 print 262144
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("262144");
@@ -55,13 +51,12 @@ namespace Quixotic.InterpretTests
             var source = @"
                 print 262144 + 131072
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("393216");
@@ -74,13 +69,12 @@ namespace Quixotic.InterpretTests
             var source = @"
                 print 262144 + (131072 / 2)
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("327680");
@@ -93,13 +87,12 @@ namespace Quixotic.InterpretTests
             var source = @"
                 print (1 + 2) * 3
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("9");
@@ -112,13 +105,12 @@ namespace Quixotic.InterpretTests
             var source = @"
                 print 262144 * 131072 + 2
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("34359738370");
@@ -131,13 +123,12 @@ namespace Quixotic.InterpretTests
             var source = @"
                 print ((1 + 2) * 4) + (17 + (7 + (4 + 2)))
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("42");
@@ -152,13 +143,12 @@ namespace Quixotic.InterpretTests
                 print ""Hello, second windmill!""
                 print ""Hello, third windmill!""
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert 
             runtime.AssertHasPrinted("Hello, first windmill!");
@@ -173,13 +163,12 @@ namespace Quixotic.InterpretTests
             var source = @"
                 let windmills := 5
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert 
             runtime.AssertVariableHasValue("windmills", 5);
@@ -193,13 +182,12 @@ namespace Quixotic.InterpretTests
                 let windmills := 5
                 let w := windmills
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert 
             runtime.AssertVariableHasValue("windmills", 5);
@@ -214,13 +202,12 @@ namespace Quixotic.InterpretTests
                 let windmills: number
                 print windmills
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert 
             runtime.AssertVariableIsNull("windmills");
@@ -235,13 +222,12 @@ namespace Quixotic.InterpretTests
                 let windmills: number := 5 + 5 + 5
                 print windmills
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert 
             runtime.AssertVariableHasValue("windmills", 15);
@@ -258,13 +244,12 @@ namespace Quixotic.InterpretTests
                 windmills := 8
                 print windmills
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert 
             runtime.AssertVariableHasValue("windmills", 8);
@@ -280,13 +265,12 @@ namespace Quixotic.InterpretTests
             var source = @"
                 let windmills := (5 + 3) * 2
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert 
             runtime.AssertVariableHasValue("windmills", 16);
@@ -301,13 +285,13 @@ namespace Quixotic.InterpretTests
                 let windmills := 5
                 print windmills
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert 
             runtime.AssertVariableHasValue("windmills", 5);
@@ -321,13 +305,13 @@ namespace Quixotic.InterpretTests
             var source = @"
                 let cost := -5
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("cost", -5);
@@ -341,13 +325,13 @@ namespace Quixotic.InterpretTests
                 let cost := -5 + 2 * (3 - 1)
                 print cost
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert 
             runtime.AssertVariableHasValue("cost", -1);
@@ -364,13 +348,13 @@ namespace Quixotic.InterpretTests
                     print ""c is greater than 3""
                 end if
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("c", 5);
@@ -389,13 +373,13 @@ namespace Quixotic.InterpretTests
                     print ""c is less than or equal to 3""
                 end if
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("c", 2);
@@ -420,13 +404,13 @@ namespace Quixotic.InterpretTests
                     print ""It's gonna be a bright, bright, bright sunshiney day!""
                 end if
             ";
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("c", 2);
@@ -443,13 +427,13 @@ namespace Quixotic.InterpretTests
                 end function
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertFunctionDeclared("sayHello");
@@ -468,13 +452,13 @@ namespace Quixotic.InterpretTests
                 sayHello()
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertFunctionDeclared("sayHello");
@@ -493,13 +477,13 @@ namespace Quixotic.InterpretTests
                 sayHello(1, 2, 3)
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertFunctionDeclared("sayHello", QxType.Number, QxType.Number, QxType.Number);
@@ -518,13 +502,13 @@ namespace Quixotic.InterpretTests
                 print sayHello(1, 2, 3)
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertFunctionDeclared("sayHello", QxType.Number, QxType.Number, QxType.Number);
@@ -547,13 +531,13 @@ namespace Quixotic.InterpretTests
                 print value
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute & Assert
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             runtime.AssertFunctionDeclared("sayHello", QxType.Number, QxType.Number, QxType.Number);
             runtime.AssertHasPrinted("6");
@@ -574,13 +558,13 @@ namespace Quixotic.InterpretTests
                 value := sayHello(1, 2, 3)
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute & Assert
-            Assert.Throws<VariableTypeMismatchException>(() => interpreter.Execute(parser.Parse()));
+            var exception = AssertThrows<VariableTypeMismatchException>(() => interpreter.Execute(source));
         }
 
         [TestMethod]
@@ -597,13 +581,13 @@ namespace Quixotic.InterpretTests
                 value := sayHello(""1"", 2, 3)
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute & Assert
-            Assert.Throws<UndefinedFunctionException>(() => interpreter.Execute(parser.Parse())); // There is no function with signature 'sayHello(string, number, number)'
+            var exception = AssertThrows<UndefinedFunctionException>(() => interpreter.Execute(source));
         }
 
 
@@ -620,13 +604,13 @@ namespace Quixotic.InterpretTests
                 print hello
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertFunctionDeclared("sayHello");
@@ -647,13 +631,13 @@ namespace Quixotic.InterpretTests
                 loop
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("0");
@@ -683,13 +667,13 @@ namespace Quixotic.InterpretTests
                 loop
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("0");
@@ -719,13 +703,13 @@ namespace Quixotic.InterpretTests
                 loop while i < 10
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("0");
@@ -756,13 +740,13 @@ namespace Quixotic.InterpretTests
                 loop until i >= 10
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("0");
@@ -797,13 +781,13 @@ namespace Quixotic.InterpretTests
                 end if
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasNotPrinted("Explosions and distruction!!!");
@@ -827,13 +811,13 @@ namespace Quixotic.InterpretTests
                 end if
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasNotPrinted("Explosions and distruction!!!");
@@ -852,13 +836,13 @@ namespace Quixotic.InterpretTests
                 end if
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("Attack!");
@@ -876,13 +860,13 @@ namespace Quixotic.InterpretTests
                 end if
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("Attack!");
@@ -901,13 +885,13 @@ namespace Quixotic.InterpretTests
                 loop
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("before break");
@@ -920,13 +904,13 @@ namespace Quixotic.InterpretTests
             // Setup
             using var source = GetTestFile("do_loop_with_continue");
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("before continue");
@@ -943,13 +927,13 @@ namespace Quixotic.InterpretTests
                 next
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted(0, "0");
@@ -977,13 +961,13 @@ namespace Quixotic.InterpretTests
                 next
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted(0, "10");
@@ -1011,13 +995,13 @@ namespace Quixotic.InterpretTests
                 next
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted(0, "0");
@@ -1043,13 +1027,13 @@ namespace Quixotic.InterpretTests
                 ' so long '''
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
         }
 
         [TestMethod]
@@ -1060,13 +1044,13 @@ namespace Quixotic.InterpretTests
                 let array := [1, 2, 3, 4, 5]
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("array", [1, 2, 3, 4, 5]);
@@ -1082,13 +1066,13 @@ namespace Quixotic.InterpretTests
                 array := array + 6
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("array", [1, 2, 3, 4, 5, 6]);
@@ -1104,13 +1088,13 @@ namespace Quixotic.InterpretTests
                 let element := array[2]
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("array", [1, 2, 3, 4, 5]);
@@ -1127,13 +1111,13 @@ namespace Quixotic.InterpretTests
                 array[2] := 10
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("array", [1, 2, 10, 4, 5]);
@@ -1149,13 +1133,13 @@ namespace Quixotic.InterpretTests
                 array[2] := 10
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute && Assert
-            Assert.Throws<TypeMismatchException>(() => interpreter.Execute(parser.Parse()));
+            AssertThrows<TypeMismatchException>(() => interpreter.Execute(source));
         }
 
         [TestMethod]
@@ -1168,13 +1152,13 @@ namespace Quixotic.InterpretTests
                 array[2] := ""10""
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute && Assert
-            Assert.Throws<TypeMismatchException>(() => interpreter.Execute(parser.Parse()));
+            var exception = AssertThrows<TypeMismatchException>(() => interpreter.Execute(source));
         }
 
 
@@ -1190,13 +1174,13 @@ namespace Quixotic.InterpretTests
                 next
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted(0, "1");
@@ -1216,13 +1200,13 @@ namespace Quixotic.InterpretTests
                 print array.length
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("5");
@@ -1238,13 +1222,14 @@ namespace Quixotic.InterpretTests
                 array.length := 7 ' This shouldn't be possible
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            Assert.Throws<UndefinedPropertyException>(() => interpreter.Execute(parser.Parse()));
+            var exception = AssertThrows<UndefinedPropertyException>(() => interpreter.Execute(source));
+
         }
 
 
@@ -1256,13 +1241,13 @@ namespace Quixotic.InterpretTests
                 let set := {1, 2, 3, 4, 5}
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5]));
@@ -1278,13 +1263,13 @@ namespace Quixotic.InterpretTests
                 set := set + 6
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
 
@@ -1302,13 +1287,13 @@ namespace Quixotic.InterpretTests
                 set := set + 3
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
 
@@ -1326,13 +1311,13 @@ namespace Quixotic.InterpretTests
                 let hasElement := 2 in set
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5]));
@@ -1349,13 +1334,13 @@ namespace Quixotic.InterpretTests
                 let newSet := set + 6
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5]));
@@ -1372,13 +1357,13 @@ namespace Quixotic.InterpretTests
                 let newSet := set + 2
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertVariableHasValue("set", Set([1, 2, 3, 4, 5]));
@@ -1397,13 +1382,13 @@ namespace Quixotic.InterpretTests
                 next
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertHasPrinted("1");
@@ -1424,13 +1409,13 @@ namespace Quixotic.InterpretTests
                 print set.length
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Executet
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
 
@@ -1448,13 +1433,14 @@ namespace Quixotic.InterpretTests
                 set.length := 7 ' This shouldn't be possible
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Execute & Assert
-            Assert.Throws<UndefinedPropertyException>(() => interpreter.Execute(parser.Parse()));
+            var exception = AssertThrows<UndefinedPropertyException>(() => interpreter.Execute(source));
+
         }
 
         [TestMethod]
@@ -1475,13 +1461,13 @@ namespace Quixotic.InterpretTests
                 end type
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Executet
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertTypeDeclared("Person");
@@ -1507,13 +1493,13 @@ namespace Quixotic.InterpretTests
                 let me := new Person
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Executet
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertTypeDeclared("Person");
@@ -1548,13 +1534,13 @@ namespace Quixotic.InterpretTests
                 me.Greet()
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Executet
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertTypeDeclared("Person");
@@ -1594,13 +1580,13 @@ namespace Quixotic.InterpretTests
                 me.Greet()
             ";
 
-            var lexer = new Lexer(source);
-            var parser = new Parser(lexer);
+
+
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);
 
             // Executet
-            interpreter.Execute(parser.Parse());
+            interpreter.Execute(source);
 
             // Assert
             runtime.AssertTypeDeclared("Person");
@@ -1894,5 +1880,29 @@ namespace Quixotic.InterpretTests
         }
 
         public TestSet<double> Set(double[] elements) => new(elements);
+
+        private TException AssertThrows<TException>(Action action)
+            where TException : Exception
+        {
+            List<string> actual = [];
+
+            try
+            {
+                action();
+            }
+            catch (Exception? ex)
+            {
+                while (ex is not null)
+                {
+                    if (ex is TException exception)
+                        return exception;
+
+                    actual.Add(ex.GetType().FullName ?? "null");
+                    ex = ex.InnerException;
+                }
+            }
+
+            throw new AssertFailedException($"AssertThrows failed. Expected exception type:<{typeof(TException).FullName}>. Actual exception type: {string.Join(", ", actual)}.");
+        }
     }
 }

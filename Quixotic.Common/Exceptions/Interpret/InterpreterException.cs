@@ -16,7 +16,7 @@ namespace Quixotic.Common.Exceptions.Interpret
             Span = span;
         }
 
-        public InterpreterException(Exception inner, Span span) : base(inner.Message)
+        public InterpreterException(Exception inner, Span span) : base(inner.Message, inner)
         {
             Span = span;
         }

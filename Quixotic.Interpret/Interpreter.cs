@@ -190,22 +190,43 @@ namespace Quixotic.Interpret
 
         public void Execute(QxStatement statement)
         {
-            var statementType = statement.GetType();
-            if (!_executes.TryGetDelegate(statementType, out var action))
-                throw new NotSupportedException($"Unsupported statement type: {statementType.Name}");
+            try
+            {
+                var statementType = statement.GetType();
+                if (!_executes.TryGetDelegate(statementType, out var action))
+                    throw new NotSupportedException($"Unsupported statement type: {statementType.Name}");
 
-            action(this, statement);
+                action(this, statement);
+            }
+            catch (FlowControlException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is not IHasSpan)
+            {
+                throw new StatementException(ex, statement);
+            }
         }
 
         private Instance Evaluate(QxExpression expression)
         {
-            var expressionType = expression.GetType();
-            if (!_evaluates.TryGetDelegate(expressionType, out var function))
-                throw new NotSupportedException($"Unsupported expression type: {expressionType.Name}");
+            try
+            {
+                var expressionType = expression.GetType();
+                if (!_evaluates.TryGetDelegate(expressionType, out var function))
+                    throw new NotSupportedException($"Unsupported expression type: {expressionType.Name}");
 
-            return function(this, expression);
+                return function(this, expression);
+            }
+            catch (FlowControlException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is not IHasSpan)
+            {
+                throw new ExpressionException(ex, expression);
+            }
         }
-
 
         public void Execute(QxPrintStatement statement)
         {
@@ -743,20 +764,11 @@ namespace Quixotic.Interpret
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
 
-            try
-            {
+            var function = Scope.GetFunction(name, leftValue.Type, rightValue.Type);
 
-                var function = Scope.GetFunction(name, leftValue.Type, rightValue.Type);
+            var arguments = function.BindArguments(name, [leftValue, rightValue]);
 
-                var arguments = function.BindArguments(name, [leftValue, rightValue]);
-
-                return Evaluate(function, arguments);
-            }
-            catch
-            {
-                var operatorValue = OperationMetadata.GetOperatorValue(op) ?? "unknown";
-                throw new BinaryOperatorException(leftValue.Type, operatorValue, rightValue.Type, left.Span + right.Span);
-            }
+            return Evaluate(function, arguments);
         }
 
         private BooleanValue And(QxExpression left, QxExpression right)

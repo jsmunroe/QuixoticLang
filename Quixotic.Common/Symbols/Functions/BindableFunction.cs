@@ -19,6 +19,8 @@ namespace Quixotic.Common.Symbols.Functions
             BindableType = bindableType;
         }
 
+        public QxType BindableType { get; }
+
         public virtual BoundFunction Bind(Instance instance)
         {
             if (!BindableType.IsAssignableFrom(instance.Type))
@@ -27,7 +29,10 @@ namespace Quixotic.Common.Symbols.Functions
             return new BoundFunction(instance, this);
         }
 
-        public QxType BindableType { get; }
+        public override List<Argument> BindArguments(string name, Instance[] instances)
+        {
+            throw new UnboundFunctionException(this);
+        }
 
         public static BindableFunction FromDelegate(QxType bindableType, Delegate implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
         {
