@@ -551,6 +551,10 @@ namespace Quixotic.Interpret
             if (Scope.TryGetType(name, out var type) && type is DefinedType definedType)
                 return definedType.Construct();
 
+            var functions = Scope.GetFunctionsByName(name);
+            if (functions.Count == 1)
+                return QxType.Function.Construct(functions[0]);
+
             throw new UndefinedIdentifierException(name, expression.Span);
         }
 

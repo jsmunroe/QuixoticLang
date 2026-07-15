@@ -3,6 +3,7 @@ using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
+using Quixotic.Common.Syntax;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
@@ -134,6 +135,11 @@ namespace Quixotic.Runtime.Environment
         public void DefineConstructor(Constructor constructor)
         {
             DefineFunction("::constructor", constructor);
+        }
+
+        public List<Function> GetFunctionsByName(string name)
+        {
+            return [.. _functionRegistry.AllFunctions.Where(s => CaseRule.Current.Equals(s.Name, name)).Select(s => s.Function)];
         }
 
         public Function GetFunction(string name, params QxType[] arguments)
