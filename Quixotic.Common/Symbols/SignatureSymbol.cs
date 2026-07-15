@@ -3,7 +3,7 @@ using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.Symbols
 {
-    public class SignatureSymbol(Signature signature, QxType returnType) : Symbol($"{nameof(SignatureSymbol)}:{signature}")
+    public class SignatureSymbol(Signature signature, QxType returnType) : Symbol(signature.Name)
     {
         public SignatureSymbol(string name, QxType returnType, params QxType[] parameters)
             : this(new Signature(name, parameters), returnType)
@@ -12,8 +12,6 @@ namespace Quixotic.Common.Symbols
         public SignatureSymbol(SignatureSymbol other)
             : this(other.Signature, other.ReturnType)
         { }
-
-        public string Name { get; } = signature.Name;
 
         public Signature Signature { get; } = signature;
 

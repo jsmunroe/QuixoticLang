@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿using Quixotic.Common.Environment;
+using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Statements;
 using Quixotic.Common.TypeSystem;
@@ -22,6 +23,8 @@ namespace Quixotic.Common.Symbols.Functions
         public QxType ReturnType { get; internal set; } = returnType;
 
         public FunctionCallType CallType { get; } = callType;
+
+        public Scope? Closure { get; init; }
 
         public virtual List<Argument> BindArguments(string name, Instance[] instances)
         {

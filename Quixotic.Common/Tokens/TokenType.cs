@@ -68,5 +68,7 @@ namespace Quixotic.Common.Tokens
         EndFunction,
         Is,
         Colon,
+        With,
+        Closure,
     }
 }

@@ -47,5 +47,10 @@ namespace Quixotic.Common.Symbols.Functions
 
             return function;
         }
+
+        public static BindableFunction Coerce(QxType bindableType, Function function)
+        {
+            return function is BindableFunction bindableFunction ? bindableFunction : new BindableFunction(bindableType, function);
+        }
     }
 }

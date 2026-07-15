@@ -21,6 +21,16 @@ namespace Quixotic.Common.Environment
                 _functions[function.Signature] = new(function);
         }
 
+        public FunctionRegistry Capture(ClosureCapture closureCapture)
+        {
+            var registry = new FunctionRegistry();
+
+            foreach (var variable in AllFunctions.Where(closureCapture.IsCaptured))
+                registry.Register(variable);
+
+            return registry;
+        }
+
         public void Register(string name, Function function)
         {
             var parameterTypes = function.Parameters.GetTypes();
@@ -47,6 +57,11 @@ namespace Quixotic.Common.Environment
         public void Register(Signature signature, FunctionSymbol function)
         {
             _functions.Add(signature, function);
+        }
+
+        public void Register(FunctionSymbol function)
+        {
+            _functions.Add(function.Signature, function);
         }
 
         public bool Contains(string name, params QxType[] arguments)

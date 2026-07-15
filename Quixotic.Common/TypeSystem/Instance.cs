@@ -20,6 +20,8 @@ namespace Quixotic.Common.TypeSystem
 
         protected Dictionary<string, object?> Fields { get; } = [];
 
+        public bool Has(string name) => Fields.ContainsKey(name);
+
         public Instance As(QxType type)
         {
             return type.Upcast(this);

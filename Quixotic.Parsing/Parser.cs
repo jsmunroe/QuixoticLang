@@ -1,5 +1,6 @@
 ﻿using Quixotic.Common.Diagnostics;
 using Quixotic.Common.Diagnostics.Issues;
+using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Parsing;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
@@ -235,11 +236,25 @@ namespace Quixotic.Parsing
 
             }, ActivityType.FunctionReturnType);
 
+            ClosureCapture? withClosure = null;
+            if (Match(TokenType.With))
+            {
+                if (Match(TokenType.Closure))
+                    withClosure = ClosureCapture.All;
+                else
+                    withClosure = new ClosureCapture(ParseIdentifierNames());
+            }
+
             var body = CaptureActivity(() => ParseBlock(BlockType.Function), ActivityType.FunctionBody);
 
             Expect(TokenType.EndFunction);
 
-            return new(returnType) { Parameters = [.. parameters], Body = body };
+            return new(returnType)
+            {
+                Parameters = [.. parameters],
+                Body = body,
+                WithClosure = withClosure,
+            };
         }
 
         private QxLambdaFunctionExpression ParseLambdaFunctionExpression()
@@ -833,6 +848,17 @@ namespace Quixotic.Parsing
             Advance();
 
             return token.Value;
+        }
+
+        private IEnumerable<string> ParseIdentifierNames()
+        {
+
+            do
+            {
+                var name = ParseIdentifierName();
+                yield return name;
+            }
+            while (Match(TokenType.Comma));
         }
 
         private string ParseTypeName()

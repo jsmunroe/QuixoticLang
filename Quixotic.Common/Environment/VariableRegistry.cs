@@ -18,6 +18,16 @@ namespace Quixotic.Common.Environment
                 _variables[variable.Name] = new(variable);
         }
 
+        public VariableRegistry Capture(ClosureCapture closureCapture)
+        {
+            var registry = new VariableRegistry();
+
+            foreach (var variable in AllVariables.Where(closureCapture.IsCaptured))
+                registry.Register(variable);
+
+            return registry;
+        }
+
         public void Register(string name, QxType type)
         {
             _variables[name] = new VariableSymbol(name, type);
@@ -26,6 +36,11 @@ namespace Quixotic.Common.Environment
         public void Register(string name, Instance value)
         {
             _variables[name] = new VariableSymbol(name, value);
+        }
+
+        private void Register(VariableSymbol symbol)
+        {
+            _variables[symbol.Name] = symbol;
         }
 
         public bool Contains(string name)

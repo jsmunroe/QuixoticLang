@@ -33,6 +33,8 @@ namespace Quixotic.Common.Syntax
             new (TokenType.Or , "or"),
             new (TokenType.Not , "not"),
             new (TokenType.Function , "function"),
+            new (TokenType.With, "with"),
+            new (TokenType.Closure, "closure"),
             new (TokenType.Return , "return"),
             new (TokenType.Type, "type"),
             new (TokenType.Is, "is"),

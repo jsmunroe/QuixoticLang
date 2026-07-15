@@ -15,11 +15,11 @@ namespace Quixotic.Common.Environment
     // under the System namespace, and it was colliding with this class.
     public class Scope(Scope? parent)
     {
-        private readonly VariableRegistry _veraiableRegistry = new();
+        private VariableRegistry _veraiableRegistry { get; init; } = new();
 
-        private readonly FunctionRegistry _functionRegistry = new();
+        private FunctionRegistry _functionRegistry { get; init; } = new();
 
-        private readonly TypeRegistry _typeRegistry = new();
+        private TypeRegistry _typeRegistry { get; init; } = new();
 
         public List<FunctionSymbol> Functions => _functionRegistry.AllFunctions;
 
@@ -42,6 +42,24 @@ namespace Quixotic.Common.Environment
             _functionRegistry.Add(scopeState.Functions);
             _typeRegistry.Add(scopeState.Types);
             _veraiableRegistry.Add(scopeState.Variables);
+        }
+
+        public Scope Capture(ClosureCapture closureCapture)
+        {
+            if (closureCapture.CaptureAll)
+                return this;
+
+            var newParent = parent?.Capture(closureCapture);
+
+            if (newParent == null)
+                return this; // Keep all global scope
+
+            return new Scope(newParent)
+            {
+                _veraiableRegistry = _veraiableRegistry.Capture(closureCapture),
+                _functionRegistry = _functionRegistry.Capture(closureCapture),
+                _typeRegistry = _typeRegistry.Capture(closureCapture),
+            };
         }
 
         public void DefineVariable(string name, Instance instance)

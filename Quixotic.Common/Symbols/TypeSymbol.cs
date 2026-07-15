@@ -9,8 +9,6 @@ namespace Quixotic.Common.TypeSystem.Symbols
             : this(other.Name, other.Type)
         { }
 
-        public TypeName Name { get; } = name;
-
         public QxType Type { get; } = type;
     }
 }

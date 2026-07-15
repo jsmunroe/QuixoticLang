@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.Statements;
+﻿using Quixotic.Common.Environment;
+using Quixotic.Common.Statements;
 
 namespace Quixotic.Common.Expressions
 {
@@ -13,12 +14,15 @@ namespace Quixotic.Common.Expressions
         {
             ReturnType = other.ReturnType;
             Parameters = other.Parameters;
+            WithClosure = other.WithClosure;
             Body = other.Body;
         }
 
         public string ReturnType { get; }
 
         public List<QxParameter> Parameters { get; init; } = [];
+
+        public ClosureCapture? WithClosure { get; init; }
 
         public Block Body { get; init; } = [];
     }

@@ -1839,6 +1839,36 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
+        public void Execute_dynamic_with_a_function()
+        {
+            // Setup
+            var source = @"
+                let thing := new dynamic
+
+                thing.fish := ""Salmon""
+
+                thing.isFish := function(fish: string): boolean
+                    return fish = this.fish
+                end function
+
+                print thing.fish
+                print thing.isFish(""Salmon"") ' true
+                print thing.isFish(""Trout"") ' false
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertVariableIsDefined("thing");
+
+            runtime.AssertHasPrinted("Salmon");
+        }
+
+        [TestMethod]
         public void Execute_dynamic_assign_member_and_check_if_only_that_member_is_assigned()
         {
             // Setup
@@ -1948,6 +1978,102 @@ namespace Quixotic.InterpretTests
 
         }
 
+        [TestMethod]
+        public void Execute_function_as_variable_with_explicit_closure_capture()
+        {
+            // Setup
+            var source = @"
+                let hello :function
+
+                if true then
+                    let greeting := ""Hi""
+
+                    function hi(name: string) with greeting
+                        print greeting + "", "" + name + ""!""
+                    end function
+
+                    hello := hi
+                end if
+
+                hello(""Bob"")
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute && Assert
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertVariableIsDefined("hello");
+
+            runtime.AssertHasPrinted("Hi, Bob!");
+
+        }
+
+        [TestMethod]
+        public void Execute_function_as_variable_with_explicit_all_closure_capture()
+        {
+            // Setup
+            var source = @"
+                function countDown(one: number, two: number, three: number): function
+                    
+                    function addUp() with closure
+                        return one + two + three
+                    end function
+
+                    return addUp
+                end function
+
+                let result := countDown(1, 1, 2)
+                
+                print result()
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute && Assert
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertHasPrinted("4");
+        }
+
+        [TestMethod]
+        public void Execute_function_as_variable_with_explicit_all_closure_capture_2()
+        {
+            // Setup
+            var source = @"
+                function makeCounter(): function
+                    let count := 0
+
+                    function increment() with count
+                        count := count + 1
+                        return count
+                    end function
+
+                    return increment
+                end function
+
+                let counter := makeCounter()
+
+                print counter()
+                print counter()
+                print counter()
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute && Assert
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertHasPrinted("1");
+            runtime.AssertHasPrinted("2");
+            runtime.AssertHasPrinted("3");
+        }
 
         [TestMethod]
         public void Execute_function_stored_in_variable()
@@ -1975,7 +2101,7 @@ namespace Quixotic.InterpretTests
             runtime.AssertHasPrinted("Hello, Greg!");
         }
 
-        private Stream GetTestFile(string name)
+        private FileStream GetTestFile(string name)
         {
             if (!name.EndsWith(".qx"))
                 name += ".qx";

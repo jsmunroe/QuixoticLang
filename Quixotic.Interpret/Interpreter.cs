@@ -162,11 +162,11 @@ namespace Quixotic.Interpret
 
             runtime.PushFunction(function);
 
-            foreach (var argument in arguments)
-                Scope.DefineVariable(argument.Name, argument.Value);
-
             if (scopeState is not null)
                 Scope.Add(scopeState);
+
+            foreach (var argument in arguments)
+                Scope.DefineVariable(argument.Name, argument.Value);
 
             try
             {
@@ -628,7 +628,7 @@ namespace Quixotic.Interpret
 
         protected FunctionReference Evaluate(QxLambdaFunctionExpression expression)
         {
-            var function = new LambdaFunction(EvaluateFunction(expression), Scope);
+            var function = new Function(EvaluateFunction(expression)) { Closure = Scope };
 
             var functionInstance = new FunctionReference(QxType.Function.Construct(function));
 
@@ -648,7 +648,15 @@ namespace Quixotic.Interpret
 
             var returnType = Scope.GetType(expression.ReturnType);
 
-            var function = new Function(expression.Body, returnType, FunctionCallType.Call) { Parameters = [.. parameters] };
+            Scope? closure = null;
+            if (expression.WithClosure is not null)
+                closure = Scope.Capture(expression.WithClosure);
+
+            var function = new Function(expression.Body, returnType, FunctionCallType.Call)
+            {
+                Parameters = [.. parameters],
+                Closure = closure,
+            };
 
             return function;
         }
@@ -684,13 +692,14 @@ namespace Quixotic.Interpret
 
             Function? method = null;
 
-            if (type is DynamicType dynamicType && ((FunctionCallType[])[FunctionCallType.Getter, FunctionCallType.Setter]).Contains(expression.Type))
+            if (type is DynamicType dynamicType)
             {
                 if (expression.Type == FunctionCallType.Getter)
                     method = dynamicType.BuildPropertyGetter(target, name);
-                else
+                else if (expression.Type == FunctionCallType.Setter)
                     method = dynamicType.BuildPropertySetter(target, name, argumentValues[0].Type);
-
+                else
+                    method = dynamicType.BuildPropertyCaller(target, name, [.. argumentValues.GetTypes()]);
             }
             else if (!type.TryResolveMethod(target, name, argumentValues, out method))
             {

@@ -17,9 +17,24 @@ namespace Quixotic.Common.Environment
                 _types[type.Name] = new(type);
         }
 
+        public TypeRegistry Capture(ClosureCapture closureCapture)
+        {
+            var registry = new TypeRegistry();
+
+            foreach (var type in AllTypes.Where(closureCapture.IsCaptured))
+                registry.Register(type);
+
+            return registry;
+        }
+
         public void Register(string name, QxType type)
         {
             _types[name] = new TypeSymbol(name, type);
+        }
+
+        private void Register(TypeSymbol symbol)
+        {
+            _types[symbol.Name] = symbol;
         }
 
         public bool Contains(string name)
