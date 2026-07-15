@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.TypeSystem;
+﻿using Quixotic.Common.Syntax;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
@@ -7,7 +8,7 @@ namespace Quixotic.Common.Environment
 {
     public class VariableRegistry
     {
-        private readonly Dictionary<string, VariableSymbol> _variables = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, VariableSymbol> _variables = new(CaseRule.Current.StringComparer);
 
         public List<VariableSymbol> AllVariables => [.. _variables.Values];
 

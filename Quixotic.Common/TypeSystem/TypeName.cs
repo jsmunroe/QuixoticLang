@@ -1,4 +1,5 @@
 ﻿using Quixotic.Common.Environment;
+using Quixotic.Common.Syntax;
 using System.Text.RegularExpressions;
 
 namespace Quixotic.Common.TypeSystem
@@ -26,7 +27,7 @@ namespace Quixotic.Common.TypeSystem
 
         public override int GetHashCode()
         {
-            return _name.ToLower().GetHashCode();
+            return CaseRule.Current.StringComparer.GetHashCode(_name);
         }
 
         public static implicit operator TypeName(string name)
@@ -46,7 +47,7 @@ namespace Quixotic.Common.TypeSystem
 
         public bool IsMatch(string second)
         {
-            if (_name.Equals(second, StringComparison.OrdinalIgnoreCase))
+            if (_name.Equals(second, CaseRule.Current.StringComparison))
                 return true;
 
             var match = _genericNames.Match(this);
@@ -55,7 +56,7 @@ namespace Quixotic.Common.TypeSystem
                 var schema = CleanForRegex(this);
                 var pattern = $"^{_genericNames.Replace(schema, "(.*)")}$";
 
-                return Regex.IsMatch(second, pattern, RegexOptions.IgnoreCase);
+                return Regex.IsMatch(second, pattern, CaseRule.Current.RegexOptions);
             }
 
             match = _genericNames.Match(second);
@@ -63,7 +64,7 @@ namespace Quixotic.Common.TypeSystem
             {
                 var pattern = $"^{_genericNames.Replace(Regex.Escape(this), "(.*)")}$";
 
-                return Regex.IsMatch(this, pattern, RegexOptions.IgnoreCase);
+                return Regex.IsMatch(this, pattern, CaseRule.Current.RegexOptions);
             }
 
             return false;
@@ -86,7 +87,7 @@ namespace Quixotic.Common.TypeSystem
 
                 var pattern = $"^{CleanForRegex(this).Replace(CleanForRegex($"{{{key}}}"), "(.*)")}$";
 
-                var valueMatch = Regex.Match(absolute, pattern);
+                var valueMatch = Regex.Match(absolute, pattern, CaseRule.Current.RegexOptions);
                 if (!valueMatch.Success)
                     throw new Exception($"A type name could not be extracted from '{absolute}' using the schema '{this}'.");
 

@@ -1,5 +1,6 @@
 ﻿using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
+using Quixotic.Common.Syntax;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
@@ -60,7 +61,7 @@ namespace Quixotic.Common.Environment
 
         public IEnumerable<FunctionSymbol> Resolve(string name)
         {
-            return _functions.Values.Where(f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            return _functions.Values.Where(f => f.Name.Equals(name, CaseRule.Current.StringComparison));
         }
 
         public FunctionSymbol? Resolve(string name, params QxType[] parameterTypes)

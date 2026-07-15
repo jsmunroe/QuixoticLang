@@ -3,6 +3,7 @@ using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
+using Quixotic.Common.Syntax;
 using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;
@@ -14,7 +15,7 @@ namespace Quixotic.Common.TypeSystem.Types
     {
         private readonly MethodRegistry _methods;
 
-        private readonly Dictionary<string, object?> _initialState = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, object?> _initialState = new(CaseRule.Current.StringComparer);
 
         public QxType(string name, QxType? baseType = null)
         {
@@ -145,7 +146,7 @@ namespace Quixotic.Common.TypeSystem.Types
             if (obj is not QxType other)
                 return false;
 
-            return string.Equals(Name, other.Name);
+            return string.Equals(Name, other.Name, CaseRule.Current.StringComparison);
         }
 
         public void RegisterMethod(string name, Delegate method, QxType returnValue, params Parameter[] parameters)

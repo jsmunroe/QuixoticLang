@@ -4,8 +4,8 @@ namespace System
 {
     public static class StringExtensions
     {
-        private static Regex _rexVowelSound = new(@"^(?:[aeiouAEIOU]|h(?:on|our|eir))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        private static Regex _rexConsonantSound = new(@"^(?:user|unique|unary|uni[v|c|t|f]|one)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private readonly static Regex _rexVowelSound = new(@"^(?:[aeiouAEIOU]|h(?:on|our|eir))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private readonly static Regex _rexConsonantSound = new(@"^(?:user|unique|unary|uni[v|c|t|f]|one)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public static string Capitalize(this string value)
         {

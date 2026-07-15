@@ -5,6 +5,7 @@ using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Symbols;
+using Quixotic.Common.Syntax;
 using Quixotic.Common.Tokens;
 using Quixotic.Parsing.Context;
 using QuixoticLang.Lexer;
@@ -784,7 +785,7 @@ namespace Quixotic.Parsing
                 return CaptureExpression(() =>
                 {
                     Advance();
-                    return new QxBooleanLiteralExpression(string.Equals(token.Value, "true", StringComparison.OrdinalIgnoreCase));
+                    return new QxBooleanLiteralExpression(string.Equals(token.Value, "true", CaseRule.Current.StringComparison));
                 }, ActivityType.BooleanLiteral);
             }
 

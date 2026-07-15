@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.TypeSystem.Types;
+﻿using Quixotic.Common.Syntax;
+using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.Symbols
 {
@@ -10,7 +11,7 @@ namespace Quixotic.Common.Symbols
 
         public bool IsCompatible(string name, params QxType[] arguments)
         {
-            if (!string.Equals(Name, name, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(Name, name, CaseRule.Current.StringComparison))
                 return false;
 
             if (Parameters.Count != arguments.Length)
@@ -36,7 +37,7 @@ namespace Quixotic.Common.Symbols
             if (obj is not Signature other)
                 return false;
 
-            if (!string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(Name, other.Name, CaseRule.Current.StringComparison))
                 return false;
 
             if (Parameters.Count != other.Parameters.Count)
@@ -50,7 +51,7 @@ namespace Quixotic.Common.Symbols
 
         public bool IsMatch(string name, params QxType[] parameters)
         {
-            if (!string.Equals(Name, name, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(Name, name, CaseRule.Current.StringComparison))
                 return false;
 
             if (Parameters.Count != parameters.Length)
