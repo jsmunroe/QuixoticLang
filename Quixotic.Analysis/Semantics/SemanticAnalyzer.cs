@@ -249,9 +249,9 @@ namespace Quixotic.Analysis.Semantics
         {
             var name = statement.Name;
 
-            var returnType = Frame.Symbols.GetType(statement.ReturnType);
+            var returnType = Frame.Symbols.GetType(statement.Expression.ReturnType);
 
-            var parameters = statement.Parameters.Select(p => Frame.Symbols.GetType(p.TypeName));
+            var parameters = statement.Expression.Parameters.Select(p => Frame.Symbols.GetType(p.TypeName));
 
             if (!Frame.Symbols.TryDefineSignature(name, returnType, [.. parameters]))
                 throw new AlreadyDefinedSignatureException(name, statement.Span);

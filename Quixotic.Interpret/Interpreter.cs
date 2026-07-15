@@ -270,19 +270,9 @@ namespace Quixotic.Interpret
 
         public void Execute(QxFunctionDeclarationStatement statement)
         {
-            List<Parameter> parameters = [];
-            foreach (var parameter in statement.Parameters)
-            {
-                if (!Scope.TryGetType(parameter.TypeName, out var type))
-                    throw new UnrecognizedTypeException(parameter.TypeName, statement.Span);
+            var functionReference = Evaluate(statement.Expression);
 
-                parameters.Add(new(parameter.Name, type));
-            }
-
-            var returnType = Scope.GetType(statement.ReturnType);
-
-            var function = new Function(statement.Body, returnType, FunctionCallType.Call) { Parameters = [.. parameters] };
-            Scope.DefineFunction(statement.Name, function);
+            Scope.DefineFunction(statement.Name, functionReference.Function);
         }
 
         public void Execute(QxFunctionCallStatement statement)
@@ -623,13 +613,39 @@ namespace Quixotic.Interpret
             return BooleanType.False;
         }
 
+        protected FunctionReference Evaluate(QxFunctionDeclarationExpression expression)
+        {
+            List<Parameter> parameters = [];
+            foreach (var parameter in expression.Parameters)
+            {
+                if (!Scope.TryGetType(parameter.TypeName, out var type))
+                    throw new UnrecognizedTypeException(parameter.TypeName, expression.Span);
+
+                parameters.Add(new(parameter.Name, type));
+            }
+
+            var returnType = Scope.GetType(expression.ReturnType);
+
+            var function = new Function(expression.Body, returnType, FunctionCallType.Call) { Parameters = [.. parameters] };
+
+            var functionInstance = new FunctionReference(QxType.Function.Construct(function));
+
+            return functionInstance;
+        }
+
         protected Instance Evaluate(QxFunctionCallExpression expression)
         {
             var name = expression.Name;
 
             var argumentValues = Evaluate(expression.Arguments);
 
-            var function = Scope.GetFunction(name, [.. argumentValues.GetTypes()]);
+            if (!Scope.TryGetFunction(name, [.. argumentValues.GetTypes()], out var function))
+            {
+                if (Scope.TryGetInstance(name, out var instance) && instance.Is(QxType.Function))
+                    function = QxType.Function.GetFunction(instance);
+                else
+                    throw new UndefinedFunctionException(name);
+            }
 
             var arguments = function.BindArguments(name, [.. argumentValues]);
 

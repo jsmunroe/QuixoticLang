@@ -1865,6 +1865,31 @@ namespace Quixotic.InterpretTests
             runtime.AssertHasPrinted("nada");
         }
 
+        [TestMethod]
+        public void Execute_function_as_variable()
+        {
+            // Setup
+            var source = @"
+                let hello := function(name: string)
+                    print ""Hello, "" + name + ""!""
+                end function
+
+                hello(""Bob"")
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertVariableIsDefined("hello");
+
+            runtime.AssertHasPrinted("Hello, Bob!");
+        }
+
+
         private Stream GetTestFile(string name)
         {
             if (!name.EndsWith(".qx"))

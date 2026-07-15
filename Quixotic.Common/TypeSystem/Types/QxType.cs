@@ -283,6 +283,8 @@ namespace Quixotic.Common.TypeSystem.Types
         public static Instance Nada { get; } = NadaType.Value;
         public static Instance Void { get; } = VoidType.Value;
 
+        public static FunctionType Function { get; } = FunctionType.Default;
+
         public static ArrayType Array(QxType elementType) => new(elementType);
         public static SetType Set(QxType elementType) => new(elementType);
         public static CollectionType Collection(QxType elementType) => new($"collection<{elementType}>", elementType);
@@ -295,6 +297,7 @@ namespace Quixotic.Common.TypeSystem.Types
                 _ => throw new InvalidOperationException($"Unsupported collection type: {collectionType.Name}")
             };
         }
+
 
         public static Generic Generic(string name) => new(name);
     }

@@ -1395,10 +1395,10 @@ namespace Quixotic.ParsingTests
             var functionStatement = Assert.IsInstanceOfType<QxFunctionDeclarationStatement>(statement);
 
             Assert.AreEqual(name, functionStatement.Name);
-            Assert.AreEqual(returnType, functionStatement.ReturnType);
+            Assert.AreEqual(returnType, functionStatement.Expression.ReturnType);
 
             if (body is not null)
-                body(functionStatement.Body);
+                body(functionStatement.Expression.Body);
 
             return functionStatement;
         }

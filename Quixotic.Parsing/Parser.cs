@@ -214,6 +214,13 @@ namespace Quixotic.Parsing
 
             }, ActivityType.FunctionName);
 
+            var expression = ParseFunctionDeclarationExpression();
+
+            return new(name, expression);
+        }
+
+        private QxFunctionDeclarationExpression ParseFunctionDeclarationExpression()
+        {
             // Parse parameters
             List<QxParameter> parameters = [];
             if (Match(TokenType.OpenParen))
@@ -232,7 +239,7 @@ namespace Quixotic.Parsing
 
             Expect(TokenType.EndFunction);
 
-            return new(name, returnType) { Parameters = [.. parameters], Body = body };
+            return new(returnType) { Parameters = [.. parameters], Body = body };
         }
 
         private QxReturnStatement ParseReturn()
@@ -791,6 +798,12 @@ namespace Quixotic.Parsing
 
             if (token.Type == TokenType.Identifier)
                 return ParseIdentifierExpression();
+
+            if (token.Type == TokenType.Function)
+            {
+                Advance();
+                return ParseFunctionDeclarationExpression();
+            }
 
             Advance(); // Consume current token
             throw new UnexpectedTokenException(token, GetDiagnostic(Issue.UnexpectedToken(token)));
