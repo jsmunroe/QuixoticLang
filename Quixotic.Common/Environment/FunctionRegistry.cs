@@ -2,12 +2,15 @@
 using Quixotic.Common.Symbols.Functions;
 using Quixotic.Common.Syntax;
 using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Common.Environment
 {
+
+    public delegate Instance ExternalFunction(params Instance[] arguments);
 
     public class FunctionRegistry
     {
@@ -42,7 +45,7 @@ namespace Quixotic.Common.Environment
             _functions[signature] = functionSymbol;
         }
 
-        public void Register(string name, Delegate implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
+        public void Register(string name, ExternalFunction implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
         {
             var function = Function.FromDelegate(implementation, returnType, callType, parameters);
 

@@ -19,7 +19,7 @@ namespace Quixotic.Common.TypeSystem.Types
         public Function BuildPropertyGetter(Instance target, string name)
         {
             var getter = PropertyGetter(name);
-            var instance = getter.Invoke(target);
+            var instance = getter.Invoke([target]);
 
             return BindableFunction.FromDelegate(this, getter, instance.Type, FunctionCallType.Getter);
         }

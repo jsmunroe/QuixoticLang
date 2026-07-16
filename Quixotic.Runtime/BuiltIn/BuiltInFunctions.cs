@@ -13,22 +13,22 @@ namespace Quixotic.Runtime.BuiltIn
     {
         public void Register(FunctionRegistry registry)
         {
-            registry.Register("+", Concat, QxType.String, FunctionCallType.OperatorCall, Param("left", QxType.String), Param("right", QxType.Any));
-            registry.Register("+", Add, QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("-", Subtract, QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("*", Multiply, QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("/", Divide, QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("<", IsLessThan, QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("<=", IsLessThanOrEqualTo, QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register(">", IsGreaterThan, QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register(">=", IsGreaterThanOrEqualTo, QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
-            registry.Register("=", IsEqualTo, QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Any), Param("right", QxType.Any));
-            registry.Register("!=", IsNotEqualTo, QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Any), Param("right", QxType.Any));
-            registry.Register("-", Negate, QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number));
-            registry.Register("not", Not, QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Any));
-            registry.Register("+", CollectionAppend, QxType.Collection(QxType.Any), FunctionCallType.OperatorCall, Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Any));
-            registry.Register("+", CollectionConcat, QxType.Collection(QxType.Any), FunctionCallType.OperatorCall, Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Collection(QxType.Any)));
-            registry.Register("in", CollectionContains, QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Any), Param("right", QxType.Collection(QxType.Any)));
+            registry.Register("+", Wrap(Concat), QxType.String, FunctionCallType.OperatorCall, Param("left", QxType.String), Param("right", QxType.Any));
+            registry.Register("+", Wrap(Add), QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("-", Wrap(Subtract), QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("*", Wrap(Multiply), QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("/", Wrap(Divide), QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("<", Wrap(IsLessThan), QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("<=", Wrap(IsLessThanOrEqualTo), QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register(">", Wrap(IsGreaterThan), QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register(">=", Wrap(IsGreaterThanOrEqualTo), QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Number), Param("right", QxType.Number));
+            registry.Register("=", Wrap(IsEqualTo), QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Any), Param("right", QxType.Any));
+            registry.Register("!=", Wrap(IsNotEqualTo), QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Any), Param("right", QxType.Any));
+            registry.Register("-", Wrap(Negate), QxType.Number, FunctionCallType.OperatorCall, Param("left", QxType.Number));
+            registry.Register("not", Wrap(Not), QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Any));
+            registry.Register("+", Wrap(CollectionAppend), QxType.Collection(QxType.Any), FunctionCallType.OperatorCall, Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Any));
+            registry.Register("+", Wrap(CollectionConcat), QxType.Collection(QxType.Any), FunctionCallType.OperatorCall, Param("left", QxType.Collection(QxType.Any)), Param("right", QxType.Collection(QxType.Any)));
+            registry.Register("in", Wrap(CollectionContains), QxType.Boolean, FunctionCallType.OperatorCall, Param("left", QxType.Any), Param("right", QxType.Collection(QxType.Any)));
         }
 
         public static Instance Concat(StringValue left, Instance right)
@@ -118,6 +118,11 @@ namespace Quixotic.Runtime.BuiltIn
                 throw new ArgumentException("Argument is not a CollectionType", nameof(array));
 
             return collectionType.Contains(array, element);
+        }
+
+        private static ExternalFunction Wrap(Delegate del)
+        {
+            return (args) => del.DynamicInvoke(args) as Instance ?? QxType.Void;
         }
 
         private static Parameter Param(string name, QxType type) => new(name, type);

@@ -149,7 +149,7 @@ namespace Quixotic.Common.TypeSystem.Types
             return string.Equals(Name, other.Name, CaseRule.Current.StringComparison);
         }
 
-        public void RegisterMethod(string name, Delegate method, QxType returnValue, params Parameter[] parameters)
+        public void RegisterMethod(string name, ExternalFunction method, QxType returnValue, params Parameter[] parameters)
         {
             _methods.RegisterBindable(name, method, returnValue, FunctionCallType.Call, parameters);
         }
@@ -172,15 +172,15 @@ namespace Quixotic.Common.TypeSystem.Types
             _methods.RegisterBindable(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("value", type));
         }
 
-        protected Func<Instance, Instance> PropertyGetter(string name) => (Instance instance) =>
+        protected ExternalFunction PropertyGetter(string name) => (Instance[] args) =>
         {
-            return (Instance)instance[name]! ?? NadaType.Value;
+            return (Instance)args[0][name]! ?? NadaType.Value;
         };
 
-        protected Func<Instance, Instance, Instance> PropertySetter(string name) => (Instance instance, Instance value) =>
+        protected ExternalFunction PropertySetter(string name) => (Instance[] args) =>
         {
-            instance[name] = value;
-            return value;
+            args[0][name] = args[1];
+            return args[1];
         };
 
         public Function ResolveMethod(Instance thisInstance, string name, params Instance[] arguments)

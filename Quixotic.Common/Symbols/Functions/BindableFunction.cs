@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿using Quixotic.Common.Environment;
+using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Statements;
 using Quixotic.Common.TypeSystem;
@@ -34,7 +35,7 @@ namespace Quixotic.Common.Symbols.Functions
             throw new UnboundFunctionException(this);
         }
 
-        public static BindableFunction FromDelegate(QxType bindableType, Delegate implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
+        public static BindableFunction FromDelegate(QxType bindableType, ExternalFunction implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
         {
             var parameterTypes = parameters.Select(p => p.Type);
 

@@ -45,7 +45,7 @@ namespace Quixotic.Common.Symbols.Functions
             return arguments;
         }
 
-        public static Function FromDelegate(Delegate implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
+        public static Function FromDelegate(ExternalFunction implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
         {
             var parameterTypes = parameters.Select(p => p.Type);
 

@@ -10,7 +10,7 @@ namespace Quixotic.Common.Environment
     {
         public QxType InstanceType { get; } = instanceType;
 
-        public void RegisterBindable(string name, Delegate implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
+        public void RegisterBindable(string name, ExternalFunction implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
         {
             var function = BindableFunction.FromDelegate(InstanceType, implementation, returnType, callType, parameters);
 

@@ -6,7 +6,7 @@
         {
             ElementType = elementType;
 
-            RegisterMethod("length", (Instance instance) => Number.Construct(Length(instance)), Number);
+            RegisterMethod("length", (Instance[] args) => Number.Construct(Length(args[0])), Number);
         }
 
         public QxType ElementType { get; }

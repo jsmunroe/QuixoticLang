@@ -1,12 +1,12 @@
-﻿using Quixotic.Common.TypeSystem;
-using Quixotic.Common.TypeSystem.Types;
+﻿using Quixotic.Common.Environment;
+using Quixotic.Common.TypeSystem;
 
 namespace Quixotic.Common.Expressions
 {
-    public class QxExternalCallExpression(Delegate call) : QxExpression
+    public class QxExternalCallExpression(ExternalFunction call) : QxExpression
     {
         public List<QxExpression> Arguments { get; init; } = [];
 
-        public Instance Invoke(params Instance[] arguments) => call.DynamicInvoke(arguments) as Instance ?? QxType.Void;
+        public Instance Invoke(params Instance[] arguments) => call(arguments);
     }
 }
