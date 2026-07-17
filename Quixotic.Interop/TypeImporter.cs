@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.TypeSystem;
+﻿using Quixotic.Common.Syntax.Casing;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Common.Utilities;
 using Quixotic.Interop.Attributes;
@@ -66,7 +67,7 @@ namespace Quixotic.Interop
 
         protected void Import(ClrType clrType, FieldInfo fieldInfo)
         {
-            var name = fieldInfo.Name;
+            var name = CaseRule.Current.Locals.Recase(fieldInfo.Name);
             var isStatic = fieldInfo.IsStatic;
 
             var type = marshaller.Wrap(fieldInfo.FieldType);
@@ -112,7 +113,7 @@ namespace Quixotic.Interop
 
         protected void Import(ClrType clrType, MethodInfo method)
         {
-            var name = method.Name;
+            var name = CaseRule.Current.MethodNames.Recase(method.Name);
             var isStatic = method.IsStatic;
 
             Instance callMethod(Instance[] arguments)
@@ -137,7 +138,7 @@ namespace Quixotic.Interop
 
         protected void Import(ClrType clrType, PropertyInfo property)
         {
-            var name = property.Name;
+            var name = CaseRule.Current.PropertyNames.Recase(property.Name);
 
             var type = marshaller.Wrap(property.PropertyType);
 

@@ -2,6 +2,7 @@
 using Quixotic.Common.Exceptions.Lexography;
 using Quixotic.Common.Source;
 using Quixotic.Common.Syntax;
+using Quixotic.Common.Syntax.Casing;
 using Quixotic.Common.Tokens;
 
 namespace QuixoticLang.Lexer

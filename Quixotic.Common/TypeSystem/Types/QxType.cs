@@ -3,7 +3,7 @@ using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
-using Quixotic.Common.Syntax;
+using Quixotic.Common.Syntax.Casing;
 using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;

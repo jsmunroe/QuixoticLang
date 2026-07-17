@@ -1,5 +1,5 @@
 ﻿using Quixotic.Common.Symbols;
-using Quixotic.Common.Syntax;
+using Quixotic.Common.Syntax.Casing;
 
 namespace Quixotic.Common.Environment
 {

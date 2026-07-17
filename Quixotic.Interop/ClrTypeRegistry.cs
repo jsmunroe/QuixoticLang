@@ -1,6 +1,6 @@
 ﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.Environment;
-using Quixotic.Common.Syntax;
+using Quixotic.Common.Syntax.Casing;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Interop.TypeSystem.Types;

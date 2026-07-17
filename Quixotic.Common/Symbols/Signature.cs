@@ -1,4 +1,4 @@
-﻿using Quixotic.Common.Syntax;
+﻿using Quixotic.Common.Syntax.Casing;
 using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.Symbols

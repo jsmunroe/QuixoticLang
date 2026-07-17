@@ -1,5 +1,5 @@
 ﻿using Quixotic.Common.Contracts;
-using Quixotic.Common.Syntax;
+using Quixotic.Common.Syntax.Casing;
 using System.Text.RegularExpressions;
 
 namespace Quixotic.Common.TypeSystem
@@ -47,7 +47,7 @@ namespace Quixotic.Common.TypeSystem
 
         public bool IsMatch(string second)
         {
-            if (_name.Equals(second, CaseRule.Current.StringComparison))
+            if (CaseRule.Current.Types.Equals(_name, second))
                 return true;
 
             var match = _genericNames.Match(this);

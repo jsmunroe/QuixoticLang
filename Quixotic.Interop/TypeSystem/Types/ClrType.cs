@@ -1,9 +1,10 @@
-﻿using Quixotic.Common.TypeSystem;
+﻿using Quixotic.Common.Syntax.Casing;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Interop.TypeSystem.Types
 {
-    public class ClrType(Type externalType, QxType? baseType = null) : DefinedType(externalType.Name, baseType)
+    public class ClrType(Type externalType, QxType? baseType = null) : DefinedType(CaseRule.Current.Types.Recase(externalType.Name), baseType)
     {
         public Type ExternalType { get; } = externalType;
 
