@@ -1,33 +1,49 @@
 ﻿using Quixotic.Common.Contracts;
+using Quixotic.Common.Namespaces;
 using Quixotic.Common.Syntax.Casing;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace Quixotic.Common.TypeSystem
 {
-    public class TypeName(string name)
+    [DebuggerDisplay("{FullName}")]
+    public class TypeName
     {
         private static readonly Regex _genericNames = new(@"{([a-z0-9_]+)}", RegexOptions.Compiled);
 
-        private readonly string _name = name;
-
-        public override string ToString()
+        public TypeName(string name)
         {
-            return _name;
+            (Namespace, Name) = Namespace.FromFullName(name);
         }
+
+        public TypeName(Namespace @namespace, string name)
+        {
+            Name = name;
+            Namespace = @namespace;
+        }
+
+        public string Name { get; }
+
+        public Namespace Namespace { get; } = Namespace.Global;
+
+        public string FullName => (Namespace.IsGlobal) ? Name : $"{Namespace}.{Name}";
 
         public override bool Equals(object? obj)
         {
-            return obj is TypeName typeName && Equals(typeName);
+            return obj is TypeName typeName && Equals(typeName) || obj is string name && CaseRule.Current.Equals(FullName, name);
         }
 
         public bool Equals(TypeName typeName)
         {
-            return IsMatch(typeName._name);
+            if (!Namespace.Equals(typeName.Namespace))
+                return false;
+
+            return IsMatch(typeName.Name);
         }
 
         public override int GetHashCode()
         {
-            return CaseRule.Current.StringComparer.GetHashCode(_name);
+            return CaseRule.Current.StringComparer.GetHashCode(FullName);
         }
 
         public static implicit operator TypeName(string name)
@@ -37,7 +53,7 @@ namespace Quixotic.Common.TypeSystem
 
         public static implicit operator string(TypeName typeName)
         {
-            return typeName._name;
+            return typeName.Name;
         }
 
         public static bool IsGeneric(TypeName name)
@@ -47,7 +63,7 @@ namespace Quixotic.Common.TypeSystem
 
         public bool IsMatch(string second)
         {
-            if (CaseRule.Current.Types.Equals(_name, second))
+            if (CaseRule.Current.Types.Equals(Name, second))
                 return true;
 
             var match = _genericNames.Match(this);

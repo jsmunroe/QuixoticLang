@@ -5,8 +5,6 @@ namespace Quixotic.Common.Syntax.Casing
 {
     public class CaseRule(bool ignoreCase)
     {
-        public static CaseRule Current { get; } = new(false);
-
         public bool Equals(string? first, string? second) => StringComparer.Equals(first, second);
 
         public IEqualityComparer<string> StringComparer { get; } = ignoreCase ? System.StringComparer.OrdinalIgnoreCase : System.StringComparer.Ordinal;
@@ -23,5 +21,8 @@ namespace Quixotic.Common.Syntax.Casing
 
         public static ICasingPolicy CamelCase { get; } = new CamelCasingPolicy();
         public static ICasingPolicy PascalCase { get; } = new PascalCasingPolicy();
+
+        public static CaseRule Current { get; } = new(false);
+
     }
 }

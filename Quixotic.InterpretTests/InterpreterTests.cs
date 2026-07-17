@@ -2101,6 +2101,25 @@ namespace Quixotic.InterpretTests
             runtime.AssertHasPrinted("Hello, Greg!");
         }
 
+        [TestMethod]
+        public void Execute_import_standard_library()
+        {
+            // Setup
+            var source = @"
+
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(source);
+
+            Console.WriteLine(Directory.GetCurrentDirectory());
+
+            // Assert
+        }
+
         private FileStream GetTestFile(string name)
         {
             if (!name.EndsWith(".qx"))

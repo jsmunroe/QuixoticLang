@@ -1,5 +1,6 @@
 ﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.Namespaces;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
 using Quixotic.Common.Syntax.Casing;
@@ -35,6 +36,11 @@ namespace Quixotic.Common.Environment
         public void Add(ITypeProvider typeProvider)
         {
             typeProvider.Register(_typeRegistry);
+        }
+
+        public bool Import(Namespace ns)
+        {
+            return _typeRegistry.Import(ns);
         }
 
         public void Add(ScopeState scopeState)

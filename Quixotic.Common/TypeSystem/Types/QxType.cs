@@ -7,10 +7,12 @@ using Quixotic.Common.Syntax.Casing;
 using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem.Symbols;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Common.TypeSystem.Types
 {
+    [DebuggerDisplay("Qx:{Name}")]
     public abstract class QxType
     {
         private readonly MethodRegistry _methods;

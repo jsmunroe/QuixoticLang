@@ -1,0 +1,25 @@
+<Project>
+
+  <Target Name="CopyLibrary"
+          AfterTargets="Build"
+          Condition="'$(IsQuixoticModule)' == 'true'">
+
+    <PropertyGroup>
+      <LibrariesDir>$(SolutionDir)Libraries</LibrariesDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(LibrariesDir)" />
+
+    <ItemGroup>
+      <LibraryFiles Include="$(TargetPath)" />
+      <LibraryFiles Include="$(TargetDir)$(TargetName).pdb"
+                    Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(LibraryFiles)"
+          DestinationFolder="$(LibrariesDir)"
+          SkipUnchangedFiles="true" />
+
+  </Target>
+
+</Project>
