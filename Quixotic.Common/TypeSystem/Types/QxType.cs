@@ -149,27 +149,80 @@ namespace Quixotic.Common.TypeSystem.Types
             return string.Equals(Name, other.Name, CaseRule.Current.StringComparison);
         }
 
-        public void RegisterMethod(string name, ExternalFunction method, QxType returnValue, params Parameter[] parameters)
+        public void RegisterConstructor(Constructor constructor)
         {
-            _methods.RegisterBindable(name, method, returnValue, FunctionCallType.Call, parameters);
+            RegisterMethod("::constructor", constructor);
         }
 
-        public void RegisterMethod(string name, Function function)
+        public void RegisterConstructor(ExternalFunction method, params Parameter[] parameters)
+        {
+            RegisterMethod("::constructor", method, Void.Type, parameters);
+        }
+
+        public virtual void RegisterMethod(string name, ExternalFunction method, QxType returnType, params Parameter[] parameters)
+        {
+            _methods.RegisterBindable(name, method, returnType, FunctionCallType.Call, parameters);
+        }
+
+        public virtual void RegisterMethod(string name, Function function)
         {
             _methods.RegisterBindable(name, function);
         }
 
-        public void RegisterProperty(string name, Instance initialValue)
+        public virtual void RegisterStaticMethod(string name, ExternalFunction method, QxType returnType, params Parameter[] parameters)
         {
-            var type = initialValue.Type;
-            _initialState[name] = initialValue;
-            RegisterProperty(name, type);
+            _methods.Register(name, method, returnType, FunctionCallType.Call, parameters);
         }
 
-        public void RegisterProperty(string name, QxType type)
+        public virtual void RegisterStaticMethod(string name, Function function)
         {
+            _methods.Register(name, function);
+        }
+
+        public virtual void RegisterProperty(string name, Instance initialValue)
+        {
+            var type = initialValue.Type;
+            RegisterProperty(name, type, initialValue);
+        }
+
+        public virtual void RegisterProperty(string name, QxType type, Instance? initialValue = null, bool isReadOnly = false)
+        {
+            _initialState[name] = initialValue ?? Nada;
+
             _methods.RegisterBindable(name, PropertyGetter(name), type, FunctionCallType.Getter);
-            _methods.RegisterBindable(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("value", type));
+
+            if (!isReadOnly)
+                _methods.RegisterBindable(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("value", type));
+        }
+
+        public virtual void RegisterProperty(string name, QxType type, ExternalFunction getter, ExternalFunction? setter = null, Instance? initialValue = null)
+        {
+            _initialState[name] = initialValue ?? Nada;
+
+            _methods.RegisterBindable(name, getter, type, FunctionCallType.Getter);
+
+            if (setter is not null)
+                _methods.RegisterBindable(name, setter, type, FunctionCallType.Call, new Parameter("value", type));
+        }
+
+        public virtual void RegisterStaticProperty(string name, QxType type, Instance? initialValue = null, bool isReadOnly = false)
+        {
+            _initialState[name] = initialValue ?? Nada;
+
+            _methods.Register(name, PropertyGetter(name), type, FunctionCallType.Getter);
+
+            if (!isReadOnly)
+                _methods.Register(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("value", type));
+        }
+
+        public virtual void RegisterStaticProperty(string name, QxType type, ExternalFunction getter, ExternalFunction? setter = null, Instance? initialValue = null)
+        {
+            _initialState[name] = initialValue ?? Nada;
+
+            _methods.Register(name, getter, type, FunctionCallType.Getter);
+
+            if (setter is not null)
+                _methods.Register(name, setter, type, FunctionCallType.Call, new Parameter("value", type));
         }
 
         protected ExternalFunction PropertyGetter(string name) => (Instance[] args) =>

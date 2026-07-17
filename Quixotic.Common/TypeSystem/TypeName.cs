@@ -1,4 +1,4 @@
-﻿using Quixotic.Common.Environment;
+﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.Syntax;
 using System.Text.RegularExpressions;
 
@@ -75,7 +75,7 @@ namespace Quixotic.Common.TypeSystem
             return Regex.Escape(text).Replace("\\{", "{");
         }
 
-        public GenericBindings GetGenericBindings(TypeName absolute, TypeRegistry typeRegistry)
+        public GenericBindings GetGenericBindings(TypeName absolute, ITypeRegistry typeRegistry)
         {
             var matches = _genericNames.Matches(this);
 

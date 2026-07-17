@@ -1,11 +1,12 @@
-﻿using Quixotic.Common.TypeSystem;
+﻿using Quixotic.Common.Contracts;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Common.Environment
 {
-    public class TypeRegistry
+    public class TypeRegistry : ITypeRegistry
     {
         private readonly Dictionary<TypeName, TypeSymbol> _types = []; // case-insensitivity is handles by TypeName class
 

@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace Quixotic.Common.Utilities
 {
-    public class MethodIndexer<TDelegate>
+    public class MethodIndexer<TDelegate, TKeyType>
         where TDelegate : Delegate
     {
         private readonly Type _targetType;
@@ -15,6 +15,8 @@ namespace Quixotic.Common.Utilities
         private readonly Type[] _delegateParameterTypes;
         private readonly Type _delegateReturnType;
 
+        private readonly int _keyParameterIndex;
+
         public MethodIndexer(Type targetType, string methodName)
         {
             _targetType = targetType;
@@ -24,8 +26,13 @@ namespace Quixotic.Common.Utilities
             _delegateInvokeMethod = typeof(TDelegate).GetMethod("Invoke")
                 ?? throw new InvalidOperationException($"{typeof(TDelegate).Name} is not a valid delegate type.");
 
-            _delegateParameterTypes = _delegateInvokeMethod.GetParameters().Select(p => p.ParameterType).ToArray();
+            _delegateParameterTypes = [.. _delegateInvokeMethod.GetParameters().Select(p => p.ParameterType)];
             _delegateReturnType = _delegateInvokeMethod.ReturnType;
+
+            _keyParameterIndex = _delegateParameterTypes.IndexOf(typeof(TKeyType)) - 1;
+
+            if (_keyParameterIndex < 0)
+                throw new InvalidOperationException($"No argument in the delegate '{typeof(TDelegate).Name}' isof type '{typeof(TKeyType).Name}'");
 
             LoadMethodMap();
         }
@@ -39,20 +46,20 @@ namespace Quixotic.Common.Utilities
 
             foreach (var method in methods)
             {
-                if (TryCreateMapEntry(method, out var delegateInstance))
+                if (TryCreateEntry(method, out var delegateInstance))
                 {
                     var methodParams = method.GetParameters();
 
-                    if (methodParams.Length > 0)
+                    if (methodParams.Length > _keyParameterIndex)
                     {
-                        var keyType = methodParams[0].ParameterType;
+                        var keyType = methodParams[_keyParameterIndex].ParameterType;
                         _methodMap[keyType] = delegateInstance;
                     }
                 }
             }
         }
 
-        private bool TryCreateMapEntry(MethodInfo method, [NotNullWhen(true)] out TDelegate? delegateInstance)
+        private bool TryCreateEntry(MethodInfo method, [NotNullWhen(true)] out TDelegate? delegateInstance)
         {
             delegateInstance = null;
 
@@ -132,9 +139,57 @@ namespace Quixotic.Common.Utilities
             return true;
         }
 
-        public bool TryGetDelegate(Type key, [NotNullWhen(returnValue: true)] out TDelegate? delegateInstance)
+        public bool TryGetMethod(Type key, [NotNullWhen(returnValue: true)] out TDelegate? delegateInstance)
         {
             return _methodMap.TryGetValue(key, out delegateInstance);
+        }
+
+        public bool TryGetMethod(object argument, [NotNullWhen(returnValue: true)] out TDelegate? delegateInstance)
+        {
+            delegateInstance = null;
+
+            if (argument is null)
+                return false;
+
+            var argumentType = argument.GetType();
+
+            if (_methodMap.TryGetValue(argumentType, out delegateInstance))
+                return true;
+
+            var closestDistance = double.PositiveInfinity;
+            TDelegate? closestMethod = null;
+            foreach (var kvp in _methodMap)
+            {
+                var distance = GetInheritanceDistance(argumentType, kvp.Key);
+
+                if (distance < 0)
+                    continue;
+
+                if (closestMethod == null || distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestMethod = kvp.Value;
+                }
+            }
+
+            delegateInstance = closestMethod;
+            return delegateInstance is not null;
+        }
+
+        public static int GetInheritanceDistance(Type type, Type baseType)
+        {
+            if (!baseType.IsAssignableFrom(type))
+                return -1;
+
+            int distance = 0;
+
+            while (type != baseType)
+            {
+                type = type.BaseType!;
+                distance++;
+            }
+
+            return distance;
         }
     }
 }

@@ -14,9 +14,9 @@ namespace Quixotic.Analysis.Semantics
 
     public class SemanticAnalyzer
     {
-        private readonly static MethodIndexer<Action<SemanticAnalyzer, QxStatement>> _statementIndexer = new(typeof(SemanticAnalyzer), "AnalyzeStatement");
+        private readonly static MethodIndexer<Action<SemanticAnalyzer, QxStatement>, QxStatement> _statementIndexer = new(typeof(SemanticAnalyzer), "AnalyzeStatement");
 
-        private readonly static MethodIndexer<Func<SemanticAnalyzer, QxExpression, QxType>> _expressionIndexer = new(typeof(SemanticAnalyzer), "AnalyzeExpression");
+        private readonly static MethodIndexer<Func<SemanticAnalyzer, QxExpression, QxType>, QxExpression> _expressionIndexer = new(typeof(SemanticAnalyzer), "AnalyzeExpression");
 
         private IFrame Frame { get; set; } = new GlobalFrame();
 
@@ -121,7 +121,7 @@ namespace Quixotic.Analysis.Semantics
 
             var statementType = statement.GetType();
 
-            if (!_statementIndexer.TryGetDelegate(statementType, out var action))
+            if (!_statementIndexer.TryGetMethod(statementType, out var action))
                 throw new NotImplementedException($"No analyzer implemented for statement type: {statementType.Name}");
 
             action(this, statement);
@@ -137,7 +137,7 @@ namespace Quixotic.Analysis.Semantics
         {
             var expressionType = expression.GetType();
 
-            if (!_expressionIndexer.TryGetDelegate(expressionType, out var func))
+            if (!_expressionIndexer.TryGetMethod(expressionType, out var func))
                 throw new NotImplementedException($"No analyzer implemented for expression type: {expressionType.Name}");
 
             var type = func(this, expression);

@@ -4,6 +4,8 @@
   <Project Path="Quixotic.Cli/Quixotic.Cli.csproj" Id="cd9acbae-0b21-40a9-a9fb-2bc81cb035df" />
   <Project Path="Quixotic.Common/Quixotic.Common.csproj" Id="ef509610-1188-4879-9488-ab6cc2176f3a" />
   <Project Path="Quixotic.CommonTests/Quixotic.CommonTests.csproj" Id="81876f88-71b4-46b6-b218-86d11fc87eed" />
+  <Project Path="Quixotic.Interop/Quixotic.Interop.csproj" Id="e70be4ee-564d-4c07-ad2f-4b55f10e7688" />
+  <Project Path="Quixotic.InteropTests/Quixotic.InteropTests.csproj" Id="7c13e218-d44e-4496-bef5-3d724cd40d26" />
   <Project Path="Quixotic.Interpret/Quixotic.Interpret.csproj" />
   <Project Path="Quixotic.InterpretTests/Quixotic.InterpretTests.csproj" />
   <Project Path="Quixotic.Lexography/Quixotic.Lexography.csproj" />
@@ -11,4 +13,6 @@
   <Project Path="Quixotic.Parsing/Quixotic.Parsing.csproj" Id="b744fa57-ccd2-4032-a0f4-765d5b3845b2" />
   <Project Path="Quixotic.ParsingTests/Quixotic.ParsingTests.csproj" Id="6ff0b923-8cb6-44ad-982a-786477d4222c" />
   <Project Path="Quixotic.Runtime/Quixotic.Runtime.csproj" Id="be41615c-d309-4104-845c-4f5c6af51e8d" />
+  <Project Path="Quixotic.Standard.Math/Quixotic.Standard.Math.csproj" Id="d7d0a6c8-eb01-451d-a0b0-37b08d73975a" />
+  <Project Path="Quixotic.Standard.MathTests/Quixotic.Standard.MathTests.csproj" Id="ca8e5103-0896-4934-82ed-757535dce5e6" />
 </Solution>

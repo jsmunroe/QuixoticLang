@@ -19,6 +19,11 @@ namespace Quixotic.Common.TypeSystem.Types
             };
         }
 
+        public double Get(Instance instance)
+        {
+            return instance["value"] is double d ? d : 0;
+        }
+
         public override bool IsTruthy(Instance instance)
         {
             return instance["value"] is double d && d != 0;

@@ -1,14 +1,8 @@
 namespace Quixotic.Common.TypeSystem.Types
 {
-    public abstract class QxValueType : QxType
+    public abstract class QxValueType(string name, Type typeOfValue) : QxType(name)
     {
-        private readonly Type _typeOfValue;
-
-        protected QxValueType(string name, Type typeOfValue)
-            : base(name)
-        {
-            _typeOfValue = typeOfValue;
-        }
+        private readonly Type _typeOfValue = typeOfValue;
 
         public override bool HasGenerics => false;
 

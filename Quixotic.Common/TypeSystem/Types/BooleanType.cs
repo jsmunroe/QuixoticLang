@@ -11,7 +11,7 @@ namespace Quixotic.Common.TypeSystem.Types
             : base("boolean", typeof(bool))
         { }
 
-        public static Instance Construct(bool value)
+        public Instance Construct(bool value)
         {
             return new Instance(Default)
             {
@@ -21,16 +21,7 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public bool Get(Instance instance)
         {
-            if (instance["value"] is bool boolValue)
-                return boolValue;
-
-            return false;
-        }
-
-        public bool Set(Instance instance, bool value)
-        {
-            instance["value"] = value;
-            return true;
+            return instance["value"] is bool b && b;
         }
 
         public override bool IsTruthy(Instance instance)
@@ -46,9 +37,9 @@ namespace Quixotic.Common.TypeSystem.Types
             return actual is BooleanType;
         }
 
-        public static Instance True { get; } = Construct(true);
+        public static Instance True { get; } = Default.Construct(true);
 
-        public static Instance False { get; } = Construct(false);
+        public static Instance False { get; } = Default.Construct(false);
 
     }
 }

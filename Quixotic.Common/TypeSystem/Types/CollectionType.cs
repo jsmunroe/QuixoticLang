@@ -93,7 +93,7 @@
 
             var contains = elements.Any(e => e.Equals(value));
 
-            return BooleanType.Construct(contains);
+            return BooleanType.Default.Construct(contains);
         }
 
         public override bool IsTruthy(Instance instance)

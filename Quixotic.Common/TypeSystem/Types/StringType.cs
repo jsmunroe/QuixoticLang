@@ -19,6 +19,11 @@ namespace Quixotic.Common.TypeSystem.Types
             };
         }
 
+        public string Get(Instance instance)
+        {
+            return instance["value"] is string s ? s : string.Empty;
+        }
+
         public override bool IsTruthy(Instance instance)
         {
             return !string.IsNullOrEmpty(instance["value"] as string);

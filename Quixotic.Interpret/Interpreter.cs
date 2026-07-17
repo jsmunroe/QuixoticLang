@@ -26,9 +26,9 @@ namespace Quixotic.Interpret
 {
     public class Interpreter(IRuntime runtime, IConsoleWriter? consoleWriter = null)
     {
-        private readonly static MethodIndexer<Action<Interpreter, QxStatement>> _executes = new(typeof(Interpreter), "Execute");
+        private readonly static MethodIndexer<Action<Interpreter, QxStatement>, QxStatement> _executes = new(typeof(Interpreter), "Execute");
 
-        private readonly static MethodIndexer<Func<Interpreter, QxExpression, Instance>> _evaluates = new(typeof(Interpreter), "Evaluate");
+        private readonly static MethodIndexer<Func<Interpreter, QxExpression, Instance>, QxExpression> _evaluates = new(typeof(Interpreter), "Evaluate");
 
         private readonly IConsoleWriter _consoleWriter = consoleWriter ?? new ConsoleWriter();
 
@@ -193,7 +193,7 @@ namespace Quixotic.Interpret
             try
             {
                 var statementType = statement.GetType();
-                if (!_executes.TryGetDelegate(statementType, out var action))
+                if (!_executes.TryGetMethod(statementType, out var action))
                     throw new NotSupportedException($"Unsupported statement type: {statementType.Name}");
 
                 action(this, statement);
@@ -213,7 +213,7 @@ namespace Quixotic.Interpret
             try
             {
                 var expressionType = expression.GetType();
-                if (!_evaluates.TryGetDelegate(expressionType, out var function))
+                if (!_evaluates.TryGetMethod(expressionType, out var function))
                     throw new NotSupportedException($"Unsupported expression type: {expressionType.Name}");
 
                 return function(this, expression);
