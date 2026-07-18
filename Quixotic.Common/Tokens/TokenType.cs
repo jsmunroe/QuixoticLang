@@ -63,12 +63,12 @@ namespace Quixotic.Common.Tokens
         CloseBracket,
         OpenBrace,
         CloseBrace,
-        Property,
         Construct,
         EndFunction,
         Is,
         Colon,
         With,
         Closure,
+        Import,
     }
 }

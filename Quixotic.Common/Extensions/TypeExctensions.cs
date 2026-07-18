@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace System
@@ -13,6 +14,24 @@ namespace System
                 return descriptionAttribute.Description;
 
             return _enumSpace.Replace(type.Name, " ");
+        }
+
+        public static bool HasAttribute<TAttribute>(this Type type)
+             where TAttribute : Attribute
+        {
+            return type.GetCustomAttribute<TAttribute>() is not null;
+        }
+
+        public static IEnumerable<Type> GetTypesWithAttribute<TAttribute>(this Assembly assembly)
+             where TAttribute : Attribute
+        {
+            return assembly.GetTypes().Where(t => t.HasAttribute<TAttribute>());
+        }
+
+        public static IEnumerable<Type> GetTypesWithAttribute<TAttribute>(this AppDomain appDomain)
+             where TAttribute : Attribute
+        {
+            return appDomain.GetAssemblies().SelectMany(a => a.GetTypesWithAttribute<TAttribute>());
         }
     }
 }

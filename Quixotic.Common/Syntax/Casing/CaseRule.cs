@@ -13,9 +13,9 @@ namespace Quixotic.Common.Syntax.Casing
 
         public RegexOptions RegexOptions { get; } = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
 
-        public ICasingPolicy Types { get; } = PascalCase;
-        public ICasingPolicy Locals { get; } = CamelCase;
-        public ICasingPolicy Fields { get; } = CamelCase;
+        public ICasingPolicy TypeNames { get; } = PascalCase;
+        public ICasingPolicy LocalNames { get; } = CamelCase;
+        public ICasingPolicy FieldNames { get; } = CamelCase;
         public ICasingPolicy MethodNames { get; } = CamelCase;
         public ICasingPolicy PropertyNames { get; } = CamelCase;
 

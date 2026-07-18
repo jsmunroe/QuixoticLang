@@ -40,7 +40,7 @@ namespace Quixotic.Common.Syntax
             new (TokenType.Is, "is"),
             new (TokenType.New, "new"),
             new (TokenType.Construct, "construct"),
-            new (TokenType.Property , "property"),
+            new (TokenType.Import, "import"),
         ];
 
         private static readonly Dictionary<string, Keyword> _keywordsByValue = Keywords.ToDictionary(k => k.Value, k => k);

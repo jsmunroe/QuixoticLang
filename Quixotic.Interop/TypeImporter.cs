@@ -1,6 +1,6 @@
-﻿using Quixotic.Common.Syntax.Casing;
+﻿using Quixotic.Common.Syntax;
+using Quixotic.Common.Syntax.Casing;
 using Quixotic.Common.TypeSystem;
-using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Common.Utilities;
 using Quixotic.Interop.Attributes;
 using Quixotic.Interop.TypeSystem.Types;
@@ -48,7 +48,7 @@ namespace Quixotic.Interop
                 var instance = arguments[0];
                 arguments = arguments[1..];
 
-                var args = marshaller.Wrap(arguments);
+                var args = marshaller.Unwrap(arguments);
 
                 var clrInstance = constructorInfo.Invoke([.. args]);
 
@@ -57,7 +57,7 @@ namespace Quixotic.Interop
                 return instance;
             }
 
-            clrType.RegisterMethod("::contructor", callConstructor, QxType.Void.Type, [.. marshaller.Wrap(constructorInfo.GetParameters())]);
+            clrType.RegisterConstructor(callConstructor, [.. marshaller.Wrap(constructorInfo.GetParameters())]);
         }
 
         protected void Import(ClrType _clrType, EventInfo _eventInfo)
@@ -67,7 +67,7 @@ namespace Quixotic.Interop
 
         protected void Import(ClrType clrType, FieldInfo fieldInfo)
         {
-            var name = CaseRule.Current.Locals.Recase(fieldInfo.Name);
+            var name = CaseRule.Current.LocalNames.Recase(fieldInfo.Name);
             var isStatic = fieldInfo.IsStatic;
 
             var type = marshaller.Wrap(fieldInfo.FieldType);
@@ -76,7 +76,7 @@ namespace Quixotic.Interop
             {
                 var instance = isStatic ? null : arguments[0];
 
-                var clrInstance = marshaller.Wrap(instance);
+                var clrInstance = marshaller.Unwrap(instance);
 
                 var value = fieldInfo.GetValue(clrInstance);
 
@@ -88,9 +88,9 @@ namespace Quixotic.Interop
                 var instance = isStatic ? null : arguments[0];
                 var value = isStatic ? arguments[0] : arguments[1];
 
-                var clrInstance = marshaller.Wrap(instance);
+                var clrInstance = marshaller.Unwrap(instance);
 
-                fieldInfo.SetValue(clrInstance, marshaller.Wrap(value));
+                fieldInfo.SetValue(clrInstance, marshaller.Unwrap(value));
 
                 return value;
             }
@@ -113,7 +113,18 @@ namespace Quixotic.Interop
 
         protected void Import(ClrType clrType, MethodInfo method)
         {
-            var name = CaseRule.Current.MethodNames.Recase(method.Name);
+            var name = method.Name;
+
+            if (method.IsSpecialName)
+            {
+                if (!ClrNames.Current.TryResolve(name, out var qxName))
+                    return;
+
+                name = qxName;
+            }
+
+            name = CaseRule.Current.MethodNames.Recase(name);
+
             var isStatic = method.IsStatic;
 
             Instance callMethod(Instance[] arguments)
@@ -121,9 +132,9 @@ namespace Quixotic.Interop
                 var instance = isStatic ? null : arguments[0];
                 arguments = isStatic ? arguments : arguments[1..];
 
-                var args = marshaller.Wrap(arguments);
+                var args = marshaller.Unwrap(arguments);
 
-                var clrInstance = marshaller.Wrap(instance);
+                var clrInstance = marshaller.Unwrap(instance);
 
                 var returnValue = method.Invoke(clrInstance, [.. args]);
 
@@ -148,7 +159,7 @@ namespace Quixotic.Interop
             {
                 var instance = isStatic ? null : arguments[0];
 
-                var clrInstance = marshaller.Wrap(instance);
+                var clrInstance = marshaller.Unwrap(instance);
 
                 var value = property.GetValue(clrInstance);
 
@@ -160,9 +171,9 @@ namespace Quixotic.Interop
                 var instance = isStatic ? null : arguments[0];
                 var value = isStatic ? arguments[0] : arguments[1];
 
-                var clrInstance = marshaller.Wrap(instance);
+                var clrInstance = marshaller.Unwrap(instance);
 
-                property.SetValue(clrInstance, marshaller.Wrap(value));
+                property.SetValue(clrInstance, marshaller.Unwrap(value));
 
                 return value;
             }

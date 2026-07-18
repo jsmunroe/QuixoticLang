@@ -4,6 +4,7 @@ using Quixotic.Common.Namespaces;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
 using Quixotic.Common.Syntax.Casing;
+using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
@@ -38,16 +39,15 @@ namespace Quixotic.Common.Environment
             typeProvider.Register(_typeRegistry);
         }
 
-        public bool Import(Namespace ns)
-        {
-            return _typeRegistry.Import(ns);
-        }
-
         public void Add(ScopeState scopeState)
         {
             _functionRegistry.Add(scopeState.Functions);
             _typeRegistry.Add(scopeState.Types);
             _veraiableRegistry.Add(scopeState.Variables);
+        }
+        public void Import(Namespace ns)
+        {
+            _typeRegistry.Import(ns);
         }
 
         public Scope Capture(ClosureCapture closureCapture)
@@ -167,7 +167,7 @@ namespace Quixotic.Common.Environment
 
         public Function GetFunction(string name, params QxType[] arguments)
         {
-            return TryGetFunction(name, arguments, out var function) ? function : throw new UndefinedFunctionException(name);
+            return TryGetFunction(name, arguments, out var function) ? function : throw new UndefinedFunctionException(name, Span.Empty); // TODO: Figure out actual Span
         }
 
         public bool TryGetFunction(string name, QxType[] arguments, [NotNullWhen(returnValue: true)] out Function? function)

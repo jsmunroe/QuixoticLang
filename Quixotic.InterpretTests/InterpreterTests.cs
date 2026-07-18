@@ -2106,7 +2106,16 @@ namespace Quixotic.InterpretTests
         {
             // Setup
             var source = @"
+                import Quixotic.Standard.Math
 
+                let complex := new Complex(1, 1)
+
+                print complex.magnitudeSqr
+
+                let complex2 := new Complex(2, 4)
+                let complex3 := complex + complex2
+                
+                print complex3
             ";
 
             var runtime = new TestRuntime();
@@ -2118,6 +2127,8 @@ namespace Quixotic.InterpretTests
             Console.WriteLine(Directory.GetCurrentDirectory());
 
             // Assert
+            runtime.AssertHasPrinted("2");
+            runtime.AssertHasPrinted("(3 + 5i)");
         }
 
         private FileStream GetTestFile(string name)

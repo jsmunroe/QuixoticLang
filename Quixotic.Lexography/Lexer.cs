@@ -197,7 +197,7 @@ namespace QuixoticLang.Lexer
 
             string text = string.Empty;
             var next = Peek();
-            while (!IsAtEnd && char.IsLetter(next))
+            while (!IsAtEnd && char.IsLetter(next) || char.IsNumber(next))
             {
                 text += next;
                 Advance();

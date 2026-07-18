@@ -115,17 +115,6 @@ namespace Quixotic.Interop
             }
         }
 
-        public IEnumerable<object?> Unwrap(IEnumerable<Instance?> instances)
-        {
-            foreach (var instance in instances)
-            {
-                if (!TryUnwrap(instance, out var value))
-                    throw new NotSupportedException($"Type '{instance!.Type}' to is not supported.");
-
-                yield return value;
-            }
-        }
-
         public bool TryUnwrap(Instance? instance, [MaybeNullWhen(returnValue: true)] out object? value)
         {
             if (instance is null || instance.IsNada)
@@ -162,15 +151,15 @@ namespace Quixotic.Interop
             return false;
         }
 
-        public IEnumerable<Type> UnWrap(IEnumerable<QxType> qxTypes)
+        public object? Unwrap(Instance? instance)
         {
-            foreach (var qxType in qxTypes)
-            {
-                if (!TryUnwrap(qxType, out var type))
-                    throw new NotSupportedException($"Type '{qxType}' to is not supported.");
+            return TryUnwrap(instance, out var value) ? value : throw new NotSupportedException($"Type '{instance!.Type}' to is not supported.");
+        }
 
-                yield return type;
-            }
+        public IEnumerable<object?> Unwrap(IEnumerable<Instance?> instances)
+        {
+            foreach (var instance in instances)
+                yield return Unwrap(instance);
         }
 
         public bool TryUnwrap(QxType qxType, [NotNullWhen(returnValue: true)] out Type? type)
@@ -202,5 +191,18 @@ namespace Quixotic.Interop
             type = null;
             return false;
         }
+
+        public Type Unwrap(QxType qxType)
+        {
+            return TryUnwrap(qxType, out var type) ? type : throw new NotSupportedException($"Type '{qxType}' to is not supported.");
+        }
+
+        public IEnumerable<Type> Unwrap(IEnumerable<QxType> qxTypes)
+        {
+            foreach (var qxType in qxTypes)
+                yield return Unwrap(qxType);
+        }
+
+
     }
 }

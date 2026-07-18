@@ -1,5 +1,6 @@
 ﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.Environment;
+using Quixotic.Common.Exceptions.Interop;
 using System.Reflection;
 
 namespace Quixotic.Common.Namespaces
@@ -8,7 +9,7 @@ namespace Quixotic.Common.Namespaces
     {
         public readonly Dictionary<Namespace, IModule> _modules = []; // Case sensitivity is handled by Namespace
 
-        public bool Load(string assemblyFile)
+        public bool TryLoad(string assemblyFile)
         {
             var assembly = Assembly.LoadFrom(assemblyFile);
 
@@ -29,6 +30,12 @@ namespace Quixotic.Common.Namespaces
             }
 
             return true;
+        }
+
+        public void Load(string assemblyFile)
+        {
+            if (!TryLoad(assemblyFile))
+                throw new LoadModuleException(assemblyFile);
         }
 
         public void Add(IModule module)

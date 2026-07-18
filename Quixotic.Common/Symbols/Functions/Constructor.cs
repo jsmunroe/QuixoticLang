@@ -1,6 +1,9 @@
-﻿using Quixotic.Common.Exceptions.Interpret;
+﻿using Quixotic.Common.Environment;
+using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.Expressions;
 using Quixotic.Common.Statements;
 using Quixotic.Common.TypeSystem;
+using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.Symbols.Functions
@@ -13,6 +16,8 @@ namespace Quixotic.Common.Symbols.Functions
             Base = other.Base;
         }
 
+        public BaseConstructor? Base { get; init; }
+
         public override BoundConstructor Bind(Instance instance)
         {
             if (!BindableType.IsAssignableFrom(instance.Type))
@@ -21,6 +26,18 @@ namespace Quixotic.Common.Symbols.Functions
             return new BoundConstructor(instance, this);
         }
 
-        public BaseConstructor? Base { get; init; }
+        public static Constructor FromDelegate(QxType bindableType, ExternalFunction implementation, params Parameter[] parameters)
+        {
+            var parameterTypes = parameters.Select(p => p.Type);
+
+            List<QxExpression> parameterExpressions = [new QxIdentifierExpression("this"), .. parameters.Select(p => new QxIdentifierExpression(p.Name))];
+
+            var externalCallExpression = new QxExternalCallExpression(implementation) { Arguments = [.. parameterExpressions] };
+            var externalCallStatement = new QxExternalCallStatement(externalCallExpression);
+
+            var constructor = new Constructor(bindableType, [externalCallStatement]) { Parameters = [.. parameters] };
+
+            return constructor;
+        }
     }
 }

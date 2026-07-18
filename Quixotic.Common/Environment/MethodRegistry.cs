@@ -10,6 +10,18 @@ namespace Quixotic.Common.Environment
     {
         public QxType InstanceType { get; } = instanceType;
 
+        public void RegisterConstructor(ExternalFunction implementation, params Parameter[] parameters)
+        {
+            var constructor = Constructor.FromDelegate(InstanceType, implementation, parameters);
+
+            var parameterTypes = constructor.Parameters.Select(p => p.Type);
+
+            var signature = new Signature("::constructor", [.. parameterTypes]);
+            var functionSymbol = new FunctionSymbol(signature.Name, constructor);
+
+            Register(signature, functionSymbol);
+        }
+
         public void RegisterBindable(string name, ExternalFunction implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
         {
             var function = BindableFunction.FromDelegate(InstanceType, implementation, returnType, callType, parameters);

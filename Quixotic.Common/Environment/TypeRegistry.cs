@@ -1,4 +1,5 @@
 ﻿using Quixotic.Common.Contracts;
+using Quixotic.Common.Exceptions.Interop;
 using Quixotic.Common.Namespaces;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
@@ -9,7 +10,7 @@ namespace Quixotic.Common.Environment
 {
     public class TypeRegistry : ITypeRegistry
     {
-        private readonly AssemblyCatalog _assemblyLocator = AssemblyCatalog.For(new InstalledLibraryLocator(), new DevelopmentLibraryLocator());
+        private readonly AssemblyCatalog _assemblyCatalog = AssemblyCatalog.For(new InstalledLibraryLocator(), new DevelopmentLibraryLocator());
 
         private readonly Dictionary<TypeName, TypeSymbol> _types = []; // case-insensitivity is handles by TypeName class
 
@@ -85,12 +86,20 @@ namespace Quixotic.Common.Environment
             return false;
         }
 
-        public bool Import(Namespace ns)
+        public bool TryImport(Namespace ns)
         {
-            if (!_assemblyLocator.TryGetLocation(ns, out var location))
+            if (!_assemblyCatalog.TryGetLocation(ns, out var location))
                 return false;
 
-            return _importSet.Load(location);
+            return _importSet.TryLoad(location);
+        }
+
+        public void Import(Namespace ns)
+        {
+            if (!_assemblyCatalog.TryGetLocation(ns, out var location))
+                throw new AssemblyNotFoundException(ns);
+
+            _importSet.Load(location);
         }
     }
 }

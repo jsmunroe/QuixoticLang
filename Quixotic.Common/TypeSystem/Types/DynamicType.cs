@@ -1,6 +1,7 @@
 ﻿using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
+using Quixotic.Common.Tokens;
 using Quixotic.Common.TypeSystem.Symbols;
 
 namespace Quixotic.Common.TypeSystem.Types
@@ -29,10 +30,10 @@ namespace Quixotic.Common.TypeSystem.Types
             return BindableFunction.FromDelegate(this, PropertySetter(name), type, FunctionCallType.Setter, new Parameter("value", type));
         }
 
-        public Function BuildPropertyCaller(Instance target, string name, QxType[] argumentTypes)
+        public Function BuildMethodCaller(Instance target, string name, QxType[] argumentTypes)
         {
             if (target[name] is not Instance value || !value.Type.Equals(Function))
-                throw new UndefinedMethodException(target.Type, name);
+                throw new UndefinedMethodException(target.Type, name, Span.Empty); // TODO: Figure out actual Span
 
             var function = Function.GetFunction(value);
 

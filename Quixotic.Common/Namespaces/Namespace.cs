@@ -79,5 +79,25 @@ namespace Quixotic.Common.Namespaces
 
             return (@namespace, name);
         }
+
+        public static Namespace Parse(string name)
+        {
+            var parts = name.Split('.');
+
+            var @namespace = new Namespace(parts);
+
+            return @namespace;
+        }
+
+        public static implicit operator Namespace(string @namespace)
+        {
+            return Parse(@namespace);
+        }
+
+        public static implicit operator string(Namespace @namespace)
+        {
+            return @namespace.ToString();
+        }
+
     }
 }

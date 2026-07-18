@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Common.TypeSystem.Types
 {
-    [DebuggerDisplay("Qx:{Name}")]
+    [DebuggerDisplay("{Name,nq}")]
     public abstract class QxType
     {
         private readonly MethodRegistry _methods;
@@ -44,7 +44,7 @@ namespace Quixotic.Common.TypeSystem.Types
         public Instance Upcast(Instance instance)
         {
             if (!IsAssignableFrom(instance.Type))
-                throw new CastMismatchException(instance.Type, this, Span.Empty);
+                throw new CastMismatchException(instance.Type, this, Span.Empty); // TODO: Figure out actual Span
 
             return new TypedInstanceView(instance, this);
         }
@@ -158,7 +158,7 @@ namespace Quixotic.Common.TypeSystem.Types
 
         public void RegisterConstructor(ExternalFunction method, params Parameter[] parameters)
         {
-            RegisterMethod("::constructor", method, Void.Type, parameters);
+            _methods.RegisterConstructor(method, parameters);
         }
 
         public virtual void RegisterMethod(string name, ExternalFunction method, QxType returnType, params Parameter[] parameters)
@@ -241,7 +241,7 @@ namespace Quixotic.Common.TypeSystem.Types
         public Function ResolveMethod(Instance thisInstance, string name, params Instance[] arguments)
         {
             if (!TryResolveMethod(thisInstance, name, arguments, out var function))
-                throw new UndefinedMethodException(this, name);
+                throw new UndefinedMethodException(this, name, Span.Empty); // TODO: Figure out actual Span
 
             return function;
         }
@@ -266,7 +266,7 @@ namespace Quixotic.Common.TypeSystem.Types
         public Function ResolveMethod(string name, params Instance[] arguments)
         {
             if (!TryResolveMethod(name, arguments, out var function))
-                throw new UndefinedMethodException(this, name);
+                throw new UndefinedMethodException(this, name, Span.Empty); // TODO: Figure out actual Span
 
             return function;
         }

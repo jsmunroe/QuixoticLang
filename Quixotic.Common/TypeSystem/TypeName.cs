@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace Quixotic.Common.TypeSystem
 {
-    [DebuggerDisplay("{FullName}")]
+    [DebuggerDisplay("{FullName,nq}")]
     public class TypeName
     {
         private static readonly Regex _genericNames = new(@"{([a-z0-9_]+)}", RegexOptions.Compiled);
@@ -46,6 +46,11 @@ namespace Quixotic.Common.TypeSystem
             return CaseRule.Current.StringComparer.GetHashCode(FullName);
         }
 
+        public override string ToString()
+        {
+            return FullName;
+        }
+
         public static implicit operator TypeName(string name)
         {
             return new TypeName(name);
@@ -63,7 +68,7 @@ namespace Quixotic.Common.TypeSystem
 
         public bool IsMatch(string second)
         {
-            if (CaseRule.Current.Types.Equals(Name, second))
+            if (CaseRule.Current.TypeNames.Equals(Name, second))
                 return true;
 
             var match = _genericNames.Match(this);

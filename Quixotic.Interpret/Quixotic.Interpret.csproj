@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Quixotic.Analysis\Quixotic.Analysis.csproj" />
+    <ProjectReference Include="..\Quixotic.Interop\Quixotic.Interop.csproj" />
     <ProjectReference Include="..\Quixotic.Parsing\Quixotic.Parsing.csproj" />
     <ProjectReference Include="..\Quixotic.Runtime\Quixotic.Runtime.csproj" />
   </ItemGroup>

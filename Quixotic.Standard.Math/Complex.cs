@@ -59,6 +59,20 @@ namespace Quixotic.Standard.Math
             return x.Equals(y);
         }
 
+        public override string ToString()
+        {
+            if (Real == 0 && Imaginary == 0)
+                return "0";
+
+            if (Real == 0)
+                return $"{Imaginary}i";
+
+            if (Imaginary == 0)
+                return $"{Real}";
+
+            return $"({Real} {(Imaginary > 0 ? "+" : "-")} {System.Math.Abs(Imaginary)}i)";
+        }
+
         [QuixoticIgnore]
         public bool Equals(Complex other)
         {

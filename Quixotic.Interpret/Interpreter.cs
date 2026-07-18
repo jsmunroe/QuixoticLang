@@ -9,6 +9,7 @@ using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
+using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
@@ -146,7 +147,7 @@ namespace Quixotic.Interpret
             Instance[] argumentValues = [.. Evaluate(baseConstructor.Arguments)];
 
             if (!type.TryResolveConstructor(argumentValues, out var constructor))
-                throw new UndefinedMethodException(type, $"{type}::constructor");
+                throw new UndefinedMethodException(type, $"{type}::constructor", Span.Empty); // TODO: Figure out actual Span
 
             var boundConstructor = constructor.Bind(instance);
 
@@ -292,6 +293,11 @@ namespace Quixotic.Interpret
                 instance = Evaluate(statement.Expression);
 
             throw new ReturnException(instance);
+        }
+
+        public void Execute(QxExternalCallStatement statement)
+        {
+            Evaluate(statement.Expression);
         }
 
         public static void Execute(QxContinueStatement statement)
@@ -464,6 +470,11 @@ namespace Quixotic.Interpret
             runtime.Pop();
 
             runtime.Frame.GlobalScope.DefineType(type.Name, type);
+        }
+
+        public void Execute(QxImportStatement statement)
+        {
+            Scope.Import(statement.Namespace);
         }
 
         public void Execute(QxConstructorDeclarationStatement statement)
@@ -672,7 +683,7 @@ namespace Quixotic.Interpret
                 if (Scope.TryGetInstance(name, out var instance) && instance.Is(QxType.Function))
                     function = QxType.Function.GetFunction(instance);
                 else
-                    throw new UndefinedFunctionException(name);
+                    throw new UndefinedFunctionException(name, expression.Span);
             }
 
             var arguments = function.BindArguments(name, [.. argumentValues]);
@@ -699,16 +710,16 @@ namespace Quixotic.Interpret
                 else if (expression.Type == FunctionCallType.Setter)
                     method = dynamicType.BuildPropertySetter(target, name, argumentValues[0].Type);
                 else
-                    method = dynamicType.BuildPropertyCaller(target, name, [.. argumentValues.GetTypes()]);
+                    method = dynamicType.BuildMethodCaller(target, name, [.. argumentValues.GetTypes()]);
             }
             else if (!type.TryResolveMethod(target, name, argumentValues, out method))
             {
                 if (expression.Type == FunctionCallType.Call)
-                    throw new UndefinedMethodException(target.Type, name);
+                    throw new UndefinedMethodException(target.Type, name, expression.Span);
                 else if (expression.Type == FunctionCallType.OperatorCall)
-                    throw new UndefinedOperatorException(target.Type, name);
+                    throw new UndefinedOperatorException(target.Type, name, expression.Span);
                 else
-                    throw new UndefinedPropertyException(target.Type, name);
+                    throw new UndefinedPropertyException(target.Type, name, expression.Span);
             }
 
             method = method is BindableFunction bindableFunction ? bindableFunction.Bind(target) : method;
@@ -746,7 +757,7 @@ namespace Quixotic.Interpret
                 if (argumentValues.Length == 0)
                     return instance;
 
-                throw new UndefinedMethodException(type, $"{type}::constructor");
+                throw new UndefinedMethodException(type, $"{type}::constructor", Span.Empty); // TODO: Figure out actual Span
             }
 
             var boundConstructor = constructor.Bind(instance);
@@ -809,7 +820,11 @@ namespace Quixotic.Interpret
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
 
-            var function = Scope.GetFunction(name, leftValue.Type, rightValue.Type);
+            if (!leftValue.Type.TryResolveMethod(name, [leftValue, rightValue], out var function)) // Check for static operator on left's type
+            {
+                if (!Scope.TryGetFunction(name, [leftValue.Type, rightValue.Type], out function)) // Check scope for operator
+                    throw new UndefinedOperatorException(leftValue.Type, name, left.Span + right.Span);
+            }
 
             var arguments = function.BindArguments(name, [leftValue, rightValue]);
 

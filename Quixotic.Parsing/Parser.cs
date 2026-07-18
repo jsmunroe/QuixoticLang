@@ -113,6 +113,9 @@ namespace Quixotic.Parsing
             if (Match(TokenType.Type))
                 return ParseTypeDeclaration();
 
+            if (Match(TokenType.Import))
+                return ParseImport();
+
             return ParseStandalonExpression();
 
             throw new UnexpectedTokenException(_tokens.Peek(), GetDiagnostic(Issue.UnexpectedToken(Peek())));
@@ -302,6 +305,13 @@ namespace Quixotic.Parsing
             return new(name) { Body = body, BaseName = baseName };
         }
 
+        private QxImportStatement ParseImport()
+        {
+            var @namespace = ParseNamespace();
+
+            return new(@namespace);
+        }
+
         private QxConstructorDeclarationStatement ParseConstructor()
         {
             _parseContext.AssignStatementType(StatementType.ConstructorDeclaration);
@@ -385,6 +395,21 @@ namespace Quixotic.Parsing
             }
 
             return parameters;
+        }
+
+        private string ParseNamespace()
+        {
+            List<string> parts = [];
+
+            do
+            {
+                var part = ParseIdentifierName();
+
+                parts.Add(part);
+            }
+            while (Match(TokenType.Dot));
+
+            return string.Join('.', parts);
         }
 
         private QxFunctionCallExpression ParseFunctionCallExpression(string name)

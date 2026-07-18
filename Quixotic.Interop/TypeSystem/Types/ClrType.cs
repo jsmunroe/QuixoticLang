@@ -4,7 +4,7 @@ using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Interop.TypeSystem.Types
 {
-    public class ClrType(Type externalType, QxType? baseType = null) : DefinedType(CaseRule.Current.Types.Recase(externalType.Name), baseType)
+    public class ClrType(Type externalType, QxType? baseType = null) : DefinedType(CaseRule.Current.TypeNames.Recase(externalType.Name), baseType)
     {
         public Type ExternalType { get; } = externalType;
 
@@ -25,6 +25,13 @@ namespace Quixotic.Interop.TypeSystem.Types
         {
             return actual is ClrType other &&
                    ExternalType == other.ExternalType;
+        }
+
+        public override string ToString(Instance instance)
+        {
+            var clrInstance = instance["instance"];
+
+            return clrInstance?.ToString() ?? base.ToString(instance);
         }
     }
 }

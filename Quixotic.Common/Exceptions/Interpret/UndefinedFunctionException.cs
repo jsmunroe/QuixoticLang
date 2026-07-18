@@ -1,4 +1,6 @@
-﻿namespace Quixotic.Common.Exceptions.Interpret
+﻿using Quixotic.Common.Tokens;
+
+namespace Quixotic.Common.Exceptions.Interpret
 {
-    public class UndefinedFunctionException(string name) : RuntimeException($"No function named '{name}' has been defined.");
+    public class UndefinedFunctionException(string name, Span span) : InterpreterException($"No function named '{name}' has been defined.", span);
 }
