@@ -559,8 +559,8 @@ namespace Quixotic.Interpret
             if (Scope.TryGetInstance(name, out var instance))
                 return instance;
 
-            if (Scope.TryGetType(name, out var type) && type is DefinedType definedType)
-                return definedType.Construct();
+            if (Scope.TryGetType(name, out var type))
+                return QxType.Meta(type).Construct();
 
             var functions = Scope.GetFunctionsByName(name);
             if (functions.Count == 1)
@@ -703,23 +703,38 @@ namespace Quixotic.Interpret
 
             Function? method = null;
 
-            if (type is DynamicType dynamicType)
+            if (type is QxMetaType metaType) // Static method call
             {
-                if (expression.Type == FunctionCallType.Getter)
-                    method = dynamicType.BuildPropertyGetter(target, name);
-                else if (expression.Type == FunctionCallType.Setter)
-                    method = dynamicType.BuildPropertySetter(target, name, argumentValues[0].Type);
-                else
-                    method = dynamicType.BuildMethodCaller(target, name, [.. argumentValues.GetTypes()]);
+                if (!metaType.TypeReference.TryResolveMethod(name, argumentValues, out method))
+                {
+                    if (expression.Type == FunctionCallType.Call)
+                        throw new UndefinedMethodException(metaType.TypeReference, name, expression.Span);
+                    else if (expression.Type == FunctionCallType.OperatorCall)
+                        throw new UndefinedOperatorException(metaType.TypeReference, name, expression.Span);
+                    else
+                        throw new UndefinedPropertyException(metaType.TypeReference, name, expression.Span);
+                }
             }
-            else if (!type.TryResolveMethod(target, name, argumentValues, out method))
+            else
             {
-                if (expression.Type == FunctionCallType.Call)
-                    throw new UndefinedMethodException(target.Type, name, expression.Span);
-                else if (expression.Type == FunctionCallType.OperatorCall)
-                    throw new UndefinedOperatorException(target.Type, name, expression.Span);
-                else
-                    throw new UndefinedPropertyException(target.Type, name, expression.Span);
+                if (type is DynamicType dynamicType)
+                {
+                    if (expression.Type == FunctionCallType.Getter)
+                        method = dynamicType.BuildPropertyGetter(target, name);
+                    else if (expression.Type == FunctionCallType.Setter)
+                        method = dynamicType.BuildPropertySetter(target, name, argumentValues[0].Type);
+                    else
+                        method = dynamicType.BuildMethodCaller(target, name, [.. argumentValues.GetTypes()]);
+                }
+                else if (!type.TryResolveMethod(target, name, argumentValues, out method))
+                {
+                    if (expression.Type == FunctionCallType.Call)
+                        throw new UndefinedMethodException(target.Type, name, expression.Span);
+                    else if (expression.Type == FunctionCallType.OperatorCall)
+                        throw new UndefinedOperatorException(target.Type, name, expression.Span);
+                    else
+                        throw new UndefinedPropertyException(target.Type, name, expression.Span);
+                }
             }
 
             method = method is BindableFunction bindableFunction ? bindableFunction.Bind(target) : method;

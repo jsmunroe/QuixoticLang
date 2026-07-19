@@ -330,6 +330,8 @@ namespace Quixotic.Common.TypeSystem.Types
             return (instance == Nada);
         }
 
+        public static QxMetaType Meta(QxType typeReference) => new(typeReference);
+
         public static QxType Any { get; } = AnyType.Default;
 
         public static NumberType Number { get; } = NumberType.Default;

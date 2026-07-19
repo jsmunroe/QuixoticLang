@@ -8,7 +8,7 @@ namespace Quixotic.Standard.Math
     {
         protected override IEnumerable<QxType> GetTypes()
         {
-            var typeLoader = ClrTypeLoader.FromTypes(typeof(Complex));
+            var typeLoader = ClrTypeLoader.FromTypes(typeof(Complex), typeof(Math));
 
             return typeLoader.Load();
         }

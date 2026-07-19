@@ -2102,7 +2102,7 @@ namespace Quixotic.InterpretTests
         }
 
         [TestMethod]
-        public void Execute_import_standard_library()
+        public void Execute_import_standard_library_use_Complex()
         {
             // Setup
             var source = @"
@@ -2124,11 +2124,31 @@ namespace Quixotic.InterpretTests
             // Execute
             interpreter.Execute(source);
 
-            Console.WriteLine(Directory.GetCurrentDirectory());
-
             // Assert
             runtime.AssertHasPrinted("2");
             runtime.AssertHasPrinted("(3 + 5i)");
+        }
+
+        [TestMethod]
+        public void Execute_import_standard_library_use_Math()
+        {
+            // Setup
+            var source = @"
+                import Quixotic.Standard.Math
+                
+                let result := Math.min(100, 10)
+
+                print result
+            ";
+
+            var runtime = new TestRuntime();
+            var interpreter = new Interpret.Interpreter(runtime);
+
+            // Execute
+            interpreter.Execute(source);
+
+            // Assert
+            runtime.AssertHasPrinted("10");
         }
 
         private FileStream GetTestFile(string name)
