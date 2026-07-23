@@ -10,4 +10,8 @@
     <Compile Include="..\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TypeSystem\Definitions\" />
+  </ItemGroup>
+
 </Project>

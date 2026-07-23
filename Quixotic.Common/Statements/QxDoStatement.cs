@@ -6,9 +6,9 @@ namespace Quixotic.Common.Statements
     {
         public QxExpression Condition { get; } = condition;
 
-        public bool EntryControlled { get; } = entryControlled;
+        public bool IsEntryControlled { get; } = entryControlled;
 
-        public bool ExitControlled { get; } = !entryControlled;
+        public bool IsExitControlled { get; } = !entryControlled;
 
         public Block Block { get; init; } = [];
     }

@@ -2,7 +2,11 @@
 using Quixotic.Common.Contracts;
 using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
+using Quixotic.Common.Namespaces;
 using Quixotic.Common.Symbols;
+using Quixotic.Common.Syntax.Casing;
+using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
 
@@ -10,115 +14,219 @@ namespace Quixotic.Analysis.Environment
 {
     public class SymbolTable(SymbolTable? parent = null)
     {
-        private readonly Dictionary<string, VariableTypeSymbol> _variables = [];
+        private IdentifierRegistry IdentifierRegistry { get; init; } = new();
 
-        private readonly SignatureRegistry _signatureRegistry = new();
+        private SignatureRegistry SignatureRegistry { get; init; } = new();
 
-        private readonly TypeRegistry _typeRegistry = new();
+        private TypeRegistry TypeRegistry { get; init; } = new();
 
         public SymbolTable? Parent { get; } = parent;
 
+        public IEnumerable<SignatureSymbol> Signatures => SignatureRegistry.AllSignatures;
+
+        public IEnumerable<IdentifierSymbol> Identifiers => IdentifierRegistry.AllIdentifiers;
+
+        public IEnumerable<TypeSymbol> Types => TypeRegistry.AllTypes;
+
         public void Add(ISignatureProvider signatureProvider)
         {
-            signatureProvider.Register(_signatureRegistry);
+            signatureProvider.Register(SignatureRegistry);
+        }
+
+        public void Add(IFunctionProvider functionProvider)
+        {
+            functionProvider.Register(SignatureRegistry);
         }
 
         public void Add(ITypeProvider typeProvider)
         {
-            typeProvider.Register(_typeRegistry);
+            typeProvider.Register(TypeRegistry);
         }
 
-        public bool TryDefineVariable(string name, QxType type)
+        public void Import(Namespace ns)
         {
-            if (IsDefined(name))
+            TypeRegistry.Import(ns);
+        }
+
+        public SymbolTable Capture(ClosureCapture closureCapture)
+        {
+            if (closureCapture.CaptureAll)
+                return this;
+
+            var newParent = Parent?.Capture(closureCapture);
+
+            if (newParent == null)
+                return this; // Keep all global scope
+
+            return new SymbolTable(newParent)
+            {
+                IdentifierRegistry = IdentifierRegistry.Capture(closureCapture),
+                SignatureRegistry = SignatureRegistry.Capture(closureCapture),
+                TypeRegistry = TypeRegistry.Capture(closureCapture),
+            };
+        }
+
+        public bool TryDefineVariable(string name, QxType type, QxType? valueType, [NotNullWhen(returnValue: true)] out IdentifierSymbol? identifierSymbol)
+        {
+            identifierSymbol = null;
+            if (IsVariableDeclared(name))
                 return false;
 
-            _variables[name] = new VariableTypeSymbol(name, type);
+            identifierSymbol = IdentifierRegistry.Register(name, type, valueType);
             return true;
         }
 
-        public bool IsSymbolDeclared(string name)
+        public bool TryDefineVariable(string name, QxType type, QxType? valueType)
         {
-            return _variables.ContainsKey(name);
+            return TryDefineVariable(name, type, valueType, out _);
         }
 
-        public bool IsFunctionDeclared(string name, params QxType[] arguments)
+        public bool TryAssignVariable(string name, QxType type)
         {
-            return _signatureRegistry.Contains(name, arguments);
+            if (!TryGetVariable(name, out var variableSymbol))
+                return false;
+
+            if (!variableSymbol.TryAssign(type))
+                return false;
+
+            return true;
+        }
+
+        public bool IsSignatureDeclared(string name, params QxType[] arguments)
+        {
+            return SignatureRegistry.Contains(name, arguments) || Parent?.IsSignatureDeclared(name, arguments) == true;
         }
 
         public bool IsVariableDeclared(string name)
         {
-            return _variables.ContainsKey(name);
+            return IdentifierRegistry.Contains(name) || Parent?.IsVariableDeclared(name) == true;
         }
 
         public bool IsTypeDeclared(string name)
         {
-            return _typeRegistry.Contains(name);
+            return TypeRegistry.Contains(name) || Parent?.IsTypeDeclared(name) == true;
         }
 
-        private bool TryGetSymbol(string name, [NotNullWhen(returnValue: true)] out Symbol? symbol)
+        public bool TryGetVariable(string name, [NotNullWhen(returnValue: true)] out IdentifierSymbol? identifierSymbol)
         {
-            if (_variables.TryGetValue(name, out var localSymbol))
+            if (IdentifierRegistry.TryResolve(name, out var localSymbol))
             {
-                symbol = localSymbol;
+                identifierSymbol = localSymbol;
                 return true;
             }
 
-            if (Parent?.TryGetSymbol(name, out var parentSymbol) == true)
+            if (Parent?.TryGetVariable(name, out var parentSymbol) == true)
             {
-                symbol = parentSymbol;
+                identifierSymbol = parentSymbol;
                 return true;
             }
 
-            symbol = default;
+            identifierSymbol = default;
             return false;
         }
 
-        public void AssignVariable(string name, QxType instance)
+        public IdentifierSymbol? GetVariable(string name)
         {
-            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableTypeSymbol variableSymbol)
-                throw new UndefinedSymbolException(name);
+            return TryGetVariable(name, out var identifierSymbol) ? identifierSymbol : null;
         }
 
-        public QxType? GetInstance(string name)
+        public bool TryDefineSignature(string name, QxType returnType, QxType[] parameters, CallType callType, [NotNullWhen(returnValue: true)] out SignatureSymbol? signatureSymbol)
         {
-            if (!TryGetSymbol(name, out var symbol) || symbol is not VariableTypeSymbol variableSymbol)
-                return null;
+            signatureSymbol = null;
 
-            return variableSymbol.Type;
-        }
-
-        public bool TryDefineSignature(string name, QxType returnType, params QxType[] parameters)
-        {
-            if (IsDefined(name))
+            if (IsSignatureDeclared(name, parameters))
                 return false;
 
-            _signatureRegistry.Register(name, returnType, parameters);
+            signatureSymbol = SignatureRegistry.Register(name, returnType, parameters, callType);
             return true;
+        }
+
+        public bool TryDefineSignature(string name, SignatureSymbol signatureSymbol)
+        {
+            if (IsSignatureDeclared(name, [.. signatureSymbol.ParameterTypes]))
+                return false;
+
+            SignatureRegistry.Register(signatureSymbol.WithName(name));
+            return true;
+        }
+
+        public bool TryDefineConstructorSignature(QxType type, QxType[] parameters)
+        {
+            return TryDefineConstructorSignature(type, parameters, out _);
+        }
+
+        public bool TryDefineConstructorSignature(QxType type, QxType[] parameters, [NotNullWhen(returnValue: true)] out SignatureSymbol? signatureSymbol)
+        {
+            signatureSymbol = null;
+
+            var name = "::constructor";
+
+            if (IsSignatureDeclared(name, parameters))
+                return false;
+
+            signatureSymbol = SignatureRegistry.Register("::constructor", type, parameters, CallType.ConstructorCall);
+            return true;
+        }
+
+        public bool TryDefineSignature(string name, QxType returnType, QxType[] parameters, CallType functionCallType)
+        {
+            return TryDefineSignature(name, returnType, parameters, functionCallType, out _);
+        }
+
+        public bool TryGetSignatureByName(string name, [NotNullWhen(returnValue: true)] out SignatureSymbol? signatureSymbol)
+        {
+            signatureSymbol = null;
+
+            var signatures = SignatureRegistry.AllSignatures.Where(s => CaseRule.Current.Equals(s.Name, name)).ToArray();
+
+            if (signatures.Length == 1)
+            {
+                signatureSymbol = signatures[0];
+                return true;
+            }
+
+            return false; // There were no signatures or more than one.
+        }
+
+        public bool TryGetSignature(string name, QxType[] arguments, [NotNullWhen(returnValue: true)] out SignatureSymbol? signatureSymbol)
+        {
+            signatureSymbol = null;
+
+            var signature = new Signature(name, arguments);
+
+            if (SignatureRegistry.TryResolve(signature, out signatureSymbol))
+                return true;
+
+            return Parent?.TryGetSignature(name, arguments, out signatureSymbol) == true;
         }
 
         public SignatureSymbol? GetSignature(string name, params QxType[] arguments)
         {
-            var signature = new Signature(name, [.. arguments]);
-
-            if (_signatureRegistry.TryResolve(signature, out var functionSymbol))
-                return functionSymbol;
-
-            if (Parent is not null)
-                return Parent.GetSignature(name, arguments);
-
-            return null;
+            return TryGetSignature(name, arguments, out var signatureSymbol) ? signatureSymbol : null;
         }
 
-        public void DefineType(string name, QxType type)
+        public SignatureSymbol? GetSignatureFromType(QxType type, string name, params QxType[] arguments)
         {
-            _typeRegistry.Register(name, type);
+            if (!type.TryResolveMethod(name, arguments, out var function))
+                return null;
+
+            var signature = new Signature(name, [.. function.Parameters.GetTypes()]);
+
+            return new SignatureSymbol(signature, function.ReturnType, function.CallType);
+        }
+
+        public bool TryDefineType(string name, QxType type)
+        {
+            if (IsTypeDeclared(name))
+                return false;
+
+            TypeRegistry.Register(name, type);
+            return true;
         }
 
         public QxType GetType(string name)
         {
-            if (_typeRegistry.TryResolve(name, out var type))
+            if (TypeRegistry.TryResolve(name, out var type))
                 return type;
 
             if (Parent is not null)
@@ -129,16 +237,15 @@ namespace Quixotic.Analysis.Environment
 
         public bool TryGetType(string name, [NotNullWhen(returnValue: true)] out QxType? type)
         {
-            if (_typeRegistry.TryResolve(name, out type))
+            if (TypeRegistry.TryResolve(name, out type))
                 return true;
 
-            type = Parent?.GetType(name);
-            return type is not null;
+            return Parent?.TryGetType(name, out type) == true;
         }
 
         public bool IsDefined(string name)
         {
-            return TryGetSymbol(name, out _);
+            return TryGetVariable(name, out _);
         }
 
     }

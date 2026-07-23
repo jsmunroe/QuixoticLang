@@ -34,7 +34,7 @@ namespace Quixotic.Common.Environment
             return registry;
         }
 
-        public void Register(string name, Function function)
+        public FunctionSymbol Register(string name, Function function)
         {
             var parameterTypes = function.Parameters.GetTypes();
 
@@ -43,9 +43,11 @@ namespace Quixotic.Common.Environment
             var functionSymbol = new FunctionSymbol(name, function);
 
             _functions[signature] = functionSymbol;
+
+            return functionSymbol;
         }
 
-        public void Register(string name, ExternalFunction implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
+        public FunctionSymbol Register(string name, ExternalFunction implementation, QxType returnType, CallType callType, params Parameter[] parameters)
         {
             var function = Function.FromDelegate(implementation, returnType, callType, parameters);
 
@@ -55,16 +57,30 @@ namespace Quixotic.Common.Environment
             var functionSymbol = new FunctionSymbol(name, function);
 
             Register(signature, functionSymbol);
+
+            return functionSymbol;
         }
 
-        public void Register(Signature signature, FunctionSymbol function)
+        public FunctionSymbol Register(Signature signature, FunctionSymbol function)
         {
-            _functions.Add(signature, function);
+            try
+            {
+                _functions.Add(signature, function);
+            }
+            catch (ArgumentException ex)
+            {
+                throw;
+            }
+
+            return function;
         }
 
-        public void Register(FunctionSymbol function)
+        public FunctionSymbol Register(FunctionSymbol function)
         {
             _functions.Add(function.Signature, function);
+
+            return function;
+
         }
 
         public bool Contains(string name, params QxType[] arguments)
@@ -98,9 +114,11 @@ namespace Quixotic.Common.Environment
 
             foreach (var (s, f) in _functions)
             {
-                if (s.IsCompatible(name, parameterTypes))
+                var bindings = new GenericBindings();
+                if (s.TryMatch(name, parameterTypes, bindings))
                 {
-                    functionSymbol = f;
+                    functionSymbol = f.Substitute(bindings);
+
                     return true;
                 }
             }

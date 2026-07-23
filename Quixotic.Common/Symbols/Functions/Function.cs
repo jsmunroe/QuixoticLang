@@ -8,23 +8,42 @@ using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.Symbols.Functions
 {
-    public class Function(Block body, QxType returnType, FunctionCallType callType)
+    public class Function(Block body, QxType returnType, CallType callType)
     {
         public Function(Function other)
             : this([.. other.Body], other.ReturnType, other.CallType)
         {
             Parameters = [.. other.Parameters];
+            Closure = other.Closure;
         }
 
         public List<Parameter> Parameters { get; init; } = [];
 
         public Block Body { get; } = body;
 
-        public QxType ReturnType { get; internal set; } = returnType;
+        public QxType ReturnType { get; private set; } = returnType;
 
-        public FunctionCallType CallType { get; } = callType;
+        public CallType CallType { get; } = callType;
 
         public Scope? Closure { get; init; }
+
+        public virtual Function Substitute(GenericBindings bindings)
+        {
+            List<Parameter> parameters = [];
+            foreach (var parameter in Parameters)
+            {
+                var type = parameter.Type.Substitute(bindings);
+                parameters.Add(new Parameter(parameter.Name, type));
+            }
+
+            var returnType = ReturnType.Substitute(bindings);
+
+            return new Function(Body, returnType, CallType)
+            {
+                Parameters = parameters,
+                Closure = Closure,
+            };
+        }
 
         public virtual List<Argument> BindArguments(string name, Instance[] instances)
         {
@@ -45,7 +64,7 @@ namespace Quixotic.Common.Symbols.Functions
             return arguments;
         }
 
-        public static Function FromDelegate(ExternalFunction implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
+        public static Function FromDelegate(ExternalFunction implementation, QxType returnType, CallType callType, params Parameter[] parameters)
         {
             var parameterTypes = parameters.Select(p => p.Type);
 

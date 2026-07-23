@@ -1,4 +1,6 @@
-﻿using Quixotic.Common.Symbols;
+﻿using Quixotic.Common.Environment;
+using Quixotic.Common.Symbols;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
 
@@ -8,11 +10,41 @@ namespace Quixotic.Analysis.Environment
     {
         private readonly Dictionary<Signature, SignatureSymbol> _signatures = [];
 
-        public void Register(string name, QxType returnType, params QxType[] parameters)
+        public IEnumerable<SignatureSymbol> AllSignatures => _signatures.Values;
+
+        public SignatureRegistry Capture(ClosureCapture closureCapture)
         {
-            var signatureSymbol = new SignatureSymbol(name, returnType, parameters);
+            var registry = new SignatureRegistry();
+
+            foreach (var signature in AllSignatures.Where(closureCapture.IsCaptured))
+                registry.Register(signature);
+
+            return registry;
+        }
+
+        public SignatureSymbol Register(string name, QxType returnType, QxType[] parameters, CallType callType)
+        {
+            var signatureSymbol = new SignatureSymbol(name, returnType, parameters, callType);
 
             _signatures[signatureSymbol.Signature] = signatureSymbol;
+
+            return signatureSymbol;
+        }
+
+        public SignatureSymbol Register(Signature signature, QxType returnType, CallType callType)
+        {
+            var signatureSymbol = new SignatureSymbol(signature, returnType, callType);
+
+            _signatures[signature] = signatureSymbol;
+
+            return signatureSymbol;
+        }
+
+        public SignatureSymbol Register(SignatureSymbol signatureSymbol)
+        {
+            _signatures[signatureSymbol.Signature] = signatureSymbol;
+
+            return signatureSymbol;
         }
 
         public bool Contains(string name, params QxType[] parameterTypes)
@@ -41,10 +73,12 @@ namespace Quixotic.Analysis.Environment
 
             foreach (var (s, f) in _signatures)
             {
+                var bindings = new GenericBindings();
 
-                if (s.IsCompatible(name, parameterTypes))
+                if (s.TryMatch(name, parameterTypes, bindings))
                 {
-                    functionSignature = f;
+                    functionSignature = f.Substitute(bindings);
+
                     return true;
                 }
             }

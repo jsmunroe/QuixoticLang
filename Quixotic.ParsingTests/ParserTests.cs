@@ -575,7 +575,7 @@ namespace Quixotic.ParsingTests
             // Assert
             Assert.HasCount(1, statements);
 
-            AssertFunctionDeclaration(statements[0], "Greet", "void",
+            AssertFunctionDeclaration(statements[0], "Greet", "deferred:ReturnedValuesAnalyzed", // Explicit type not given.
                 body: block =>
                 {
                     AssertPrint(block[0], ("Hello ", "+", new TestMethodCallExpression("Name")));
@@ -1356,10 +1356,11 @@ namespace Quixotic.ParsingTests
 
                 AssertVariableDeclaration(body[0], "Name", "string", "");
                 AssertVariableDeclaration(body[1], "Age", "number", 0);
-                AssertFunctionDeclaration(body[2], "Greet", "void", body2 =>
-                {
-                    AssertPrint(body2[0], ("Hello ", "+", ".Name"));
-                });
+                AssertFunctionDeclaration(body[2], "Greet", "deferred:ReturnedValuesAnalyzed",  // Explicit type not given.
+                    body2 =>
+                    {
+                        AssertPrint(body2[0], ("Hello ", "+", ".Name"));
+                    });
 
             });
 
@@ -1479,7 +1480,7 @@ namespace Quixotic.ParsingTests
                 condition.Assert(doStatement.Condition);
 
             if (isEntryControl is not null)
-                Assert.AreEqual(isEntryControl, doStatement.EntryControlled);
+                Assert.AreEqual(isEntryControl, doStatement.IsEntryControlled);
 
             if (block is not null)
                 block(doStatement.Block);

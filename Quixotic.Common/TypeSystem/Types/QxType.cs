@@ -1,11 +1,10 @@
-using Quixotic.Common.Contracts;
 using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
 using Quixotic.Common.Syntax.Casing;
 using Quixotic.Common.Tokens;
-using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.BuiltIn;
 using Quixotic.Common.TypeSystem.Symbols;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -18,6 +17,8 @@ namespace Quixotic.Common.TypeSystem.Types
         private readonly MethodRegistry _methods;
 
         private readonly Dictionary<string, object?> _initialState = new(CaseRule.Current.StringComparer);
+
+        private bool _methodsLoaded = false;
 
         public QxType(string name, QxType? baseType = null)
         {
@@ -113,16 +114,6 @@ namespace Quixotic.Common.TypeSystem.Types
             return $"{{Qx:{Name}}}";
         }
 
-        public void Add(IFunctionProvider functionProvider)
-        {
-            functionProvider.Register(_methods);
-        }
-
-        public void AddMethods(IFunctionProvider methodSource)
-        {
-            methodSource.Register(_methods);
-        }
-
         public virtual bool Equals(Instance first, Instance second)
         {
             return false;
@@ -151,80 +142,121 @@ namespace Quixotic.Common.TypeSystem.Types
             return string.Equals(Name, other.Name, CaseRule.Current.StringComparison);
         }
 
-        public void RegisterConstructor(Constructor constructor)
+        protected void EnforceMethodsLoaded()
         {
-            RegisterMethod("::constructor", constructor);
+            if (_methodsLoaded)
+                return;
+
+            RegisterStaticMethod("and", (args) => BooleanType.Default.Construct(args[0].IsTruthy && args[1].IsTruthy), BooleanType.Default, new Parameter("left", Any), new Parameter("right", Any));
+            RegisterStaticMethod("or", (args) => BooleanType.Default.Construct(args[0].IsTruthy || args[1].IsTruthy), BooleanType.Default, new Parameter("left", Any), new Parameter("right", Any));
+
+            RegisterStaticMethod("in", (args) => args[1].Type is CollectionType collectionType ? CollectionDefinition.Contains(args[1], args[0]) : BooleanType.False, BooleanType.Default, new Parameter("this", this), new Parameter("collection", Array.MakeGenericType(Generic("TItem"))));
+            RegisterStaticMethod("in", (args) => args[1].Type is CollectionType collectionType ? CollectionDefinition.Contains(args[1], args[0]) : BooleanType.False, BooleanType.Default, new Parameter("this", this), new Parameter("collection", Set.MakeGenericType(Generic("TItem"))));
+
+            LoadMethods();
+
+            _methodsLoaded = true;
         }
 
-        public void RegisterConstructor(ExternalFunction method, params Parameter[] parameters)
+        protected virtual void LoadMethods()
         {
-            _methods.RegisterConstructor(method, parameters);
+            // Optionally handled by subclasses of QxType
         }
 
-        public virtual void RegisterMethod(string name, ExternalFunction method, QxType returnType, params Parameter[] parameters)
+        public FunctionSymbol RegisterConstructor(Constructor constructor)
         {
-            _methods.RegisterBindable(name, method, returnType, FunctionCallType.Call, parameters);
+            return RegisterMethod("::constructor", constructor);
         }
 
-        public virtual void RegisterMethod(string name, Function function)
+        public FunctionSymbol RegisterConstructor(ExternalFunction method, params Parameter[] parameters)
         {
-            _methods.RegisterBindable(name, function);
+            return _methods.RegisterConstructor(method, parameters);
         }
 
-        public virtual void RegisterStaticMethod(string name, ExternalFunction method, QxType returnType, params Parameter[] parameters)
+        public virtual FunctionSymbol RegisterMethod(string name, ExternalFunction method, QxType returnType, params Parameter[] parameters)
         {
-            _methods.Register(name, method, returnType, FunctionCallType.Call, parameters);
+            return _methods.RegisterBindable(name, method, returnType, CallType.Call, parameters);
         }
 
-        public virtual void RegisterStaticMethod(string name, Function function)
+        public virtual FunctionSymbol RegisterMethod(string name, Function function)
         {
-            _methods.Register(name, function);
+            return _methods.RegisterBindable(name, function);
         }
 
-        public virtual void RegisterProperty(string name, Instance initialValue)
+        public virtual FunctionSymbol RegisterStaticMethod(string name, ExternalFunction method, QxType returnType, params Parameter[] parameters)
+        {
+            return _methods.Register(name, method, returnType, CallType.Call, parameters);
+        }
+
+        public virtual FunctionSymbol RegisterStaticMethod(string name, Function function)
+        {
+            return _methods.Register(name, function);
+        }
+
+        public virtual (FunctionSymbol, FunctionSymbol?) RegisterProperty(string name, Instance initialValue)
         {
             var type = initialValue.Type;
-            RegisterProperty(name, type, initialValue);
+            return RegisterProperty(name, type, initialValue);
         }
 
-        public virtual void RegisterProperty(string name, QxType type, Instance? initialValue = null, bool isReadOnly = false)
+        public virtual (FunctionSymbol, FunctionSymbol?) RegisterProperty(string name, QxType type, Instance? initialValue = null, bool isReadOnly = false)
         {
             _initialState[name] = initialValue ?? Nada;
 
-            _methods.RegisterBindable(name, PropertyGetter(name), type, FunctionCallType.Getter);
+            var getter = _methods.RegisterBindable(name, PropertyGetter(name), type, CallType.Getter);
 
             if (!isReadOnly)
-                _methods.RegisterBindable(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("value", type));
+            {
+                var setter = _methods.RegisterBindable(name, PropertySetter(name), type, CallType.Call, new Parameter("value", type));
+                return (getter, setter);
+            }
+
+            return (getter, null);
         }
 
-        public virtual void RegisterProperty(string name, QxType type, ExternalFunction getter, ExternalFunction? setter = null, Instance? initialValue = null)
+        public virtual (FunctionSymbol, FunctionSymbol?) RegisterProperty(string name, QxType type, ExternalFunction getter, ExternalFunction? setter = null, Instance? initialValue = null)
         {
             _initialState[name] = initialValue ?? Nada;
 
-            _methods.RegisterBindable(name, getter, type, FunctionCallType.Getter);
+            var getterSymbol = _methods.RegisterBindable(name, getter, type, CallType.Getter);
 
             if (setter is not null)
-                _methods.RegisterBindable(name, setter, type, FunctionCallType.Call, new Parameter("value", type));
+            {
+                var setterSymbol = _methods.RegisterBindable(name, setter, type, CallType.Call, new Parameter("value", type));
+                return (getterSymbol, setterSymbol);
+            }
+
+            return (getterSymbol, null);
         }
 
-        public virtual void RegisterStaticProperty(string name, QxType type, Instance? initialValue = null, bool isReadOnly = false)
+        public virtual (FunctionSymbol, FunctionSymbol?) RegisterStaticProperty(string name, QxType type, Instance? initialValue = null, bool isReadOnly = false)
         {
             _initialState[name] = initialValue ?? Nada;
 
-            _methods.Register(name, PropertyGetter(name), type, FunctionCallType.Getter);
+            var getter = _methods.Register(name, PropertyGetter(name), type, CallType.Getter);
 
             if (!isReadOnly)
-                _methods.Register(name, PropertySetter(name), type, FunctionCallType.Call, new Parameter("value", type));
+            {
+                var setter = _methods.Register(name, PropertySetter(name), type, CallType.Call, new Parameter("value", type));
+                return (getter, setter);
+            }
+
+            return (getter, null);
         }
 
-        public virtual void RegisterStaticProperty(string name, QxType type, ExternalFunction getter, ExternalFunction? setter = null, Instance? initialValue = null)
+        public virtual (FunctionSymbol, FunctionSymbol?) RegisterStaticProperty(string name, QxType type, ExternalFunction getter, ExternalFunction? setter = null, Instance? initialValue = null)
         {
             _initialState[name] = initialValue ?? Nada;
 
-            _methods.Register(name, getter, type, FunctionCallType.Getter);
+            var getterSymbol = _methods.Register(name, getter, type, CallType.Getter);
 
             if (setter is not null)
-                _methods.Register(name, setter, type, FunctionCallType.Call, new Parameter("value", type));
+            {
+                var setterSymbol = _methods.Register(name, setter, type, CallType.Call, new Parameter("value", type));
+                return (getterSymbol, setterSymbol);
+            }
+
+            return (getterSymbol, null);
         }
 
         protected ExternalFunction PropertyGetter(string name) => (Instance[] args) =>
@@ -238,47 +270,23 @@ namespace Quixotic.Common.TypeSystem.Types
             return args[1];
         };
 
-        public Function ResolveMethod(Instance thisInstance, string name, params Instance[] arguments)
+        public Function ResolveMethod(string name, params QxType[] arguments)
         {
-            if (!TryResolveMethod(thisInstance, name, arguments, out var function))
-                throw new UndefinedMethodException(this, name, Span.Empty); // TODO: Figure out actual Span
+            EnforceMethodsLoaded();
 
-            return function;
-        }
-
-        public bool TryResolveMethod(Instance thisInstance, string name, Instance[] arguments, [NotNullWhen(returnValue: true)] out Function? function)
-        {
-            function = null;
-
-            if (_methods.TryResolve(name, [.. arguments.GetTypes()], out var functionSymbol))
-            {
-                function = functionSymbol.Function;
-                return true;
-            }
-
-            return BaseType?.TryResolveMethod(thisInstance, name, arguments, out function) ?? false;
-
-        }
-
-        /// <summary>
-        /// For static methods
-        /// </summary>
-        public Function ResolveMethod(string name, params Instance[] arguments)
-        {
             if (!TryResolveMethod(name, arguments, out var function))
                 throw new UndefinedMethodException(this, name, Span.Empty); // TODO: Figure out actual Span
 
             return function;
         }
 
-        /// <summary>
-        /// For static methods
-        /// </summary>
-        public bool TryResolveMethod(string name, Instance[] arguments, [NotNullWhen(returnValue: true)] out Function? function)
+        public virtual bool TryResolveMethod(string name, QxType[] arguments, [NotNullWhen(returnValue: true)] out Function? function)
         {
+            EnforceMethodsLoaded();
+
             function = null;
 
-            if (_methods.TryResolve(name, [.. arguments.GetTypes()], out var functionSymbol))
+            if (_methods.TryResolve(name, arguments, out var functionSymbol))
             {
                 function = functionSymbol.Function;
                 return true;
@@ -287,7 +295,7 @@ namespace Quixotic.Common.TypeSystem.Types
             return BaseType?.TryResolveMethod(name, arguments, out function) ?? false;
         }
 
-        public Constructor ResolveConstructor(params Instance[] arguments)
+        public Constructor ResolveConstructor(params QxType[] arguments)
         {
             if (!TryResolveConstructor(arguments, out var constructor))
                 throw new UndefinedConstructorException(this);
@@ -295,11 +303,13 @@ namespace Quixotic.Common.TypeSystem.Types
             return constructor;
         }
 
-        public bool TryResolveConstructor(Instance[] arguments, [NotNullWhen(returnValue: true)] out Constructor? constructor)
+        public virtual bool TryResolveConstructor(QxType[] arguments, [NotNullWhen(returnValue: true)] out Constructor? constructor)
         {
+            EnforceMethodsLoaded();
+
             constructor = null;
 
-            if (_methods.TryResolve("::constructor", [.. arguments.GetTypes()], out var functionSymbol))
+            if (_methods.TryResolve("::constructor", arguments, out var functionSymbol))
             {
                 constructor = functionSymbol.Function as Constructor;
                 return constructor is not null;
@@ -308,13 +318,10 @@ namespace Quixotic.Common.TypeSystem.Types
             return false;
         }
 
-        public IEnumerable<Function> ResolveMethods(string name)
-        {
-            return _methods.Resolve(name).Select(f => f.Function);
-        }
-
         public bool IsMemberDeclared(string name)
         {
+            EnforceMethodsLoaded();
+
             return _methods.Contains(name);
         }
 
@@ -330,32 +337,22 @@ namespace Quixotic.Common.TypeSystem.Types
             return (instance == Nada);
         }
 
-        public static QxMetaType Meta(QxType typeReference) => new(typeReference);
+        public static QxMetaType Meta(QxType typeReference) => BuiltInTypes.Meta(typeReference);
 
-        public static QxType Any { get; } = AnyType.Default;
+        public static QxType Any => BuiltInTypes.Any;
 
-        public static NumberType Number { get; } = NumberType.Default;
-        public static StringType String { get; } = StringType.Default;
-        public static BooleanType Boolean { get; } = BooleanType.Default;
-        public static Instance Nada { get; } = NadaType.Value;
-        public static Instance Void { get; } = VoidType.Value;
+        public static NumberType Number => BuiltInTypes.Number;
+        public static StringType String => BuiltInTypes.String;
+        public static BooleanType Boolean => BuiltInTypes.Boolean;
+        public static Instance Nada => BuiltInTypes.Nada;
+        public static Instance Void => BuiltInTypes.Void;
 
-        public static FunctionType Function { get; } = FunctionType.Default;
+        public static FunctionDefinition Function => BuiltInTypes.Function;
 
-        public static ArrayType Array(QxType elementType) => new(elementType);
-        public static SetType Set(QxType elementType) => new(elementType);
-        public static CollectionType Collection(QxType elementType) => new($"collection<{elementType}>", elementType);
-        public static CollectionType Collection(CollectionType collectionType, QxType elementType)
-        {
-            return collectionType switch
-            {
-                ArrayType => new ArrayType(elementType),
-                SetType => new SetType(elementType),
-                _ => throw new InvalidOperationException($"Unsupported collection type: {collectionType.Name}")
-            };
-        }
+        public static ArrayDefinition Array => BuiltInTypes.Array;
+        public static SetDefinition Set => BuiltInTypes.Set;
+        public static CollectionType Collection(CollectionType collectionType, QxType elementType) => BuiltInTypes.Collection(collectionType, elementType);
 
-
-        public static Generic Generic(string name) => new(name);
+        public static Generic Generic(string name) => BuiltInTypes.Generic(name);
     }
 }

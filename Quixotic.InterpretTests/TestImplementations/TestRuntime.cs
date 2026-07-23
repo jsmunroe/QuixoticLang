@@ -259,12 +259,14 @@ namespace Quixotic.InterpretTests.TestImplementations
                 if (!frame.Scope.IsVariableDeclared(name))
                     continue;
 
-                if (frame.Scope.GetInstance(name) is NumberValue numberValue)
+                if (frame.Scope.GetInstance(name) is Instance instance)
                 {
-                    if (Equals(numberValue.Value, value))
+                    var numberValue = NumberType.Default.Get(instance);
+
+                    if (Equals(numberValue, value))
                         return;
 
-                    otherFrameValues.Add($"In frame #{i}, {name} = {numberValue.Value}.");
+                    otherFrameValues.Add($"In frame #{i}, {name} = {numberValue}.");
                 }
             }
 

@@ -1,4 +1,5 @@
 ﻿using Quixotic.Common.Syntax.Casing;
+using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.Symbols
@@ -9,27 +10,33 @@ namespace Quixotic.Common.Symbols
 
         public List<QxType> Parameters { get; } = [.. parameters];
 
-        public bool IsCompatible(string name, params QxType[] arguments)
+        public bool TryMatch(string name, QxType[] arguments, GenericBindings bindings)
         {
             if (!string.Equals(Name, name, CaseRule.Current.StringComparison))
                 return false;
 
             if (Parameters.Count != arguments.Length)
-                return false; // TODO: Handle optional parameters later
+                return false;
 
-            // Check if each argument type is assignable to the parameter type
-            foreach (var (param, argument) in Parameters.Zip(arguments))
+            foreach (var (parameter, argument) in Parameters.Zip(arguments))
             {
-                if (!param.IsAssignableFrom(argument))
+                if (!parameter.Match(argument, bindings))
                     return false;
             }
 
             return true;
         }
 
-        public bool IsCompatible(Signature other)
+        public bool TryMatch(Signature other, GenericBindings bindings)
         {
-            return IsCompatible(other.Name, [.. other.Parameters]);
+            return TryMatch(other.Name, [.. other.Parameters], bindings);
+        }
+
+        public virtual Signature Substitute(GenericBindings bindings)
+        {
+            var parameters = Parameters.Select(p => p.Substitute(bindings));
+
+            return new Signature(Name, [.. parameters]);
         }
 
         public override bool Equals(object? obj)
@@ -44,20 +51,6 @@ namespace Quixotic.Common.Symbols
                 return false;
 
             if (!Parameters.SequenceEqual(other.Parameters))
-                return false;
-
-            return true;
-        }
-
-        public bool IsMatch(string name, params QxType[] parameters)
-        {
-            if (!string.Equals(Name, name, CaseRule.Current.StringComparison))
-                return false;
-
-            if (Parameters.Count != parameters.Length)
-                return false;
-
-            if (!Parameters.SequenceEqual(parameters))
                 return false;
 
             return true;

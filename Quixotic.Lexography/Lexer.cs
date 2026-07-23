@@ -444,7 +444,7 @@ namespace QuixoticLang.Lexer
         {
             var c = Peek();
             var commentText = string.Empty;
-            while (c != '\n')
+            while (c != '\n' && !IsAtEnd)
             {
                 if (c == '\r')
                 {

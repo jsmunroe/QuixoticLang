@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.Tokens;
+﻿using Quixotic.Common.Analysis.Expressions;
+using Quixotic.Common.Tokens;
 
 namespace Quixotic.Common.Expressions
 {
@@ -7,6 +8,6 @@ namespace Quixotic.Common.Expressions
     {
         public Span Span { get; set; } = Span.Empty;
 
-        public SemanticInfo? SemanticInfo { get; set; }
+        public ExpressionInfo? Info { get; set; }
     }
 }

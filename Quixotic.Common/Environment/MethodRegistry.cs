@@ -10,7 +10,7 @@ namespace Quixotic.Common.Environment
     {
         public QxType InstanceType { get; } = instanceType;
 
-        public void RegisterConstructor(ExternalFunction implementation, params Parameter[] parameters)
+        public FunctionSymbol RegisterConstructor(ExternalFunction implementation, params Parameter[] parameters)
         {
             var constructor = Constructor.FromDelegate(InstanceType, implementation, parameters);
 
@@ -19,10 +19,10 @@ namespace Quixotic.Common.Environment
             var signature = new Signature("::constructor", [.. parameterTypes]);
             var functionSymbol = new FunctionSymbol(signature.Name, constructor);
 
-            Register(signature, functionSymbol);
+            return Register(signature, functionSymbol);
         }
 
-        public void RegisterBindable(string name, ExternalFunction implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
+        public FunctionSymbol RegisterBindable(string name, ExternalFunction implementation, QxType returnType, CallType callType, params Parameter[] parameters)
         {
             var function = BindableFunction.FromDelegate(InstanceType, implementation, returnType, callType, parameters);
 
@@ -31,10 +31,10 @@ namespace Quixotic.Common.Environment
             var signature = new Signature(name, [.. parameterTypes]);
             var functionSymbol = new FunctionSymbol(name, function);
 
-            Register(signature, functionSymbol);
+            return Register(signature, functionSymbol);
         }
 
-        public void RegisterBindable(string name, Function function)
+        public FunctionSymbol RegisterBindable(string name, Function function)
         {
             var parameterTypes = function.Parameters.GetTypes();
 
@@ -44,7 +44,7 @@ namespace Quixotic.Common.Environment
 
             var functionSymbol = new FunctionSymbol(name, function);
 
-            Register(signature, functionSymbol);
+            return Register(signature, functionSymbol);
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Quixotic.Common.Contracts;
 using Quixotic.Common.Exceptions.Interop;
+using Quixotic.Common.Exceptions.Interpret;
 using Quixotic.Common.Namespaces;
+using Quixotic.Common.Syntax.Casing;
 using Quixotic.Common.TypeSystem;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
@@ -62,6 +64,23 @@ namespace Quixotic.Common.Environment
         public bool TryResolve(string name, [NotNullWhen(returnValue: true)] out QxType? type)
         {
             type = null;
+
+            // TODO: This may be the wrong place for this code. Consider moving it elsewhere.
+            if (name.StartsWith("deferred:", CaseRule.Current.StringComparison) && Enum.TryParse<ContextDependency>(name.Substring(9), out var contextDependency))
+            {
+                type = new DeferredType($"Type is stated as deferred type in the AST and is awaiting: {contextDependency}", contextDependency);
+                return true;
+            }
+
+            // TODO: This may be the wrong place for this code. Consider moving it elsewhere.
+            if (name.StartsWith("function", CaseRule.Current.StringComparison))
+            {
+                if (!FunctionDefinition.Default.TryParseTypeName(name, this, out var functionType))
+                    throw new RuntimeException($"Cannot parse function type name '{name}'.");
+
+                type = functionType;
+                return true;
+            }
 
             if (_types.TryGetValue(name, out var typeSymbol))
             {

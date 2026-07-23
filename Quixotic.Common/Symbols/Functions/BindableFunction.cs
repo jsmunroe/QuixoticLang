@@ -10,7 +10,7 @@ namespace Quixotic.Common.Symbols.Functions
 {
     public class BindableFunction : Function
     {
-        public BindableFunction(QxType bindableType, Block body, QxType returnType, FunctionCallType callType) : base(body, returnType, callType)
+        public BindableFunction(QxType bindableType, Block body, QxType returnType, CallType callType) : base(body, returnType, callType)
         {
             BindableType = bindableType;
         }
@@ -35,7 +35,7 @@ namespace Quixotic.Common.Symbols.Functions
             throw new UnboundFunctionException(this);
         }
 
-        public static BindableFunction FromDelegate(QxType bindableType, ExternalFunction implementation, QxType returnType, FunctionCallType callType, params Parameter[] parameters)
+        public static BindableFunction FromDelegate(QxType bindableType, ExternalFunction implementation, QxType returnType, CallType callType, params Parameter[] parameters)
         {
             var parameterTypes = parameters.Select(p => p.Type);
 
@@ -47,6 +47,13 @@ namespace Quixotic.Common.Symbols.Functions
             var function = new BindableFunction(bindableType, [returnStatement], returnType, callType) { Parameters = [.. parameters] };
 
             return function;
+        }
+
+        public override BindableFunction Substitute(GenericBindings bindings)
+        {
+            var function = base.Substitute(bindings);
+
+            return new BindableFunction(BindableType, function);
         }
 
         public static BindableFunction Coerce(QxType bindableType, Function function)

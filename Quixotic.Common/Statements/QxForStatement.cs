@@ -9,7 +9,7 @@ namespace Quixotic.Common.Statements
         public QxExpression From { get; } = from;
         public QxExpression To { get; } = to;
 
-        public QxExpression Step { get; init; } = new QxNumberLiteralExpression(1);
+        public QxExpression? Step { get; init; }
 
         public Block Block { get; init; } = [];
     }

@@ -9,7 +9,7 @@ namespace Quixotic.Common.TypeSystem
     [DebuggerDisplay("{FullName,nq}")]
     public class TypeName
     {
-        private static readonly Regex _genericNames = new(@"{([a-z0-9_]+)}", RegexOptions.Compiled);
+        private static readonly Regex _genericNames = new(@"{([a-z0-9_]+)}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public TypeName(string name)
         {

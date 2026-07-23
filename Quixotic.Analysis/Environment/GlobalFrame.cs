@@ -1,5 +1,4 @@
-﻿using Quixotic.Analysis.BuiltIn;
-using Quixotic.Analysis.Contracts;
+﻿using Quixotic.Analysis.Contracts;
 using Quixotic.Common.TypeSystem.BuiltIn;
 
 namespace Quixotic.Analysis.Environment
@@ -8,7 +7,7 @@ namespace Quixotic.Analysis.Environment
     {
         public GlobalFrame()
         {
-            Symbols.Add(new BuiltInSignatures());
+            Symbols.Add(new BuiltInFunctions());
             Symbols.Add(new BuiltInTypes());
         }
 

@@ -9,6 +9,7 @@ using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
+using Quixotic.Common.Syntax.Casing;
 using Quixotic.Common.Tokens;
 using Quixotic.Common.Types;
 using Quixotic.Common.TypeSystem;
@@ -60,7 +61,7 @@ namespace Quixotic.Interpret
             {
                 var statements = parser.Parse();
 
-                var analyzer = new SemanticAnalyzer();
+                var analyzer = new SemanticAnalyzer(source);
                 analyzer.Analyze(statements);
 
                 foreach (var issue in analyzer.Issues)
@@ -146,7 +147,7 @@ namespace Quixotic.Interpret
 
             Instance[] argumentValues = [.. Evaluate(baseConstructor.Arguments)];
 
-            if (!type.TryResolveConstructor(argumentValues, out var constructor))
+            if (!type.TryResolveConstructor([.. argumentValues.GetTypes()], out var constructor))
                 throw new UndefinedMethodException(type, $"{type}::constructor", Span.Empty); // TODO: Figure out actual Span
 
             var boundConstructor = constructor.Bind(instance);
@@ -241,17 +242,20 @@ namespace Quixotic.Interpret
             if (statement.Value is not null)
                 value = Evaluate(statement.Value);
 
-            QxType? type = null;
+            QxType? declaredType = null;
             if (statement.TypeName is not null)
             {
-                if (!Scope.TryGetType(statement.TypeName, out type))
+                if (CaseRule.Current.Equals(statement.TypeName, "function")) // Defer a type function without any arguments or return type
+                    declaredType = new DeferredType($"Function type was given without arguments or return type.", ContextDependency.VariableAssignment) { NecessaryBaseType = QxType.Function };
+
+                else if (!Scope.TryGetType(statement.TypeName, out declaredType))
                     throw new UnrecognizedTypeException(statement.TypeName, statement.Span);
             }
 
-            if (!QxType.IsNada(value) && type is not null)
+            if (!QxType.IsNada(value) && declaredType is not null)
             {
-                if (!type.IsAssignableFrom(value.Type))
-                    throw new TypeMismatchException(value.Type, type, statement.Value?.Span ?? statement.Span);
+                if (!declaredType.IsAssignableFrom(value.Type))
+                    throw new TypeMismatchException(value.Type, declaredType, statement.Value?.Span ?? statement.Span);
 
                 Scope.DefineVariable(statement.Name, value);
             }
@@ -259,9 +263,9 @@ namespace Quixotic.Interpret
             {
                 Scope.DefineVariable(statement.Name, value);
             }
-            else if (type is not null)
+            else if (declaredType is not null)
             {
-                Scope.DefineVariable(statement.Name, type);
+                Scope.DefineVariable(statement.Name, declaredType);
             }
             else
             {
@@ -368,28 +372,25 @@ namespace Quixotic.Interpret
         {
             var iterator = statement.Iterator;
 
-            var from = ExpectType<NumberValue>(statement.From);
-            var to = ExpectType<NumberValue>(statement.To);
+            var from = ExpectNumberValue(statement.From);
+            var to = ExpectNumberValue(statement.To);
 
-            double start() => from.Value;
+            double start() => from;
 
             bool check(double i)
             {
-                if (from.Value < to.Value)
-                    return i <= to.Value;
+                if (from < to)
+                    return i <= to;
 
-                return i >= to.Value;
+                return i >= to;
             }
 
-            NumberValue step;
-            double iterate(double i) => i += step.Value;
+            double step = statement.Step is null ? 1 : ExpectNumberValue(statement.Step);
+
+            double iterate(double i) => i += step;
 
             for (var i = start(); check(i); i = iterate(i))
             {
-                from = ExpectType<NumberValue>(statement.From);
-                to = ExpectType<NumberValue>(statement.To);
-                step = ExpectType<NumberValue>(statement.Step);
-
                 try
                 {
                     Execute(statement.Block, [new(iterator, new NumberValue(i))]);
@@ -412,7 +413,7 @@ namespace Quixotic.Interpret
             var collection = Evaluate(statement.Collection);
 
             if (collection is not CollectionReference array)
-                throw new TypeMismatchException(collection.Type, QxType.Array(QxType.Any), statement.Collection.Span);
+                throw new TypeMismatchException(collection.Type, QxType.Array.MakeGenericType(QxType.Any), statement.Collection.Span);
 
             foreach (var item in array.Elements)
                 Execute(statement.Block, [new(iterator, item)]);
@@ -422,7 +423,7 @@ namespace Quixotic.Interpret
         {
             while (true)
             {
-                if (statement.EntryControlled && !IsTruthy(Evaluate(statement.Condition)))
+                if (statement.IsEntryControlled && !IsTruthy(Evaluate(statement.Condition)))
                     break;
 
                 try
@@ -438,7 +439,7 @@ namespace Quixotic.Interpret
                     continue;
                 }
 
-                if (!statement.EntryControlled && !IsTruthy(Evaluate(statement.Condition)))
+                if (!statement.IsEntryControlled && !IsTruthy(Evaluate(statement.Condition)))
                     break;
             }
         }
@@ -604,7 +605,7 @@ namespace Quixotic.Interpret
 
         protected Instance Evaluate(QxIsComparisonExpression expression)
         {
-            var instance = Evaluate(expression.Instance);
+            var instance = Evaluate(expression.Target);
 
             var type = Scope.GetType(expression.TypeName);
 
@@ -663,7 +664,7 @@ namespace Quixotic.Interpret
             if (expression.WithClosure is not null)
                 closure = Scope.Capture(expression.WithClosure);
 
-            var function = new Function(expression.Body, returnType, FunctionCallType.Call)
+            var function = new Function(expression.Body, returnType, CallType.Call)
             {
                 Parameters = [.. parameters],
                 Closure = closure,
@@ -680,8 +681,8 @@ namespace Quixotic.Interpret
 
             if (!Scope.TryGetFunction(name, [.. argumentValues.GetTypes()], out var function))
             {
-                if (Scope.TryGetInstance(name, out var instance) && instance.Is(QxType.Function))
-                    function = QxType.Function.GetFunction(instance);
+                if (Scope.TryGetInstance(name, out var instance) && instance.Type is FunctionType functionType)
+                    function = functionType.GetFunction(instance);
                 else
                     throw new UndefinedFunctionException(name, expression.Span);
             }
@@ -705,11 +706,11 @@ namespace Quixotic.Interpret
 
             if (type is QxMetaType metaType) // Static method call
             {
-                if (!metaType.TypeReference.TryResolveMethod(name, argumentValues, out method))
+                if (!metaType.TypeReference.TryResolveMethod(name, [.. argumentValues.GetTypes()], out method))
                 {
-                    if (expression.Type == FunctionCallType.Call)
+                    if (expression.Type == CallType.Call)
                         throw new UndefinedMethodException(metaType.TypeReference, name, expression.Span);
-                    else if (expression.Type == FunctionCallType.OperatorCall)
+                    else if (expression.Type == CallType.OperatorCall)
                         throw new UndefinedOperatorException(metaType.TypeReference, name, expression.Span);
                     else
                         throw new UndefinedPropertyException(metaType.TypeReference, name, expression.Span);
@@ -719,18 +720,18 @@ namespace Quixotic.Interpret
             {
                 if (type is DynamicType dynamicType)
                 {
-                    if (expression.Type == FunctionCallType.Getter)
+                    if (expression.Type == CallType.Getter)
                         method = dynamicType.BuildPropertyGetter(target, name);
-                    else if (expression.Type == FunctionCallType.Setter)
+                    else if (expression.Type == CallType.Setter)
                         method = dynamicType.BuildPropertySetter(target, name, argumentValues[0].Type);
                     else
                         method = dynamicType.BuildMethodCaller(target, name, [.. argumentValues.GetTypes()]);
                 }
-                else if (!type.TryResolveMethod(target, name, argumentValues, out method))
+                else if (!type.TryResolveMethod(name, [.. argumentValues.GetTypes()], out method))
                 {
-                    if (expression.Type == FunctionCallType.Call)
+                    if (expression.Type == CallType.Call)
                         throw new UndefinedMethodException(target.Type, name, expression.Span);
-                    else if (expression.Type == FunctionCallType.OperatorCall)
+                    else if (expression.Type == CallType.OperatorCall)
                         throw new UndefinedOperatorException(target.Type, name, expression.Span);
                     else
                         throw new UndefinedPropertyException(target.Type, name, expression.Span);
@@ -767,17 +768,17 @@ namespace Quixotic.Interpret
 
             Instance[] argumentValues = [.. Evaluate(expression.Arguments)];
 
-            if (!type.TryResolveConstructor(argumentValues, out var constructor))
+            if (!type.TryResolveConstructor([.. argumentValues.GetTypes()], out var constructor))
             {
                 if (argumentValues.Length == 0)
                     return instance;
 
-                throw new UndefinedMethodException(type, $"{type}::constructor", Span.Empty); // TODO: Figure out actual Span
+                throw new UndefinedMethodException(type, $"{type}::constructor", expression.Span);
             }
 
             var boundConstructor = constructor.Bind(instance);
 
-            var arguments = boundConstructor.BindArguments($"{type}::constructor", argumentValues);
+            var arguments = boundConstructor.BindArguments(argumentValues);
 
             Evaluate(boundConstructor, arguments, instance);
 
@@ -789,15 +790,14 @@ namespace Quixotic.Interpret
             return instance.IsTruthy;
         }
 
-        private TValue ExpectType<TValue>(QxExpression expression)
-            where TValue : Instance
+        private double ExpectNumberValue(QxExpression expression)
         {
             var instance = Evaluate(expression);
 
-            if (instance is not TValue expectedValue)
-                throw new UnexpectedTypeException(typeof(TValue).Describe(), instance.Type, expression.Span);
+            if (!instance.Type.Equals(QxType.Number))
+                throw new UnexpectedTypeException(QxType.Number, instance.Type, expression.Span);
 
-            return expectedValue;
+            return QxType.Number.Get(instance);
         }
 
         private Instance InvokeOperator(Operator op, QxExpression left)
@@ -835,7 +835,7 @@ namespace Quixotic.Interpret
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
 
-            if (!leftValue.Type.TryResolveMethod(name, [leftValue, rightValue], out var function)) // Check for static operator on left's type
+            if (!leftValue.Type.TryResolveMethod(name, [leftValue.Type, rightValue.Type], out var function)) // Check for static operator on left's type
             {
                 if (!Scope.TryGetFunction(name, [leftValue.Type, rightValue.Type], out function)) // Check scope for operator
                     throw new UndefinedOperatorException(leftValue.Type, name, left.Span + right.Span);

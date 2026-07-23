@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Quixotic.Common\Quixotic.Common.csproj" />
     <ProjectReference Include="..\Quixotic.Interop\Quixotic.Interop.csproj" />
   </ItemGroup>

@@ -1,4 +1,6 @@
+using Quixotic.Common.TypeSystem.Symbols;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace Quixotic.Common.TypeSystem.Types
 {
@@ -17,6 +19,21 @@ namespace Quixotic.Common.TypeSystem.Types
             {
                 ["value"] = value
             };
+        }
+
+        protected override void LoadMethods()
+        {
+            RegisterStaticMethod("+", Add, Number, new Parameter("left", String), new Parameter("right", Any));
+        }
+
+        private Instance Add(params Instance[] args)
+        {
+            Debug.Assert(args.Length == 2);
+
+            var left = args[0];
+            var right = args[1];
+
+            return Construct(Get(left) + right.ToString());
         }
 
         public string Get(Instance instance)

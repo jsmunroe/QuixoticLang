@@ -1,10 +1,19 @@
 ﻿using Quixotic.Analysis.Contracts;
 using Quixotic.Analysis.Environment;
 using Quixotic.Analysis.Exceptions;
+using Quixotic.Common.Analysis.Expressions;
+using Quixotic.Common.Analysis.Statements;
+using Quixotic.Common.Contracts;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
+using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Symbols;
+using Quixotic.Common.Symbols.Functions;
+using Quixotic.Common.Syntax.Casing;
+using Quixotic.Common.Tokens;
+using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using Quixotic.Common.Utilities;
 using Quixotic.Parsing;
@@ -12,19 +21,27 @@ using Quixotic.Parsing;
 namespace Quixotic.Analysis.Semantics
 {
 
-    public class SemanticAnalyzer
+    public class SemanticAnalyzer(ISource source)
     {
-        private readonly static MethodIndexer<Action<SemanticAnalyzer, QxStatement>, QxStatement> _statementIndexer = new(typeof(SemanticAnalyzer), "AnalyzeStatement");
+        private readonly static MethodIndexer<Func<SemanticAnalyzer, QxStatement, StatementInfo>, QxStatement> _statementIndexer = new(typeof(SemanticAnalyzer), "AnalyzeStatement");
 
-        private readonly static MethodIndexer<Func<SemanticAnalyzer, QxExpression, QxType>, QxExpression> _expressionIndexer = new(typeof(SemanticAnalyzer), "AnalyzeExpression");
+        private readonly static MethodIndexer<Func<SemanticAnalyzer, QxExpression, ExpressionInfo>, QxExpression> _expressionIndexer = new(typeof(SemanticAnalyzer), "AnalyzeExpression");
+
+        public SemanticAnalyzer(string source)
+            : this(new StringSource(source))
+        { }
 
         private IFrame Frame { get; set; } = new GlobalFrame();
+
+        private SymbolTable Symbols => Frame.Symbols;
 
         public List<SemanticException> Issues { get; } = [];
 
         public IEnumerable<SemanticException> Errors => Issues.Where(issue => issue.Severity == Severity.Error);
 
         public IEnumerable<SemanticException> Warnings => Issues.Where(issue => issue.Severity == Severity.Warning);
+
+        public ISource Source { get; } = source;
 
         public void PushBlockFrame()
         {
@@ -36,17 +53,33 @@ namespace Quixotic.Analysis.Semantics
             Frame = new LoopFrame(Frame);
         }
 
-        public void PushFunctionFrame(SignatureSymbol signatureSymbol)
+        public void PushFunctionFrame(FunctionSymbol function, SymbolTable? otherState)
         {
-            Frame = new FunctionFrame(Frame, signatureSymbol);
+            Frame = new FunctionFrame(Frame, function, otherState);
+
+            foreach (var parameter in function.Function.Parameters)
+            {
+                if (!Symbols.TryDefineVariable(parameter.Name, parameter.Type, parameter.Type))
+                    throw new AlreadyDefinedIdentifierException(parameter.Name, Span.Empty);
+
+            }
         }
 
-        public void PopFrame()
+        public void PushTypeFrame(QxType type)
+        {
+            Frame = new TypeFrame(Frame, type);
+        }
+
+        public IFrame PopFrame()
         {
             if (Frame.Parent is null)
                 throw new InvalidOperationException("Cannot pop the global frame.");
 
+            var frame = Frame;
+
             Frame = Frame.Parent;
+
+            return frame;
         }
 
         public IEnumerable<QxStatement> Analyze(Parser parser)
@@ -72,15 +105,15 @@ namespace Quixotic.Analysis.Semantics
             }
         }
 
-        private void AnalyzeBlock(Block block)
+        private IEnumerable<StatementInfo> AnalyzeBlockStatements(Block block)
         {
-            PushBlockFrame();
+            List<StatementInfo> statementInfos = [];
 
             foreach (var statement in block)
             {
                 try
                 {
-                    AnalyzeStatement(statement);
+                    statementInfos.Add(AnalyzeStatement(statement));
                 }
                 catch (SemanticException ex)
                 {
@@ -88,33 +121,57 @@ namespace Quixotic.Analysis.Semantics
                 }
             }
 
-            PopFrame();
+            return statementInfos;
         }
 
-        private void AnalyzeLoopBlock(Block block, params VariableTypeSymbol[] symbols)
+        private IEnumerable<StatementInfo> AnalyzeBlock(Block block)
+        {
+            PushBlockFrame();
+
+            var statements = AnalyzeBlockStatements(block);
+
+            PopFrame();
+
+            return statements;
+        }
+
+        private IEnumerable<StatementInfo> AnalyzeLoopBlock(Block block, params IdentifierSymbol[] symbols)
         {
             PushLoopFrame();
 
             foreach (var symbol in symbols)
-                Frame.Symbols.TryDefineVariable(symbol.Name, symbol.Type);
+                Symbols.TryDefineVariable(symbol.Name, symbol.Type, symbol.ValueType);
 
-            foreach (var statement in block)
-            {
-                try
-                {
-                    AnalyzeStatement(statement);
-                }
-                catch (SemanticException ex)
-                {
-                    Issues.Add(ex);
-                }
-            }
+            var statements = AnalyzeBlockStatements(block);
 
             PopFrame();
+
+            return statements;
         }
 
+        private IEnumerable<StatementInfo> AnalyzeTypeBlock(Block block, QxType type)
+        {
+            PushTypeFrame(type);
 
-        private void AnalyzeStatement(QxStatement statement)
+            var statements = AnalyzeBlockStatements(block);
+
+            PopFrame();
+
+            return statements;
+        }
+
+        private IEnumerable<StatementInfo> AnalyzeFunctionBlock(Block block, FunctionSymbol function, SymbolTable otherState)
+        {
+            PushFunctionFrame(function, otherState);
+
+            var statements = AnalyzeBlockStatements(block);
+
+            PopFrame();
+
+            return statements;
+        }
+
+        private StatementInfo AnalyzeStatement(QxStatement statement)
         {
             if (Frame.RedirectionType != FrameRedirectionType.None)
                 Issues.Add(new UnreachableCodeException(statement.Span));
@@ -124,252 +181,750 @@ namespace Quixotic.Analysis.Semantics
             if (!_statementIndexer.TryGetMethod(statementType, out var action))
                 throw new NotImplementedException($"No analyzer implemented for statement type: {statementType.Name}");
 
-            action(this, statement);
+            try
+            {
+                var statementInfo = action(this, statement);
+                statement.Info = statementInfo;
+            }
+            catch (Exception ex)
+            {
+                statement.Info = new StatementErrorInfo(ex);
+                throw;
+            }
+
+            return statement.Info;
         }
 
-        private IEnumerable<QxType> AnalyzeExpressions(IEnumerable<QxExpression> expressions)
+        private IEnumerable<ExpressionInfo> AnalyzeExpressions(IEnumerable<QxExpression> expressions)
         {
             foreach (var expression in expressions)
                 yield return AnalyzeExpression(expression);
         }
 
-        private QxType AnalyzeExpression(QxExpression expression)
+        private ExpressionInfo AnalyzeExpression(QxExpression expression)
         {
             var expressionType = expression.GetType();
 
             if (!_expressionIndexer.TryGetMethod(expressionType, out var func))
                 throw new NotImplementedException($"No analyzer implemented for expression type: {expressionType.Name}");
 
-            var type = func(this, expression);
-            expression.SemanticInfo = expression.SemanticInfo is null ? new Common.Expressions.SemanticInfo(type) : expression.SemanticInfo with { Type = type };
-            return type;
+            try
+            {
+                var expressionInfo = func(this, expression);
+                expression.Info = expressionInfo;
+            }
+            catch (Exception ex)
+            {
+                expression.Info = new ExpressionErrorInfo(ex);
+                throw;
+            }
+
+            return expression.Info;
         }
 
-        // Example statement analyzers
-        protected void AnalyzeStatement(QxPrintStatement statement)
+        protected StatementInfo AnalyzeStatement(QxPrintStatement statement)
         {
             // Analyze the expression to get its type
             var expressionType = AnalyzeExpression(statement.Expression);
 
             // Print statements don't have additional semantic checks
+
+            return new PrintStatementInfo
+            {
+                Expression = expressionType
+            };
         }
 
-        // Example statement analyzers
-        protected void AnalyzeStatement(QxVariableDeclarationStatement statement)
+        protected StatementInfo AnalyzeStatement(QxVariableDeclarationStatement statement)
         {
             var name = statement.Name;
 
-            var valueType = statement.Value is not null ? AnalyzeExpression(statement.Value) : null;
+            var value = statement.Value is not null ? AnalyzeExpression(statement.Value) : null;
 
             QxType? declaredType = null;
             if (statement.TypeName is not null)
             {
-                if (!Frame.Symbols.TryGetType(statement.TypeName, out declaredType))
+                if (CaseRule.Current.Equals(statement.TypeName, "function")) // Defer a type function without any arguments or return type
+                    declaredType = new DeferredType($"Function type was given without arguments or return type.", ContextDependency.VariableAssignment) { NecessaryBaseType = QxType.Function };
+
+                else if (!Symbols.TryGetType(statement.TypeName, out declaredType))
                     throw new UnrecognizedTypeException(statement.TypeName, statement.Span);
             }
 
-            if (declaredType is not null)
+            var expressionType = value?.ExpressionType ?? declaredType;
+
+            if (expressionType is null)
+                throw new UntypedVariableDeclarationException(name, statement.Span);
+
+            IdentifierSymbol? identifierSymbol = null;
+            SignatureSymbol? getterSymbol = null;
+            SignatureSymbol? setterSymbol = null;
+
+            var typeFrame = Frame as TypeFrame;
+
+            // Variable is member of type
+            if (typeFrame is not null)
             {
-                if (!Frame.Symbols.TryDefineVariable(name, declaredType))
+                var type = typeFrame.Type;
+                (getterSymbol, setterSymbol) = type.RegisterProperty(name, expressionType);
+            }
+            else if (value is not null)
+            {
+                if (!Symbols.TryDefineVariable(name, value.ExpressionType, value.ExpressionType, out identifierSymbol))
                     throw new AlreadyDefinedIdentifierException(name, statement.Span);
             }
-            else if (valueType is not null)
+            else if (declaredType is not null)
             {
-                if (!Frame.Symbols.TryDefineVariable(name, valueType))
+                if (!Symbols.TryDefineVariable(name, declaredType, null, out identifierSymbol))
                     throw new AlreadyDefinedIdentifierException(name, statement.Span);
+
             }
             else
                 throw new UntypedVariableDeclarationException(name, statement.Span);
 
-            if (declaredType is not null && valueType is not null && !declaredType.IsAssignableFrom(valueType))
-                throw new AssignmentTypeMismatchException(name, declaredType, valueType, statement.Span);
+            if (declaredType is not null && value is not null && !declaredType.IsAssignableFrom(value.ExpressionType))
+                throw new AssignmentTypeMismatchException(name, declaredType, value.ExpressionType, statement.Span);
+
+            return new VariableDeclarationStatementInfo
+            {
+                Name = name,
+                Value = value,
+                DeclaredType = declaredType,
+                IdentifierSymbol = identifierSymbol,
+                IsPropertyMember = typeFrame is not null,
+                MemberOf = typeFrame?.Type,
+                GetterSymbol = getterSymbol,
+                SetterSymbol = setterSymbol,
+            };
         }
 
-        protected void AnalyzeStatement(QxAssignmentStatement statement)
+        protected StatementInfo AnalyzeStatement(QxAssignmentStatement statement)
         {
             var target = AnalyzeExpression(statement.Target);
 
-            var valueType = AnalyzeExpression(statement.Value);
+            var value = AnalyzeExpression(statement.Value);
 
-            if (!target.IsAssignableFrom(valueType))
-                throw new AssignmentTypeMismatchException(target, valueType, statement.Span);
-        }
-
-        protected void AnalyzeStatement(QxIfStatement statement)
-        {
-            AnalyzeExpression(statement.Condition);
-
-            AnalyzeBlock(statement.ThenBlock);
-
-            foreach (var elseIfClause in statement.ElseIfClauses)
+            if (target is IdentifierExpressionInfo identifierExpressionInfo)
             {
-                AnalyzeExpression(elseIfClause.Condition);
-
-                AnalyzeBlock(elseIfClause.Block);
+                if (!Symbols.TryAssignVariable(identifierExpressionInfo.Name, value.ExpressionType))
+                    throw new AssignmentTypeMismatchException(target.ExpressionType, value.ExpressionType, statement.Span);
+            }
+            else
+            {
+                if (!target.ExpressionType.IsAssignableFrom(value.ExpressionType))
+                    throw new AssignmentTypeMismatchException(target.ExpressionType, value.ExpressionType, statement.Span);
             }
 
-            if (statement.ElseBlock is not null)
-                AnalyzeBlock(statement.ElseBlock);
+            return new AssignmentStatementInfo
+            {
+                Target = target,
+                Value = value,
+            };
         }
 
-        protected void AnalyzeStatement(QxDoStatement statement)
+        protected StatementInfo AnalyzeStatement(QxIfStatement statement)
         {
-            if (statement.EntryControlled)
-                AnalyzeExpression(statement.Condition);
+            var ifCondition = AnalyzeExpression(statement.Condition);
 
-            AnalyzeLoopBlock(statement.Block);
+            var thenStatements = AnalyzeBlock(statement.ThenBlock);
 
-            if (statement.ExitControlled)
-                AnalyzeExpression(statement.Condition);
+            List<ElseIfBlockInfo> elseIfBlocks = [];
+            foreach (var elseIfClause in statement.ElseIfClauses)
+            {
+                var elseIfCondition = AnalyzeExpression(elseIfClause.Condition);
+
+                var elseIfStatements = AnalyzeBlock(elseIfClause.Block);
+
+                elseIfBlocks.Add(new ElseIfBlockInfo
+                {
+                    Condition = elseIfCondition,
+                    Statements = [.. elseIfStatements],
+                });
+            }
+
+            ElseBlockInfo? elseInfo = null;
+
+            if (statement.ElseBlock is not null)
+            {
+                var elseStatements = AnalyzeBlock(statement.ElseBlock);
+
+                elseInfo = new()
+                {
+                    Statements = [.. elseStatements],
+                };
+            }
+
+            return new IfStatementInfo
+            {
+                Condition = ifCondition,
+                IfStatements = [.. thenStatements],
+                ElseIfBlocks = [.. elseIfBlocks],
+                ElseBlock = elseInfo,
+            };
         }
 
-        protected void AnalyzeStatement(QxForStatement statement)
+        protected StatementInfo AnalyzeStatement(QxDoStatement statement)
+        {
+            if (statement.IsEntryControlled && statement.IsExitControlled)
+                throw new DoStatementHasDualConditionException(statement.Span);
+
+            if (!statement.IsEntryControlled && !statement.IsExitControlled)
+                throw new DoStatementMissingConditionException(statement.Span);
+
+            var condition = AnalyzeExpression(statement.Condition);
+
+            var statements = AnalyzeLoopBlock(statement.Block);
+
+            return new DoStatementInfo
+            {
+                IsEntryControlled = statement.IsEntryControlled,
+                IsExitControlled = statement.IsExitControlled,
+                Condition = condition,
+                BlockStatements = [.. statements],
+            };
+        }
+
+        protected StatementInfo AnalyzeStatement(QxForStatement statement)
         {
             var iterator = statement.Iterator; // TODO: Validate iterator name
 
-            var fromType = AnalyzeExpression(statement.From);
+            var from = AnalyzeExpression(statement.From);
 
-            if (fromType is not NumberType)
-                throw new ForLoopRangeTypeException(fromType, "from", statement.From.Span);
+            if (from.ExpressionType is not NumberType)
+                throw new ForLoopRangeTypeException(from, "from", statement.From.Span);
 
-            var toType = AnalyzeExpression(statement.To);
+            var to = AnalyzeExpression(statement.To);
 
-            if (toType is not NumberType)
-                throw new ForLoopRangeTypeException(toType, "to", statement.To.Span);
+            if (to.ExpressionType is not NumberType)
+                throw new ForLoopRangeTypeException(to, "to", statement.To.Span);
 
-            var stepType = AnalyzeExpression(statement.Step);
+            var step = statement.Step is not null ? AnalyzeExpression(statement.Step) : null;
 
-            if (stepType is not NumberType)
-                throw new ForLoopRangeTypeException(stepType, "step", statement.Step.Span);
+            if (step is not null && step.ExpressionType is not NumberType)
+                throw new ForLoopRangeTypeException(step, "step", statement.Step!.Span);
 
-            AnalyzeLoopBlock(statement.Block, new VariableTypeSymbol(iterator, QxType.Number));
+            var statements = AnalyzeLoopBlock(statement.Block, new IdentifierSymbol(iterator, QxType.Number, QxType.Number));
+
+            return new ForStatementInfo
+            {
+                IteratorName = iterator,
+                From = from,
+                To = to,
+                Step = step,
+                BlockStatements = [.. statements],
+            };
         }
 
-        protected void AnalyzeStatement(QxFunctionDeclarationStatement statement)
+        protected StatementInfo AnalyzeStatement(QxForInStatement statement)
+        {
+            var iterator = statement.Iterator;
+
+            var collection = AnalyzeExpression(statement.Collection);
+
+            if (collection.ExpressionType is not CollectionType collectionType)
+                throw new ForInLoopCollectionTypeException(collection.ExpressionType, statement.Collection.Span);
+
+            var statements = AnalyzeLoopBlock(statement.Block, new IdentifierSymbol(iterator, collectionType.ElementType, collectionType.ElementType));
+
+            return new ForInStatementInfo
+            {
+                IteratorName = iterator,
+                Collection = collection,
+                BlockStatements = [.. statements],
+            };
+        }
+
+        protected StatementInfo AnalyzeStatement(QxFunctionDeclarationStatement statement)
         {
             var name = statement.Name;
 
-            var returnType = Frame.Symbols.GetType(statement.Expression.ReturnType);
+            var call = (FunctionExpressionInfo)AnalyzeExpression(statement.Expression);
 
-            var parameters = statement.Expression.Parameters.Select(p => Frame.Symbols.GetType(p.TypeName));
+            var typeFrame = Frame as TypeFrame;
 
-            if (!Frame.Symbols.TryDefineSignature(name, returnType, [.. parameters]))
-                throw new AlreadyDefinedSignatureException(name, statement.Span);
+            // Variable is member of type
+            if (typeFrame is not null)
+            {
+                var type = typeFrame.Type;
+
+                type.RegisterMethod(name, new Function(Block.Empty, call.ReturnType, call.CallType)
+                {
+                    Parameters = [.. call.Parameters]
+                });
+            }
+            else
+            {
+                if (!Symbols.TryDefineSignature(name, call.SignatureSymbol))
+                    throw new AlreadyDefinedSignatureException(name, statement.Span);
+            }
+
+            return new FunctionDeclarationStatementInfo
+            {
+                Name = name,
+                Parameters = call.Parameters,
+                ReturnType = call.ReturnType,
+                SignatureSymbol = call.SignatureSymbol,
+                BodyStatements = call.BodyStatements,
+            };
         }
 
-        protected void AnalyzeStatement(QxFunctionCallStatement statement)
+        protected StatementInfo AnalyzeStatement(QxFunctionCallStatement statement)
         {
-            var returnType = AnalyzeExpression(statement.Call);
+            var call = AnalyzeExpression(statement.Call);
+
+            return new FunctionCallStatementInfo
+            {
+                Call = call,
+            };
         }
 
-        protected void AnalyzeStatement(QxBreakStatement statement)
+        protected StatementInfo AnalyzeStatement(QxMethodCallStatement statement)
+        {
+            var call = AnalyzeExpression(statement.Call);
+
+            return new MethodCallStatementInfo
+            {
+                Call = call,
+            };
+        }
+
+        protected StatementInfo AnalyzeStatement(QxBreakStatement statement)
         {
             if (Frame.GetLoopFrame() is null)
                 throw new BreakOutsideLoopException(statement.Span);
 
             Frame.RedirectionType = FrameRedirectionType.Break;
+
+            return new BreakStatementInfo();
         }
 
-        protected void AnalyzeStatement(QxContinueStatement statement)
+        protected StatementInfo AnalyzeStatement(QxContinueStatement statement)
         {
             if (Frame.GetLoopFrame() is null)
                 throw new ContinueOutsideLoopException(statement.Span);
 
             Frame.RedirectionType = FrameRedirectionType.Continue;
+
+            return new ContinueStatementInfo();
         }
 
-        protected void AnalyzeStatement(QxReturnStatement statement)
+        protected StatementInfo AnalyzeStatement(QxReturnStatement statement)
         {
             var functionFrame = Frame.GetFunctionFrame() ?? throw new ReturnOutsideFunctionException(statement.Span);
 
-            var returnValueType = statement.Expression is null ? QxType.Void.Type : AnalyzeExpression(statement.Expression);
+            var returnValue = statement.Expression is null ? new VoidExpressionInfo() : AnalyzeExpression(statement.Expression);
 
-            if (!functionFrame.Function.ReturnType.IsAssignableFrom(returnValueType))
-                throw new ReturnTypeMismatchException(functionFrame.Function.Name, returnValueType, statement.Span);
+            if (functionFrame.Function.ReturnType is DeferredType deferredType)
+                deferredType.AddAlternative(returnValue.ExpressionType);
+            else if (!functionFrame.Function.ReturnType.IsAssignableFrom(returnValue.ExpressionType))
+                throw new ReturnTypeMismatchException(functionFrame.Function.Name, returnValue.ExpressionType, statement.Span);
 
             Frame.RedirectionType = FrameRedirectionType.Return;
+
+            return new ReturnStatementInfo
+            {
+                ReturnValue = returnValue,
+            };
         }
 
-        protected QxType AnalyzeExpression(QxNumberLiteralExpression expression)
+        protected StatementInfo AnalyzeStatement(QxTypeDeclarationStatement statement)
         {
-            return QxType.Number;
+            var name = statement.Name;
+
+            if (!CaseRule.Current.TypeNames.IsMatch(name))
+                Issues.Add(new TypeNameCasingException(name, statement.Span));
+
+            var baseTypeName = statement.BaseName;
+
+            if (!Symbols.TryGetType(baseTypeName, out var baseType))
+                throw new UnrecognizedTypeException(baseTypeName, statement.Span);
+
+            var type = new DefinedType(name, baseType);
+
+            var statements = AnalyzeTypeBlock(statement.Body, type);
+
+            if (!Symbols.TryDefineType(name, type))
+                throw new AlreadyDefinedTypeException(name, statement.Span);
+
+            return new TypeDeclarationStatementInfo
+            {
+                Type = type,
+                BaseType = baseType,
+                MemberStatements = [.. statements],
+            };
         }
 
-        protected QxType AnalyzeExpression(QxStringLiteralExpression expression)
+        protected StatementInfo AnalyzeStatement(QxConstructorDeclarationStatement statement)
         {
-            return QxType.String;
+            if (Frame is not TypeFrame typeFrame)
+                throw new ConstructorOutsideOfTypeException(statement.Span);
+
+            List<Parameter> parameters = [];
+            foreach (var parameter in statement.Parameters)
+            {
+                if (!Symbols.TryGetType(parameter.TypeName, out var parameterType))
+                    throw new UnrecognizedTypeException(parameter.TypeName, statement.Span);
+
+                parameters.Add(new Parameter(parameter.Name, parameterType));
+            }
+
+            BaseConstructorCallExpressionInfo? baseCall = statement.BaseCall is null ? null : (BaseConstructorCallExpressionInfo?)AnalyzeExpression(statement.BaseCall);
+
+            var type = typeFrame.Type;
+
+            var signatureSymbol = type.RegisterConstructor(new Constructor(type, statement.Body)
+            {
+                Base = baseCall?.BaseConstructor,
+                Parameters = parameters,
+            });
+
+            return new ConstructorDeclarationStatementInfo
+            {
+                Type = typeFrame.Type,
+                Parameters = parameters.AsReadOnly(),
+                BaseCall = baseCall,
+                SignatureSymbol = signatureSymbol,
+            };
         }
 
-        protected QxType AnalyzeExpression(QxBooleanLiteralExpression expression)
+        protected StatementInfo AnalyzeStatement(QxImportStatement statement)
         {
-            return QxType.Boolean;
+            Symbols.Import(statement.Namespace);
+
+            return new ImportStatementInfo
+            {
+                Namespace = statement.Namespace
+            };
         }
 
-        protected QxType AnalyzeExpression(QxArrayExpression expression)
+        protected ExpressionInfo AnalyzeExpression(QxNumberLiteralExpression expression)
         {
-            var elementTypes = AnalyzeExpressions(expression.Elements);
-            var commonElementType = QxType.GetCommonBase(elementTypes);
-
-            return QxType.Array(commonElementType);
+            return new LiteralExpressionInfo(QxType.Number);
         }
 
-        protected QxType AnalyzeExpression(QxBinaryExpression expression)
+        protected ExpressionInfo AnalyzeExpression(QxStringLiteralExpression expression)
+        {
+            return new LiteralExpressionInfo(QxType.String);
+        }
+
+        protected ExpressionInfo AnalyzeExpression(QxBooleanLiteralExpression expression)
+        {
+            return new LiteralExpressionInfo(QxType.Boolean);
+        }
+
+        protected ExpressionInfo AnalyzeExpression(QxArrayExpression expression)
+        {
+            var elements = AnalyzeExpressions(expression.Elements);
+            var commonElementType = QxType.GetCommonBase(elements.GetTypes());
+
+            return new ArrayExpressionInfo(commonElementType)
+            {
+                Elements = [.. elements],
+            };
+        }
+
+        protected ExpressionInfo AnalyzeExpression(QxSetExpression expression)
+        {
+            var elements = AnalyzeExpressions(expression.Elements);
+            var commonElementType = QxType.GetCommonBase(elements.GetTypes());
+
+            return new SetExpressionInfo(commonElementType)
+            {
+                Elements = [.. elements],
+            };
+        }
+
+        protected ExpressionInfo AnalyzeExpression(QxBinaryExpression expression)
         {
             var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator) ?? throw new UnrecognizedOperatorException(expression.Operator, expression.Span);
 
-            var leftType = AnalyzeExpression(expression.Left);
-            var rightType = AnalyzeExpression(expression.Right);
+            var left = AnalyzeExpression(expression.Left);
+            var right = AnalyzeExpression(expression.Right);
 
-            var signature = Frame.Symbols.GetSignature(operatorValue, leftType, rightType) ?? throw new UnrecognizedFunctionSignatureException(new Signature(operatorValue, leftType, rightType), expression.Span);
+            var signature = Symbols.GetSignature(operatorValue, left.ExpressionType, right.ExpressionType)
+                ?? Symbols.GetSignatureFromType(left.ExpressionType, operatorValue, left.ExpressionType, right.ExpressionType)
+                ?? throw new UnrecognizedFunctionSignatureException(new Signature(operatorValue, left.ExpressionType, right.ExpressionType), expression.Span);
 
-            signature = signature.Substitute(leftType, rightType);
-
-            return signature.ReturnType;
+            return new BinaryExpressionInfo(signature.ReturnType)
+            {
+                Operator = expression.Operator,
+                Left = left,
+                Right = right,
+                SignatureSymbol = signature,
+            };
         }
 
-        protected QxType AnalyzeExpression(QxUnaryExpression expression)
+        protected ExpressionInfo AnalyzeExpression(QxUnaryExpression expression)
         {
+            if (expression.Operator == Operator.New)
+                return AnalyzeExpression(expression.Operand);
+
+            var operatorValue = OperationMetadata.GetOperatorValue(expression.Operator) ?? throw new UnrecognizedOperatorException(expression.Operator, expression.Span);
+
             var operand = AnalyzeExpression(expression.Operand);
 
-            return operand;
+            var signature = Symbols.GetSignature(operatorValue, operand.ExpressionType) ?? throw new UnrecognizedFunctionSignatureException(new Signature(operatorValue, operand.ExpressionType), expression.Span);
+
+            return new UnaryExpressionInfo(signature.ReturnType)
+            {
+                Operator = expression.Operator,
+                Operand = operand,
+                SignatureSymbol = signature,
+            };
         }
 
-        protected QxType AnalyzeExpression(QxIdentifierExpression expression)
+        protected ExpressionInfo AnalyzeExpression(QxIdentifierExpression expression)
         {
             var name = expression.Name;
 
-            var type = Frame.Symbols.GetInstance(name) ?? throw new UnrecognizedIdentifierException(name, expression.Span);
+            QxType? variableType = null;
 
-            return type;
+            if (Symbols.TryGetVariable(name, out var identifierSymbol))
+                variableType = identifierSymbol.Type;
+            else if (Symbols.TryGetSignatureByName(name, out var signatureIdentifier))
+                variableType = QxType.Function.MakeFunctionType(signatureIdentifier.ReturnType, [.. signatureIdentifier.ParameterTypes.ToParameters()]);
+            else if (Symbols.TryGetType(name, out var type))
+                variableType = type;
+            else
+                throw new UnrecognizedIdentifierException(name, expression.Span);
+
+            return new IdentifierExpressionInfo(variableType)
+            {
+                Name = name,
+            };
         }
 
-        protected QxType AnalyzeExpression(QxIndexerExpression expression)
+        protected ExpressionInfo AnalyzeExpression(QxIndexerExpression expression)
         {
-            var targetType = AnalyzeExpression(expression.Target);
+            var target = AnalyzeExpression(expression.Target);
 
-            if (targetType is not ArrayType arrayType)
-                throw new InvalidIndexerTargetException(targetType, expression.Span);
+            if (target.ExpressionType is not ArrayType arrayType)
+                throw new InvalidIndexerTargetException(target, expression.Span);
 
-            var indexType = AnalyzeExpression(expression.Index);
+            var index = AnalyzeExpression(expression.Index);
 
-            if (indexType != QxType.Number)
-                throw new IndexTypeException(indexType, expression.Span);
+            if (index.ExpressionType != QxType.Number)
+                throw new IndexTypeException(index, expression.Span);
 
-            return arrayType.ElementType;
+            return new IndexerExpressionInfo(arrayType.ElementType)
+            {
+                Target = target,
+                Index = index,
+            };
         }
 
-        protected QxType AnalyzeExpression(QxFunctionCallExpression expression)
+        protected ExpressionInfo AnalyzeExpression(QxIsComparisonExpression expression)
+        {
+            var target = AnalyzeExpression(expression.Target);
+
+            var typeName = expression.TypeName;
+
+            if (!Symbols.TryGetType(typeName, out var type))
+                throw new UnrecognizedTypeException(typeName, expression.Span);
+
+            var result = target.ExpressionType.IsAssignableFrom(type);
+
+            IdentifierSymbol? patternIdentifier = null;
+            if (result && expression.PatternIdentifier is not null)
+            {
+                if (!Symbols.TryDefineVariable(expression.PatternIdentifier, type, type, out patternIdentifier))
+                    throw new AlreadyDefinedIdentifierException(expression.PatternIdentifier, expression.Span);
+            }
+
+            return new IsComparisonExpressionInfo
+            {
+                Target = target,
+                Type = type,
+                Result = result,
+                PatternIdentifier = patternIdentifier,
+            };
+        }
+
+        protected ExpressionInfo AnalyzeExpression(QxFunctionCallExpression expression)
         {
             var name = expression.Name;
 
             var arguments = AnalyzeExpressions(expression.Arguments);
 
-            var signature = new Signature(name, [.. arguments]);
+            var signature = new Signature(name, [.. arguments.GetTypes()]);
 
-            var functionSignature = Frame.Symbols.GetSignature(name, [.. arguments]) ?? throw new UnrecognizedFunctionSignatureException(signature, expression.Span);
+            QxType returnType;
 
-            return functionSignature.ReturnType;
+            if (Symbols.TryGetSignature(name, [.. arguments.GetTypes()], out var signatureSymbol))
+                returnType = signatureSymbol.ReturnType;
+            else if (Symbols.TryGetVariable(name, out var identifierSymbol) && identifierSymbol.ValueType is FunctionType functionType)
+                returnType = functionType.ReturnType;
+            else
+                throw new UnrecognizedFunctionSignatureException(signature, expression.Span);
+
+            return new FunctionCallExpressionInfo(returnType)
+            {
+                Name = name,
+                Arguments = [.. arguments],
+            };
+
         }
 
+        protected ExpressionInfo AnalyzeExpression(QxFunctionExpression expression)
+        {
+            var typeFrame = Frame as TypeFrame;
+
+            QxType? returnType;
+            if (CaseRule.Current.Equals(expression.ReturnType, "function")) // Defer a type function without any arguments or return type
+                returnType = new DeferredType($"Function type was given without arguments or return type.", ContextDependency.ReturnedValuesAnalyzed) { NecessaryBaseType = QxType.Function };
+            else
+                returnType = Symbols.GetType(expression.ReturnType);
+
+            List<Parameter> parameters = [];
+            foreach (var parameter in expression.Parameters)
+            {
+                if (!Symbols.TryGetType(parameter.TypeName, out var parameterType))
+                    throw new UnrecognizedTypeException(parameter.TypeName, expression.Span);
+
+                parameters.Add(new(parameter.Name, parameterType));
+            }
+
+            var function = new Function(expression.Body, returnType, expression.CallType) { Parameters = [.. parameters.Select(p => new Parameter(p.Name, p.Type))] };
+            var functionSymbol = new FunctionSymbol(expression.Name, function);
+
+            var symbols = new SymbolTable();
+
+            if (expression is QxLambdaFunctionExpression)
+            {
+                symbols = Symbols;
+            }
+            else if (expression.WithClosure is not null)
+            {
+                symbols = Symbols.Capture(expression.WithClosure);
+            }
+
+            if (!expression.IsGlobalOrStatic)
+            {
+                if (typeFrame is not null)
+                {
+                    var type = typeFrame.Type;
+                    symbols.TryDefineVariable("this", typeFrame.Type, typeFrame.Type);
+
+                    var baseType = type.BaseType;
+                    if (baseType is not null)
+                        symbols.TryDefineVariable("base", baseType, baseType);
+                }
+                else
+                {
+                    var thisType = new DeferredType("A this variable is supplied to the scope of the inline function and is deferred in lieu of assignment to a member.", ContextDependency.AssignmentToMember);
+                    symbols.TryDefineVariable("this", thisType, thisType);
+                }
+            }
+
+            var statements = AnalyzeFunctionBlock(expression.Body, functionSymbol, symbols);
+
+            if (function.ReturnType is DeferredType deferredType)
+            {
+                returnType = deferredType.SelectAlternative(QxType.Void.Type);
+
+                function = new Function(expression.Body, returnType, expression.CallType) { Parameters = [.. parameters.Select(p => new Parameter(p.Name, p.Type))] };
+                functionSymbol = new FunctionSymbol(expression.Name, function);
+
+                expression.ReturnType = returnType.Name;
+            }
+
+            return new FunctionExpressionInfo(returnType, [.. parameters])
+            {
+                SignatureSymbol = functionSymbol,
+                BodyStatements = [.. statements],
+                CallType = expression.CallType,
+                Closure = expression.WithClosure,
+            };
+        }
+
+        protected ExpressionInfo AnalyzeExpression(QxLambdaFunctionExpression expression)
+        {
+            return AnalyzeExpression((QxFunctionExpression)expression);
+        }
+
+        protected ExpressionInfo AnalyzeExpression(QxMethodCallExpression expression)
+        {
+            var target = AnalyzeExpression(expression.Target);
+
+            var methodName = expression.MethodName;
+
+            var functionCallType = expression.Type;
+
+            ExpressionInfo[] arguments = [.. AnalyzeExpressions(expression.Arguments)];
+
+            Function? method = null;
+            bool isDynamic = false;
+            bool isDeferred = false;
+
+            var targetType = target.ExpressionType;
+            if (targetType is DeferredType deferredType && deferredType.HasAlternative)
+                targetType = deferredType.SelectedAlternative;
+
+            if (targetType is DeferredType)
+                isDeferred = true;
+            else if (targetType is DynamicType)
+                isDynamic = true;
+            else if (!targetType.TryResolveMethod(methodName, [.. arguments.GetTypes()], out method))
+            {
+                if (expression.Type == CallType.Setter || expression.Type == CallType.Getter)
+                    throw new UnrecognizedPropertySignatureException(target.ExpressionType, methodName, expression.Span);
+                else
+                    throw new UnrecognizedMethodSignatureException(target.ExpressionType, new Signature(methodName, [.. arguments.GetTypes()]), expression.Span);
+            }
+
+            var isInstanceCall = method is BindableFunction;
+            var isStaticCall = !isInstanceCall;
+
+            var expressionType = method?.ReturnType ?? target.ExpressionType;
+
+            return new MethodCallExpressionInfo(expressionType)
+            {
+                Target = target,
+                MethodName = methodName,
+                FunctionCallType = functionCallType,
+                Arguments = [.. arguments],
+                IsInstanceCall = isInstanceCall,
+                IsStaticCall = isStaticCall,
+                IsDynamic = isDynamic,
+                IsDeferred = isDeferred,
+            };
+        }
+
+        protected ExpressionInfo AnalyzeExpression(QxConstructorCallExpression expression)
+        {
+            var typeName = expression.TypeName;
+
+            if (!Symbols.TryGetType(typeName, out var type))
+                throw new UnrecognizedTypeException(typeName, expression.Span);
+
+            ExpressionInfo[] arguments = [.. AnalyzeExpressions(expression.Arguments)];
+
+            if (!type.TryResolveConstructor([.. arguments.GetTypes()], out var constructor))
+            {
+                if (arguments.Length > 0)
+                    throw new UnrecognizedConstructorSignatureException(type, expression.Span);
+            }
+
+            return new ConstructorCallExpressionInfo(type)
+            {
+                Arguments = [.. arguments],
+            };
+        }
+
+        protected ExpressionInfo AnalyzeExpression(QxBaseConstructorCallExpression expression)
+        {
+            if (Frame is not TypeFrame typeFrame)
+                throw new ConstructorOutsideOfTypeException(expression.Span);
+
+            var thisType = typeFrame.Type;
+            var baseType = thisType.BaseType ?? throw new BaseConstructorOnTypeWithoutBaseTypeException(thisType, expression.Span);
+
+            return new BaseConstructorCallExpressionInfo(thisType)
+            {
+                BaseType = baseType,
+                BaseConstructor = new BaseConstructor(thisType, Span.Empty) { Arguments = expression.Arguments },
+                Arguments = expression.Arguments, // Arguments are not evaluated until the base type is called.
+            };
+        }
     }
 }

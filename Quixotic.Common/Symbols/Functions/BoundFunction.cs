@@ -36,5 +36,12 @@ namespace Quixotic.Common.Symbols.Functions
             return arguments;
         }
 
+        public override BoundFunction Substitute(GenericBindings bindings)
+        {
+            var function = base.Substitute(bindings);
+            var bindableFunction = function is BindableFunction bindable ? bindable : new BindableFunction(BoundInstance.Type, function);
+
+            return new BoundFunction(BoundInstance, bindableFunction);
+        }
     }
 }

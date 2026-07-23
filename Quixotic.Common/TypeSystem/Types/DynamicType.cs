@@ -22,20 +22,20 @@ namespace Quixotic.Common.TypeSystem.Types
             var getter = PropertyGetter(name);
             var instance = getter.Invoke([target]);
 
-            return BindableFunction.FromDelegate(this, getter, instance.Type, FunctionCallType.Getter);
+            return BindableFunction.FromDelegate(this, getter, instance.Type, CallType.Getter);
         }
 
         public Function BuildPropertySetter(Instance target, string name, QxType type)
         {
-            return BindableFunction.FromDelegate(this, PropertySetter(name), type, FunctionCallType.Setter, new Parameter("value", type));
+            return BindableFunction.FromDelegate(this, PropertySetter(name), type, CallType.Setter, new Parameter("value", type));
         }
 
         public Function BuildMethodCaller(Instance target, string name, QxType[] argumentTypes)
         {
-            if (target[name] is not Instance value || !value.Type.Equals(Function))
+            if (target[name] is not Instance value || value.Type is not FunctionType functionType)
                 throw new UndefinedMethodException(target.Type, name, Span.Empty); // TODO: Figure out actual Span
 
-            var function = Function.GetFunction(value);
+            var function = functionType.GetFunction(value);
 
             var bindableFunction = BindableFunction.Coerce(target.Type, function);
             return bindableFunction;

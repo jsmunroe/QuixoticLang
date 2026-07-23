@@ -8,15 +8,43 @@ namespace Quixotic.Common.TypeSystem.BuiltIn
     {
         public void Register(TypeRegistry registry)
         {
-            registry.Register("any", QxType.Any);
-            registry.Register("void", QxType.Void.Type);
-            registry.Register("number", QxType.Number);
-            registry.Register("string", QxType.String);
-            registry.Register("boolean", QxType.Boolean);
-            registry.Register("function", QxType.Function);
+            registry.Register("any", Any);
+            registry.Register("void", Void.Type);
+            registry.Register("number", Number);
+            registry.Register("string", String);
+            registry.Register("boolean", Boolean);
+            registry.Register("function", Function);
             registry.Register("dynamic", new DynamicType());
-            registry.Register("{element}[]", QxType.Array(QxType.Generic("element")));
-            registry.Register("set<{element}>", QxType.Set(QxType.Generic("element")));
+            registry.Register("{TItem}[]", Array);
+            registry.Register("set<{TItem}>", Set);
         }
+
+        public static QxMetaType Meta(QxType typeReference) => new(typeReference);
+
+        public static QxType Any { get; } = AnyType.Default;
+
+        public static NumberType Number { get; } = NumberType.Default;
+        public static StringType String { get; } = StringType.Default;
+        public static BooleanType Boolean { get; } = BooleanType.Default;
+        public static Instance Nada { get; } = NadaType.Value;
+        public static Instance Void { get; } = VoidType.Value;
+
+        public static FunctionDefinition Function { get; } = FunctionDefinition.Default;
+
+        public static ArrayDefinition Array { get; } = new();
+        public static SetDefinition Set { get; } = new();
+        public static CollectionType Collection(CollectionType collectionType, QxType elementType)
+        {
+            return collectionType switch
+            {
+                ArrayType => Array.MakeGenericType(elementType),
+                SetType => Set.MakeGenericType(elementType),
+                _ => throw new InvalidOperationException($"Unsupported collection type: {collectionType.Name}")
+            };
+        }
+
+
+        public static Generic Generic(string name) => new(name);
+
     }
 }

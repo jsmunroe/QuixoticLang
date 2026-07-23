@@ -1,11 +1,11 @@
 ﻿using Quixotic.Common.Symbols.Functions;
+using Quixotic.Common.Types;
+using Quixotic.Common.TypeSystem.Symbols;
 
 namespace Quixotic.Common.TypeSystem.Types
 {
-    public class FunctionType() : QxType("function")
+    public class FunctionType(QxType returnType, params Parameter[] parameters) : QxType(GetFunctionTypeName(returnType, parameters))
     {
-        public static FunctionType Default { get; } = new();
-
         public Instance Construct(Function function)
         {
             var instance = new Instance(this);
@@ -15,6 +15,9 @@ namespace Quixotic.Common.TypeSystem.Types
         }
 
         public override bool HasGenerics => false;
+
+        public QxType ReturnType { get; } = returnType;
+        public Parameter[] Parameters { get; } = parameters;
 
         public override bool Match(QxType actual, GenericBindings bindings)
         {
@@ -29,6 +32,11 @@ namespace Quixotic.Common.TypeSystem.Types
         public void SetFunction(Instance instance, Function function)
         {
             instance["function"] = function;
+        }
+
+        protected static string GetFunctionTypeName(QxType returnType, params Parameter[] parameters)
+        {
+            return $"function({string.Join(", ", parameters.GetTypes())}): {returnType}";
         }
     }
 }

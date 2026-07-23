@@ -1,10 +1,11 @@
 ﻿namespace Quixotic.Common.Symbols
 {
-    public enum FunctionCallType
+    public enum CallType
     {
         Setter,
         Getter,
         Call,
-        OperatorCall
+        OperatorCall,
+        ConstructorCall
     }
 }

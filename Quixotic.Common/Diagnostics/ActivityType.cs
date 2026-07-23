@@ -43,5 +43,6 @@
         MethodCall,
         IdentifierType,
         IsComparison,
+        ConstructorCall,
     }
 }

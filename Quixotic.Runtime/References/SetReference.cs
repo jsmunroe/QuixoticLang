@@ -9,12 +9,13 @@ namespace Quixotic.Runtime.References
             : base(instance)
         {
             if (instance.Type is not SetType)
-                throw new InvalidOperationException($"Instance is not of type {QxType.Set(QxType.Any)}.");
+                throw new InvalidOperationException($"Instance is not of type {QxType.Set.MakeGenericType(QxType.Any)}.");
         }
 
-        public SetReference(QxType elementType, Instance[] elements) : base(QxType.Set(elementType))
+        public SetReference(QxType elementType, Instance[] elements) : base(QxType.Set.MakeGenericType(elementType))
         {
-            QxType.Set(elementType).Assign(this, elements);
+            var type = (SetType)QxType.Set.MakeGenericType(elementType);
+            type.Assign(this, elements);
         }
 
 

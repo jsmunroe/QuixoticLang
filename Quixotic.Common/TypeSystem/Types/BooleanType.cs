@@ -11,6 +11,11 @@ namespace Quixotic.Common.TypeSystem.Types
             : base("boolean", typeof(bool))
         { }
 
+        protected override void LoadMethods()
+        {
+            base.LoadMethods();
+        }
+
         public Instance Construct(bool value)
         {
             return new Instance(Default)

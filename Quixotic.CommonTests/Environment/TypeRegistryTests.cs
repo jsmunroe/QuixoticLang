@@ -27,14 +27,14 @@ namespace Quixotic.CommonTests.Environment
             // Setup
             var registry = new TypeRegistry();
             registry.Register("number", QxType.Number);
-            registry.Register("{element}[]", QxType.Array(QxType.Generic("element")));
+            registry.Register("{TItem}[]", QxType.Array);
 
             // Execute
             var result = registry.Resolve("number[]");
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual(QxType.Array(QxType.Number), result);
+            Assert.AreEqual(QxType.Array.MakeGenericType(QxType.Number), result);
         }
 
 

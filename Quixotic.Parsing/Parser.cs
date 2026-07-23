@@ -99,7 +99,7 @@ namespace Quixotic.Parsing
                 return ParseVariableDeclaration();
 
             if (Match(TokenType.Function))
-                return ParseFunctionDeclaration();
+                return ParseFunctionDeclaration(isMember: false);
 
             if (Match(TokenType.Return))
                 return ParseReturn();
@@ -127,7 +127,7 @@ namespace Quixotic.Parsing
                 return ParseVariableDeclaration();
 
             if (Match(TokenType.Function))
-                return ParseFunctionDeclaration();
+                return ParseFunctionDeclaration(isMember: true);
 
             if (Match(TokenType.Construct))
                 return ParseConstructor();
@@ -205,7 +205,7 @@ namespace Quixotic.Parsing
             return new(name, typeName, expression);
         }
 
-        private QxFunctionDeclarationStatement ParseFunctionDeclaration()
+        private QxFunctionDeclarationStatement ParseFunctionDeclaration(bool isMember)
         {
             _parseContext.AssignStatementType(StatementType.FunctionDeclaration);
 
@@ -218,12 +218,17 @@ namespace Quixotic.Parsing
 
             }, ActivityType.FunctionName);
 
-            var expression = ParseFunctionExpression();
+            var isGlobalOrStatic = !isMember;
 
-            return new(name, expression);
+            var expression = ParseFunctionExpression(name, CallType.Call, isGlobalOrStatic);
+
+            return new(name, expression, isMember);
         }
 
-        private QxFunctionExpression ParseFunctionExpression()
+        private QxFunctionExpression ParseFunctionExpression(CallType callType, bool isGlobalOrStatic) => ParseFunctionExpression("::inline", callType, isGlobalOrStatic);
+
+
+        private QxFunctionExpression ParseFunctionExpression(string name, CallType callType, bool isGlobalOrStatic)
         {
             // Parse parameters
             List<QxParameter> parameters = [];
@@ -235,7 +240,7 @@ namespace Quixotic.Parsing
                 if (Match(TokenType.Colon))
                     return ParseTypeName();
 
-                return "void";
+                return "deferred:ReturnedValuesAnalyzed"; // If not explicitly set defer until return value is determined.
 
             }, ActivityType.FunctionReturnType);
 
@@ -252,7 +257,7 @@ namespace Quixotic.Parsing
 
             Expect(TokenType.EndFunction);
 
-            return new(returnType)
+            return new(name, returnType, callType, isGlobalOrStatic)
             {
                 Parameters = [.. parameters],
                 Body = body,
@@ -262,7 +267,7 @@ namespace Quixotic.Parsing
 
         private QxLambdaFunctionExpression ParseLambdaFunctionExpression()
         {
-            return new(ParseFunctionExpression());
+            return new(ParseFunctionExpression(CallType.Call, false));
         }
 
         private QxReturnStatement ParseReturn()
@@ -335,17 +340,21 @@ namespace Quixotic.Parsing
 
         private QxConstructorCallExpression ParseTypeInstantiation()
         {
-            var typeName = ParseIdentifierName();
-
-            // Parse parameters
-            List<QxExpression> arguments = [];
-            if (Match(TokenType.OpenParen))
-                arguments = ParseArguments();
-
-            return new(typeName)
+            return CaptureExpression<QxConstructorCallExpression>(() =>
             {
-                Arguments = arguments
-            };
+                var typeName = ParseIdentifierName();
+
+                // Parse parameters
+                List<QxExpression> arguments = [];
+                if (Match(TokenType.OpenParen))
+                    arguments = ParseArguments();
+
+                return new(typeName)
+                {
+                    Arguments = arguments
+                };
+
+            }, ActivityType.ConstructorCall);
         }
 
         private QxBaseConstructorCallExpression ParseBaseConstructorCall()
@@ -430,16 +439,16 @@ namespace Quixotic.Parsing
             {
                 var assigned = ParseExpression();
 
-                return new(target, name, FunctionCallType.Setter) { Arguments = [assigned] };
+                return new(target, name, CallType.Setter) { Arguments = [assigned] };
             }
             else if (Match(TokenType.OpenParen))
             {
                 // Parse arguments
                 var arguments = ParseArguments();
-                return new(target, name, FunctionCallType.Call) { Arguments = [.. arguments] };
+                return new(target, name, CallType.Call) { Arguments = [.. arguments] };
             }
 
-            return new(target, name, FunctionCallType.Getter) { Arguments = [] };
+            return new(target, name, CallType.Getter) { Arguments = [] };
         }
 
         private List<QxExpression> ParseArguments()
@@ -894,6 +903,34 @@ namespace Quixotic.Parsing
             {
                 Expect(TokenType.CloseBracket);
                 typeName += "[]";
+            }
+
+            if (CaseRule.Current.Equals(typeName, "function"))
+            {
+                if (Match(TokenType.OpenParen))
+                {
+                    typeName += "(";
+
+                    while (!Match(TokenType.CloseParen))
+                    {
+                        var argumentType = ParseTypeName();
+                        typeName += argumentType;
+
+                        if (Match(TokenType.Comma))
+                            typeName += ",";
+                    }
+
+                    typeName += ")";
+                }
+
+                if (Match(TokenType.Colon))
+                {
+                    typeName += ":";
+
+                    var returnType = ParseTypeName();
+
+                    typeName += returnType;
+                }
             }
 
             return typeName;

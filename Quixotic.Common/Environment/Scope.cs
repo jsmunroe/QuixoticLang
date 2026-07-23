@@ -17,37 +17,37 @@ namespace Quixotic.Common.Environment
     // under the System namespace, and it was colliding with this class.
     public class Scope(Scope? parent)
     {
-        private VariableRegistry _veraiableRegistry { get; init; } = new();
+        private VariableRegistry VeraiableRegistry { get; init; } = new();
 
-        private FunctionRegistry _functionRegistry { get; init; } = new();
+        private FunctionRegistry FunctionRegistry { get; init; } = new();
 
-        private TypeRegistry _typeRegistry { get; init; } = new();
+        private TypeRegistry TypeRegistry { get; init; } = new();
 
-        public List<FunctionSymbol> Functions => _functionRegistry.AllFunctions;
+        public List<FunctionSymbol> Functions => FunctionRegistry.AllFunctions;
 
-        public List<VariableSymbol> Variables => _veraiableRegistry.AllVariables;
+        public List<VariableSymbol> Variables => VeraiableRegistry.AllVariables;
 
-        public List<TypeSymbol> Types => _typeRegistry.AllTypes;
+        public List<TypeSymbol> Types => TypeRegistry.AllTypes;
 
         public void Add(IFunctionProvider functionProvider)
         {
-            functionProvider.Register(_functionRegistry);
+            functionProvider.Register(FunctionRegistry);
         }
 
         public void Add(ITypeProvider typeProvider)
         {
-            typeProvider.Register(_typeRegistry);
+            typeProvider.Register(TypeRegistry);
         }
 
         public void Add(ScopeState scopeState)
         {
-            _functionRegistry.Add(scopeState.Functions);
-            _typeRegistry.Add(scopeState.Types);
-            _veraiableRegistry.Add(scopeState.Variables);
+            FunctionRegistry.Add(scopeState.Functions);
+            TypeRegistry.Add(scopeState.Types);
+            VeraiableRegistry.Add(scopeState.Variables);
         }
         public void Import(Namespace ns)
         {
-            _typeRegistry.Import(ns);
+            TypeRegistry.Import(ns);
         }
 
         public Scope Capture(ClosureCapture closureCapture)
@@ -62,9 +62,9 @@ namespace Quixotic.Common.Environment
 
             return new Scope(newParent)
             {
-                _veraiableRegistry = _veraiableRegistry.Capture(closureCapture),
-                _functionRegistry = _functionRegistry.Capture(closureCapture),
-                _typeRegistry = _typeRegistry.Capture(closureCapture),
+                VeraiableRegistry = VeraiableRegistry.Capture(closureCapture),
+                FunctionRegistry = FunctionRegistry.Capture(closureCapture),
+                TypeRegistry = TypeRegistry.Capture(closureCapture),
             };
         }
 
@@ -74,7 +74,7 @@ namespace Quixotic.Common.Environment
                 throw new VariableAlreadyDefinedException(name);
 
 
-            _veraiableRegistry.Register(name, instance);
+            VeraiableRegistry.Register(name, instance);
         }
 
         public void DefineVariable(string name, QxType type)
@@ -82,27 +82,27 @@ namespace Quixotic.Common.Environment
             if (IsVariableDeclared(name))
                 throw new VariableAlreadyDefinedException(name);
 
-            _veraiableRegistry.Register(name, type);
+            VeraiableRegistry.Register(name, type);
         }
 
         public bool IsFunctionDeclared(string name, params QxType[] parameters)
         {
-            return _functionRegistry.Contains(name, parameters);
+            return FunctionRegistry.Contains(name, parameters);
         }
 
         public bool IsVariableDeclared(string name)
         {
-            return _veraiableRegistry.Contains(name);
+            return VeraiableRegistry.Contains(name);
         }
 
         public bool IsTypeDeclared(string name)
         {
-            return _typeRegistry.Contains(name);
+            return TypeRegistry.Contains(name);
         }
 
         private bool TryGetSymbol(string name, [NotNullWhen(returnValue: true)] out Symbol? symbol)
         {
-            if (_veraiableRegistry.TryResolve(name, out var localSymbol))
+            if (VeraiableRegistry.TryResolve(name, out var localSymbol))
             {
                 symbol = localSymbol;
                 return true;
@@ -149,10 +149,10 @@ namespace Quixotic.Common.Environment
         {
             var signature = new Signature(name, [.. function.Parameters.GetTypes()]);
 
-            if (_functionRegistry.Contains(signature))
+            if (FunctionRegistry.Contains(signature))
                 throw new FunctionAlreadyDefinedException(signature);
 
-            _functionRegistry.Register(name, function);
+            FunctionRegistry.Register(name, function);
         }
 
         public void DefineConstructor(Constructor constructor)
@@ -162,7 +162,7 @@ namespace Quixotic.Common.Environment
 
         public List<Function> GetFunctionsByName(string name)
         {
-            return [.. _functionRegistry.AllFunctions.Where(s => CaseRule.Current.Equals(s.Name, name)).Select(s => s.Function)];
+            return [.. FunctionRegistry.AllFunctions.Where(s => CaseRule.Current.Equals(s.Name, name)).Select(s => s.Function)];
         }
 
         public Function GetFunction(string name, params QxType[] arguments)
@@ -174,7 +174,7 @@ namespace Quixotic.Common.Environment
         {
             function = null;
 
-            if (_functionRegistry.TryResolve(name, arguments, out var functionSymbol))
+            if (FunctionRegistry.TryResolve(name, arguments, out var functionSymbol))
             {
                 function = functionSymbol.Function;
                 return true;
@@ -191,12 +191,12 @@ namespace Quixotic.Common.Environment
             if (IsTypeDeclared(name))
                 throw new TypeAlreadyDefinedException(name);
 
-            _typeRegistry.Register(name, type);
+            TypeRegistry.Register(name, type);
         }
 
         public QxType GetType(string name)
         {
-            if (_typeRegistry.TryResolve(name, out var type))
+            if (TypeRegistry.TryResolve(name, out var type))
                 return type;
 
             if (parent is not null)
@@ -207,7 +207,7 @@ namespace Quixotic.Common.Environment
 
         public bool TryGetType(string name, [NotNullWhen(returnValue: true)] out QxType? type)
         {
-            if (_typeRegistry.TryResolve(name, out type))
+            if (TypeRegistry.TryResolve(name, out type))
                 return true;
 
             if (parent is null)

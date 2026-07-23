@@ -4,7 +4,7 @@ using System.ComponentModel;
 namespace Quixotic.Common.TypeSystem.Types
 {
     [Description("array")]
-    public class ArrayType(QxType elementType) : CollectionType($"{elementType}[]", elementType)
+    public class ArrayType(QxType elementType, ArrayDefinition definition) : CollectionType($"{elementType}[]", elementType, definition)
     {
         public Instance Construct(Instance[] elements)
         {
@@ -15,9 +15,12 @@ namespace Quixotic.Common.TypeSystem.Types
             return array;
         }
 
-        public override CollectionType Create(QxType elementType)
+        public override bool Match(QxType actual, GenericBindings bindings)
         {
-            return new ArrayType(elementType);
+            if (actual is not ArrayType collection)
+                return false;
+
+            return ElementType.Match(collection.ElementType, bindings);
         }
 
         public void Assign(Instance array, Instance[] elements)
@@ -34,7 +37,7 @@ namespace Quixotic.Common.TypeSystem.Types
             array["elements"] = elements;
         }
 
-        public Instance Get(Instance instance, int index)
+        public Instance GetElement(Instance instance, int index)
         {
             if (instance["elements"] is not Instance[] elements)
                 throw new InvalidOperationException("Instance does not contain an array of elements.");
@@ -45,15 +48,15 @@ namespace Quixotic.Common.TypeSystem.Types
             return elements[index];
         }
 
-        public Instance Get(Instance instance, Instance index)
+        public Instance GetElement(Instance instance, Instance index)
         {
             if (index["value"] is not double indexValue)
                 throw new InvalidOperationException("Index instance does not contain a numeric value.");
 
-            return Get(instance, (int)indexValue);
+            return GetElement(instance, (int)indexValue);
         }
 
-        public void Set(int index, Instance instance, Instance value)
+        public void SetElement(int index, Instance instance, Instance value)
         {
             if (instance["elements"] is not Instance[] elements)
                 throw new InvalidOperationException("Instance does not contain an array of elements.");
@@ -64,12 +67,12 @@ namespace Quixotic.Common.TypeSystem.Types
             elements[index] = value;
         }
 
-        public void Set(Instance index, Instance instance, Instance value)
+        public void SetElement(Instance index, Instance instance, Instance value)
         {
             if (index["value"] is not double indexValue)
                 throw new InvalidOperationException("Index instance does not contain a numeric value.");
 
-            Set((int)indexValue, instance, value);
+            SetElement((int)indexValue, instance, value);
         }
 
         public override bool IsAssignableFrom(QxType other)

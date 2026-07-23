@@ -4,18 +4,18 @@ using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.TypeSystem.Symbols
 {
-    public class VariableSymbol : VariableTypeSymbol
+    public class VariableSymbol : IdentifierSymbol
     {
         public Instance Instance { get; private set; }
 
         public VariableSymbol(string name, Instance instance)
-            : base(name, instance.Type)
+            : base(name, instance.Type, instance.Type)
         {
             Instance = instance;
         }
 
         public VariableSymbol(string name, QxType type)
-            : base(name, type)
+            : base(name, type, null)
         {
             Instance = NadaType.Value;
         }
@@ -28,7 +28,15 @@ namespace Quixotic.Common.TypeSystem.Symbols
 
         public void Assign(Instance instance)
         {
-            if (Type != QxType.Nada.Type && !instance.Type.Equals(Type))
+            if (Type is DeferredType deferredType)
+            {
+                if (deferredType.ContextDependency == ContextDependency.VariableAssignment)
+                    Type = instance.Type;
+                else if (deferredType.HasAlternative)
+                    Type = deferredType.SelectedAlternative;
+            }
+
+            if (Type != QxType.Nada.Type && !instance.Type.IsAssignableFrom(Type))
                 throw new VariableTypeMismatchException(instance.Type.Name, Type.Name);
 
             Instance = instance;

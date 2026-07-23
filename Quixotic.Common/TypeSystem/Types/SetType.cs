@@ -5,7 +5,7 @@ namespace Quixotic.Common.TypeSystem.Types
 {
 
     [Description("set")]
-    public class SetType(QxType elementType) : CollectionType($"set<{elementType}>", elementType)
+    public class SetType(QxType elementType, SetDefinition definition) : CollectionType($"set<{elementType}>", elementType, definition)
     {
         public Instance Construct(Instance[] elements)
         {
@@ -15,10 +15,12 @@ namespace Quixotic.Common.TypeSystem.Types
 
             return set;
         }
-
-        public override CollectionType Create(QxType elementType)
+        public override bool Match(QxType actual, GenericBindings bindings)
         {
-            return new ArrayType(elementType);
+            if (actual is not SetType collection)
+                return false;
+
+            return ElementType.Match(collection.ElementType, bindings);
         }
 
         public void Assign(Instance set, Instance[] elements)
@@ -44,11 +46,6 @@ namespace Quixotic.Common.TypeSystem.Types
                 return false;
 
             return true;
-        }
-
-        protected override Instance[] CleanElements(Instance[] elements)
-        {
-            return [.. elements.Distinct().OrderBy(e => Random.Shared.Next())];
         }
 
         public override string ToString(Instance instance)

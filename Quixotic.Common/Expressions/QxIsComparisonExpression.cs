@@ -1,8 +1,8 @@
 ﻿namespace Quixotic.Common.Expressions
 {
-    public class QxIsComparisonExpression(QxExpression instance, string typeName, string? patternIdentifier) : QxExpression
+    public class QxIsComparisonExpression(QxExpression target, string typeName, string? patternIdentifier) : QxExpression
     {
-        public QxExpression Instance { get; } = instance;
+        public QxExpression Target { get; } = target;
 
         public string TypeName { get; } = typeName;
 

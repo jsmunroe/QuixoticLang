@@ -5,6 +5,7 @@ using Quixotic.InterpretTests.TestImplementations;
 namespace Quixotic.InterpretTests
 {
     [TestClass]
+    [DoNotParallelize] // Quixotic's compiler/runtime currently assumes single-threaded execution. Tests must not execute concurrently.
     public sealed class InterpreterTests
     {
 
@@ -1356,8 +1357,6 @@ namespace Quixotic.InterpretTests
 
                 let newSet := set + 2
             ";
-
-
 
             var runtime = new TestRuntime();
             var interpreter = new Interpret.Interpreter(runtime);

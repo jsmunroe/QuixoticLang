@@ -8,32 +8,33 @@ namespace Quixotic.Runtime.References
         public ArrayReference(Instance instance) : base(instance)
         {
             if (instance.Type is not ArrayType)
-                throw new InvalidOperationException($"Instance is not of type {QxType.Array(QxType.Any)}.");
+                throw new InvalidOperationException($"Instance is not of type {QxType.Array}.");
         }
 
-        public ArrayReference(QxType elementType, Instance[] elements) : base(QxType.Array(elementType))
+        public ArrayReference(QxType elementType, Instance[] elements) : base(QxType.Array.MakeGenericType(elementType))
         {
-            QxType.Array(elementType).Assign(this, elements);
+            var type = (ArrayType)QxType.Array.MakeGenericType(elementType);
+            type.Assign(this, elements);
         }
 
         public void Set(int index, Instance value)
         {
-            ((ArrayType)Type).Set(index, this, value);
+            ((ArrayType)Type).SetElement(index, this, value);
         }
 
         public void Set(Instance index, Instance value)
         {
-            ((ArrayType)Type).Set(index, this, value);
+            ((ArrayType)Type).SetElement(index, this, value);
         }
 
         public Instance Get(int index)
         {
-            return ((ArrayType)Type).Get(this, index);
+            return ((ArrayType)Type).GetElement(this, index);
         }
 
         public Instance Get(Instance index)
         {
-            return ((ArrayType)Type).Get(this, index);
+            return ((ArrayType)Type).GetElement(this, index);
         }
 
         public static ArrayReference Convert(Instance instance)

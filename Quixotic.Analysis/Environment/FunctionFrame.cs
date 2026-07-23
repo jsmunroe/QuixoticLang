@@ -1,17 +1,15 @@
 ﻿using Quixotic.Analysis.Contracts;
-using Quixotic.Common.Symbols;
+using Quixotic.Common.TypeSystem.Symbols;
 
 namespace Quixotic.Analysis.Environment
 {
-    public class FunctionFrame(IFrame parent, SignatureSymbol function) : IFrame
+    public class FunctionFrame(IFrame parent, FunctionSymbol function, SymbolTable? symbolTable) : IFrame
     {
-        public bool IsContinued { get; set; }
-
         public IFrame? Parent => parent;
 
-        public SymbolTable Symbols { get; } = new(parent.GetGlobalSymbols());
+        public SymbolTable Symbols { get; } = new(symbolTable ?? parent.GetGlobalSymbols());
 
-        public SignatureSymbol Function { get; } = function;
+        public FunctionSymbol Function { get; } = function;
 
         public FrameRedirectionType RedirectionType { get; set; } = FrameRedirectionType.None;
     }
