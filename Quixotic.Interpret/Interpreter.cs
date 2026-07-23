@@ -74,7 +74,7 @@ namespace Quixotic.Interpret
                 if (analyzer.Errors.Any())
                     return;
 
-                Execute(session.Root);
+                Execute(session.AstRoot);
             }
             catch (Exception ex)
             {

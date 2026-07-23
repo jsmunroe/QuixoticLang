@@ -7,5 +7,10 @@ namespace Quixotic.Common.Analysis.Expressions
     {
         public required string Name { get; init; }
         public IReadOnlyList<ExpressionInfo> Arguments { get; init; } = [];
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [.. Arguments];
+        }
+
     }
 }

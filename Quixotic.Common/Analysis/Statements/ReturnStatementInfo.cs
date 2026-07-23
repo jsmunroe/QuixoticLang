@@ -6,5 +6,11 @@ namespace Quixotic.Common.Analysis.Statements
     public class ReturnStatementInfo(QxStatement statement) : StatementInfo(statement)
     {
         public required ExpressionInfo ReturnValue { get; init; }
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [ReturnValue];
+        }
+
     }
 }

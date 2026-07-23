@@ -18,5 +18,11 @@ namespace Quixotic.Common.Analysis.Expressions
         public required bool IsDeferred { get; set; }
 
         public IReadOnlyList<ExpressionInfo> Arguments { get; init; } = [];
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [Target, .. Arguments];
+        }
+
     }
 }

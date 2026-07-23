@@ -19,5 +19,11 @@ namespace Quixotic.Common.Analysis.Expressions
 
         public required ClosureCapture? Closure { get; init; }
         public required CallType CallType { get; init; }
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [];
+        }
+
     }
 }

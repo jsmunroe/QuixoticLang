@@ -1,4 +1,5 @@
 ﻿using Quixotic.Analysis.Contracts;
+using Quixotic.Common.Analysis;
 using Quixotic.Common.Analysis.Expressions;
 using Quixotic.Common.Analysis.Statements;
 using Quixotic.Common.Contracts;
@@ -65,14 +66,7 @@ namespace Quixotic.Analysis.Sessions
             for (var i = _entries.Count; i <= span.End.Index; i++)
                 _entries.Add(new(_document.GetPosition(i)));
 
-            try
-            {
-                return _entries.GetRange(span.Start.Index, span.Length);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                throw;
-            }
+            return _entries.GetRange(span.Start.Index, span.Length);
         }
 
         class SourceDatabaseEntry(Position position) : ISourceDatabaseEntry

@@ -5,5 +5,11 @@ namespace Quixotic.Common.Analysis.Statements
     public class StatementErrorInfo(Exception exception, QxStatement statement) : StatementInfo(statement)
     {
         public Exception Exception { get; init; } = exception;
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [];
+        }
+
     }
 }

@@ -12,5 +12,10 @@ namespace Quixotic.Common.Analysis.Statements
         public required IReadOnlyList<Parameter> Parameters { get; init; }
         public required ExpressionInfo? BaseCall { get; init; }
         public required SignatureSymbol? SignatureSymbol { get; init; }
+
+        protected override IEnumerable<AnalysisInfo?> GetChildren()
+        {
+            return [BaseCall];
+        }
     }
 }

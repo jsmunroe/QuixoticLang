@@ -3,5 +3,10 @@
 namespace Quixotic.Common.Analysis.Statements
 {
     public class ContinueStatementInfo(QxStatement statement) : StatementInfo(statement)
-    { }
+    {
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [];
+        }
+    }
 }

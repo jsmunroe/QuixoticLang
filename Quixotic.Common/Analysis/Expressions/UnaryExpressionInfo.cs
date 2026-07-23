@@ -11,5 +11,10 @@ namespace Quixotic.Common.Analysis.Expressions
         public required ExpressionInfo Operand { get; init; }
 
         public required SignatureSymbol SignatureSymbol { get; init; }
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [Operand];
+        }
     }
 }

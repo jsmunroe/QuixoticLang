@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\AssemblyInfo.cs" Link="AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OmniSharp.Extensions.LanguageProtocol" Version="0.19.9" />
+    <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Quixotic.Analysis\Quixotic.Analysis.csproj" />
+    <ProjectReference Include="..\Quixotic.Common\Quixotic.Common.csproj" />
+    <ProjectReference Include="..\Quixotic.Lexography\Quixotic.Lexography.csproj" />
+    <ProjectReference Include="..\Quixotic.Parsing\Quixotic.Parsing.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -11,5 +11,10 @@ namespace Quixotic.Common.Analysis.Statements
         public ExpressionInfo? Step { get; init; }
 
         public required IReadOnlyCollection<StatementInfo> BlockStatements { get; init; } = [];
+
+        protected override IEnumerable<AnalysisInfo?> GetChildren()
+        {
+            return [From, To, Step, .. BlockStatements];
+        }
     }
 }

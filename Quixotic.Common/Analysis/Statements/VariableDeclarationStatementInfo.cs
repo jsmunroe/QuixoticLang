@@ -21,5 +21,9 @@ namespace Quixotic.Common.Analysis.Statements
         public SignatureSymbol? GetterSymbol { get; init; }
         public SignatureSymbol? SetterSymbol { get; init; }
 
+        protected override IEnumerable<AnalysisInfo?> GetChildren()
+        {
+            return [Value];
+        }
     }
 }

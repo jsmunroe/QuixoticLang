@@ -8,5 +8,10 @@ namespace Quixotic.Common.Analysis.Statements
         public required ExpressionInfo Target { get; init; }
 
         public required ExpressionInfo Value { get; init; }
+
+        protected override IEnumerable<AnalysisInfo?> GetChildren()
+        {
+            return [Target, Value];
+        }
     }
 }

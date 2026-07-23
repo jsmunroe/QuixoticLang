@@ -15,5 +15,11 @@ namespace Quixotic.Common.Analysis.Expressions
         public required bool Result { get; init; }
 
         public required IdentifierSymbol? PatternIdentifier { get; init; }
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [Target];
+        }
+
     }
 }

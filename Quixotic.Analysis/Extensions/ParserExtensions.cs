@@ -6,7 +6,7 @@ namespace Quixotic.Analysis.Extensions
 {
     public static class ParserExtensions
     {
-        public static Session ParseSession(this Parser parser)
+        public static AnalysisSession ParseSession(this Parser parser)
         {
             var statements = parser.Parse();
             var root = new Block(statements);

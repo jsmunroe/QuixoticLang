@@ -9,6 +9,12 @@ namespace Quixotic.Common.Analysis.Statements
         public required bool IsExitControlled { get; init; }
         public required ExpressionInfo Condition { get; init; }
 
+
         public required IReadOnlyCollection<StatementInfo> BlockStatements { get; init; } = [];
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [Condition, .. BlockStatements];
+        }
     }
 }

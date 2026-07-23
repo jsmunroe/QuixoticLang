@@ -10,5 +10,11 @@ namespace Quixotic.Common.Analysis.Statements
         public required QxType? BaseType { get; init; }
 
         public IReadOnlyList<StatementInfo> MemberStatements { get; init; } = [];
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [.. MemberStatements];
+        }
+
     }
 }

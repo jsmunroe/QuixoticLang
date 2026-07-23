@@ -8,5 +8,11 @@ namespace Quixotic.Common.Analysis.Expressions
         public QxType ElementType { get; } = elementType;
 
         public IReadOnlyList<ExpressionInfo> Elements { get; init; } = [];
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [.. Elements];
+        }
+
     }
 }

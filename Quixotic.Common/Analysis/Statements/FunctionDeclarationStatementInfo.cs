@@ -13,5 +13,10 @@ namespace Quixotic.Common.Analysis.Statements
 
         public required SignatureSymbol SignatureSymbol { get; init; }
         public IReadOnlyCollection<StatementInfo> BodyStatements { get; set; } = [];
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [.. BodyStatements];
+        }
     }
 }

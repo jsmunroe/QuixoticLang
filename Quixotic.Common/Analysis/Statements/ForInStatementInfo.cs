@@ -10,5 +10,10 @@ namespace Quixotic.Common.Analysis.Statements
         public required ExpressionInfo Collection { get; init; }
 
         public required IReadOnlyCollection<StatementInfo> BlockStatements { get; init; } = [];
+
+        protected override IEnumerable<AnalysisInfo> GetChildren()
+        {
+            return [Collection, .. BlockStatements];
+        }
     }
 }
