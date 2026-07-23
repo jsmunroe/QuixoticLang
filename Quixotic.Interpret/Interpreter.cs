@@ -1,4 +1,5 @@
 ﻿using Quixotic.Analysis.Errors;
+using Quixotic.Analysis.Extensions;
 using Quixotic.Analysis.Semantics;
 using Quixotic.Common.Contracts;
 using Quixotic.Common.Environment;
@@ -59,10 +60,10 @@ namespace Quixotic.Interpret
 
             try
             {
-                var statements = parser.Parse();
+                var session = parser.ParseSession();
 
-                var analyzer = new SemanticAnalyzer(source);
-                analyzer.Analyze(statements);
+                var analyzer = new SemanticAnalyzer();
+                analyzer.Analyze(session);
 
                 foreach (var issue in analyzer.Issues)
                 {
@@ -73,7 +74,7 @@ namespace Quixotic.Interpret
                 if (analyzer.Errors.Any())
                     return;
 
-                Execute(statements);
+                Execute(session.Root);
             }
             catch (Exception ex)
             {

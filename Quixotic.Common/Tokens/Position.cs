@@ -20,5 +20,13 @@
             };
         }
 
+        public override string ToString()
+        {
+            if (IsEmpty)
+                return "empty";
+
+            return $"{Line}:{Column} ({Index})";
+        }
+
     }
 }

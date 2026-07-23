@@ -2,9 +2,12 @@
 
 namespace Quixotic.Common.Statements
 {
-    public class Block : IList<QxStatement>
+    public class Block(IEnumerable<QxStatement> statements) : IList<QxStatement>
     {
-        private readonly List<QxStatement> _statements = [];
+        private readonly List<QxStatement> _statements = [.. statements];
+
+        public Block() : this([])
+        { }
 
         public QxStatement this[int index]
         {

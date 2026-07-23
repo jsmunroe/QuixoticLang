@@ -1,12 +1,13 @@
 ﻿using Quixotic.Analysis.Contracts;
 using Quixotic.Analysis.Environment;
 using Quixotic.Analysis.Exceptions;
+using Quixotic.Analysis.Extensions;
+using Quixotic.Analysis.Sessions;
 using Quixotic.Common.Analysis.Expressions;
 using Quixotic.Common.Analysis.Statements;
 using Quixotic.Common.Contracts;
 using Quixotic.Common.Expressions;
 using Quixotic.Common.Operations;
-using Quixotic.Common.Source;
 using Quixotic.Common.Statements;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.Symbols.Functions;
@@ -21,15 +22,11 @@ using Quixotic.Parsing;
 namespace Quixotic.Analysis.Semantics
 {
 
-    public class SemanticAnalyzer(ISource source)
+    public class SemanticAnalyzer
     {
         private readonly static MethodIndexer<Func<SemanticAnalyzer, QxStatement, StatementInfo>, QxStatement> _statementIndexer = new(typeof(SemanticAnalyzer), "AnalyzeStatement");
 
         private readonly static MethodIndexer<Func<SemanticAnalyzer, QxExpression, ExpressionInfo>, QxExpression> _expressionIndexer = new(typeof(SemanticAnalyzer), "AnalyzeExpression");
-
-        public SemanticAnalyzer(string source)
-            : this(new StringSource(source))
-        { }
 
         private IFrame Frame { get; set; } = new GlobalFrame();
 
@@ -41,19 +38,50 @@ namespace Quixotic.Analysis.Semantics
 
         public IEnumerable<SemanticException> Warnings => Issues.Where(issue => issue.Severity == Severity.Warning);
 
-        public ISource Source { get; } = source;
+        public ISource? Source { get; private set; }
 
-        public void PushBlockFrame()
+        public SourceDatabase? SourceDatabase { get; private set; }
+
+        public IEnumerable<StatementInfo> Analyze(Parser parser)
+        {
+            return Analyze(parser.ParseSession());
+        }
+
+        public IEnumerable<StatementInfo> Analyze(Session session)
+        {
+            Source = session.Source;
+            SourceDatabase = session.SourceDatabase;
+
+            foreach (var statement in session.Root)
+            {
+                StatementInfo? statementInfo = null;
+
+                try
+                {
+                    statementInfo = AnalyzeStatement(statement);
+                }
+                catch (SemanticException ex)
+                {
+                    Issues.Add(ex);
+                }
+
+                if (statementInfo is not null)
+                    yield return statementInfo;
+            }
+        }
+
+
+        private void PushBlockFrame()
         {
             Frame = new BlockFrame(Frame);
         }
 
-        public void PushLoopFrame()
+        private void PushLoopFrame()
         {
             Frame = new LoopFrame(Frame);
         }
 
-        public void PushFunctionFrame(FunctionSymbol function, SymbolTable? otherState)
+        private void PushFunctionFrame(FunctionSymbol function, SymbolTable? otherState)
         {
             Frame = new FunctionFrame(Frame, function, otherState);
 
@@ -65,12 +93,12 @@ namespace Quixotic.Analysis.Semantics
             }
         }
 
-        public void PushTypeFrame(QxType type)
+        private void PushTypeFrame(QxType type)
         {
             Frame = new TypeFrame(Frame, type);
         }
 
-        public IFrame PopFrame()
+        private IFrame PopFrame()
         {
             if (Frame.Parent is null)
                 throw new InvalidOperationException("Cannot pop the global frame.");
@@ -82,30 +110,7 @@ namespace Quixotic.Analysis.Semantics
             return frame;
         }
 
-        public IEnumerable<QxStatement> Analyze(Parser parser)
-        {
-            var statements = parser.Parse();
-            return Analyze(statements);
-        }
-
-        public IEnumerable<QxStatement> Analyze(IEnumerable<QxStatement> statements)
-        {
-            foreach (var statement in statements)
-            {
-                try
-                {
-                    AnalyzeStatement(statement);
-                }
-                catch (SemanticException ex)
-                {
-                    Issues.Add(ex);
-                }
-
-                yield return statement;
-            }
-        }
-
-        private IEnumerable<StatementInfo> AnalyzeBlockStatements(Block block)
+        private List<StatementInfo> AnalyzeBlockStatements(Block block)
         {
             List<StatementInfo> statementInfos = [];
 
@@ -124,7 +129,7 @@ namespace Quixotic.Analysis.Semantics
             return statementInfos;
         }
 
-        private IEnumerable<StatementInfo> AnalyzeBlock(Block block)
+        private List<StatementInfo> AnalyzeBlock(Block block)
         {
             PushBlockFrame();
 
@@ -135,7 +140,7 @@ namespace Quixotic.Analysis.Semantics
             return statements;
         }
 
-        private IEnumerable<StatementInfo> AnalyzeLoopBlock(Block block, params IdentifierSymbol[] symbols)
+        private List<StatementInfo> AnalyzeLoopBlock(Block block, params IdentifierSymbol[] symbols)
         {
             PushLoopFrame();
 
@@ -149,7 +154,7 @@ namespace Quixotic.Analysis.Semantics
             return statements;
         }
 
-        private IEnumerable<StatementInfo> AnalyzeTypeBlock(Block block, QxType type)
+        private List<StatementInfo> AnalyzeTypeBlock(Block block, QxType type)
         {
             PushTypeFrame(type);
 
@@ -160,7 +165,7 @@ namespace Quixotic.Analysis.Semantics
             return statements;
         }
 
-        private IEnumerable<StatementInfo> AnalyzeFunctionBlock(Block block, FunctionSymbol function, SymbolTable otherState)
+        private List<StatementInfo> AnalyzeFunctionBlock(Block block, FunctionSymbol function, SymbolTable otherState)
         {
             PushFunctionFrame(function, otherState);
 
@@ -171,55 +176,60 @@ namespace Quixotic.Analysis.Semantics
             return statements;
         }
 
+        /// <summary>
+        /// Find and call statement analyze method for given statement.
+        /// </summary>
         private StatementInfo AnalyzeStatement(QxStatement statement)
         {
             if (Frame.RedirectionType != FrameRedirectionType.None)
                 Issues.Add(new UnreachableCodeException(statement.Span));
 
-            var statementType = statement.GetType();
-
-            if (!_statementIndexer.TryGetMethod(statementType, out var action))
-                throw new NotImplementedException($"No analyzer implemented for statement type: {statementType.Name}");
+            if (!_statementIndexer.TryGetMethod(statement, out var action))
+                throw new NotImplementedException($"No analyzer implemented for statement type: {statement.GetType().Name}");
 
             try
             {
                 var statementInfo = action(this, statement);
                 statement.Info = statementInfo;
+                SourceDatabase?.Add(statementInfo);
             }
             catch (Exception ex)
             {
-                statement.Info = new StatementErrorInfo(ex);
+                statement.Info = new StatementErrorInfo(ex, statement);
+                SourceDatabase?.Add(statement.Info);
                 throw;
             }
 
             return statement.Info;
         }
 
-        private IEnumerable<ExpressionInfo> AnalyzeExpressions(IEnumerable<QxExpression> expressions)
-        {
-            foreach (var expression in expressions)
-                yield return AnalyzeExpression(expression);
-        }
-
+        /// <summary>
+        /// Find and call expression analyze method for given expression.
+        /// </summary>
         private ExpressionInfo AnalyzeExpression(QxExpression expression)
         {
-            var expressionType = expression.GetType();
-
-            if (!_expressionIndexer.TryGetMethod(expressionType, out var func))
-                throw new NotImplementedException($"No analyzer implemented for expression type: {expressionType.Name}");
+            if (!_expressionIndexer.TryGetMethod(expression, out var func))
+                throw new NotImplementedException($"No analyzer implemented for expression type: {expression.GetType().Name}");
 
             try
             {
                 var expressionInfo = func(this, expression);
                 expression.Info = expressionInfo;
+                SourceDatabase?.Add(expressionInfo);
             }
             catch (Exception ex)
             {
-                expression.Info = new ExpressionErrorInfo(ex);
+                expression.Info = new ExpressionErrorInfo(ex, expression);
+                SourceDatabase?.Add(expression.Info);
                 throw;
             }
 
             return expression.Info;
+        }
+        private IEnumerable<ExpressionInfo> AnalyzeExpressions(IEnumerable<QxExpression> expressions)
+        {
+            foreach (var expression in expressions)
+                yield return AnalyzeExpression(expression);
         }
 
         protected StatementInfo AnalyzeStatement(QxPrintStatement statement)
@@ -229,7 +239,7 @@ namespace Quixotic.Analysis.Semantics
 
             // Print statements don't have additional semantic checks
 
-            return new PrintStatementInfo
+            return new PrintStatementInfo(statement)
             {
                 Expression = expressionType
             };
@@ -285,7 +295,7 @@ namespace Quixotic.Analysis.Semantics
             if (declaredType is not null && value is not null && !declaredType.IsAssignableFrom(value.ExpressionType))
                 throw new AssignmentTypeMismatchException(name, declaredType, value.ExpressionType, statement.Span);
 
-            return new VariableDeclarationStatementInfo
+            return new VariableDeclarationStatementInfo(statement)
             {
                 Name = name,
                 Value = value,
@@ -315,7 +325,7 @@ namespace Quixotic.Analysis.Semantics
                     throw new AssignmentTypeMismatchException(target.ExpressionType, value.ExpressionType, statement.Span);
             }
 
-            return new AssignmentStatementInfo
+            return new AssignmentStatementInfo(statement)
             {
                 Target = target,
                 Value = value,
@@ -354,7 +364,7 @@ namespace Quixotic.Analysis.Semantics
                 };
             }
 
-            return new IfStatementInfo
+            return new IfStatementInfo(statement)
             {
                 Condition = ifCondition,
                 IfStatements = [.. thenStatements],
@@ -375,7 +385,7 @@ namespace Quixotic.Analysis.Semantics
 
             var statements = AnalyzeLoopBlock(statement.Block);
 
-            return new DoStatementInfo
+            return new DoStatementInfo(statement)
             {
                 IsEntryControlled = statement.IsEntryControlled,
                 IsExitControlled = statement.IsExitControlled,
@@ -405,7 +415,7 @@ namespace Quixotic.Analysis.Semantics
 
             var statements = AnalyzeLoopBlock(statement.Block, new IdentifierSymbol(iterator, QxType.Number, QxType.Number));
 
-            return new ForStatementInfo
+            return new ForStatementInfo(statement)
             {
                 IteratorName = iterator,
                 From = from,
@@ -426,7 +436,7 @@ namespace Quixotic.Analysis.Semantics
 
             var statements = AnalyzeLoopBlock(statement.Block, new IdentifierSymbol(iterator, collectionType.ElementType, collectionType.ElementType));
 
-            return new ForInStatementInfo
+            return new ForInStatementInfo(statement)
             {
                 IteratorName = iterator,
                 Collection = collection,
@@ -458,7 +468,7 @@ namespace Quixotic.Analysis.Semantics
                     throw new AlreadyDefinedSignatureException(name, statement.Span);
             }
 
-            return new FunctionDeclarationStatementInfo
+            return new FunctionDeclarationStatementInfo(statement)
             {
                 Name = name,
                 Parameters = call.Parameters,
@@ -472,7 +482,7 @@ namespace Quixotic.Analysis.Semantics
         {
             var call = AnalyzeExpression(statement.Call);
 
-            return new FunctionCallStatementInfo
+            return new FunctionCallStatementInfo(statement)
             {
                 Call = call,
             };
@@ -482,7 +492,7 @@ namespace Quixotic.Analysis.Semantics
         {
             var call = AnalyzeExpression(statement.Call);
 
-            return new MethodCallStatementInfo
+            return new MethodCallStatementInfo(statement)
             {
                 Call = call,
             };
@@ -495,7 +505,7 @@ namespace Quixotic.Analysis.Semantics
 
             Frame.RedirectionType = FrameRedirectionType.Break;
 
-            return new BreakStatementInfo();
+            return new BreakStatementInfo(statement);
         }
 
         protected StatementInfo AnalyzeStatement(QxContinueStatement statement)
@@ -505,14 +515,14 @@ namespace Quixotic.Analysis.Semantics
 
             Frame.RedirectionType = FrameRedirectionType.Continue;
 
-            return new ContinueStatementInfo();
+            return new ContinueStatementInfo(statement);
         }
 
         protected StatementInfo AnalyzeStatement(QxReturnStatement statement)
         {
             var functionFrame = Frame.GetFunctionFrame() ?? throw new ReturnOutsideFunctionException(statement.Span);
 
-            var returnValue = statement.Expression is null ? new VoidExpressionInfo() : AnalyzeExpression(statement.Expression);
+            var returnValue = statement.Expression is null ? new VoidExpressionInfo(statement.Expression!) : AnalyzeExpression(statement.Expression);
 
             if (functionFrame.Function.ReturnType is DeferredType deferredType)
                 deferredType.AddAlternative(returnValue.ExpressionType);
@@ -521,7 +531,7 @@ namespace Quixotic.Analysis.Semantics
 
             Frame.RedirectionType = FrameRedirectionType.Return;
 
-            return new ReturnStatementInfo
+            return new ReturnStatementInfo(statement)
             {
                 ReturnValue = returnValue,
             };
@@ -546,7 +556,7 @@ namespace Quixotic.Analysis.Semantics
             if (!Symbols.TryDefineType(name, type))
                 throw new AlreadyDefinedTypeException(name, statement.Span);
 
-            return new TypeDeclarationStatementInfo
+            return new TypeDeclarationStatementInfo(statement)
             {
                 Type = type,
                 BaseType = baseType,
@@ -578,7 +588,7 @@ namespace Quixotic.Analysis.Semantics
                 Parameters = parameters,
             });
 
-            return new ConstructorDeclarationStatementInfo
+            return new ConstructorDeclarationStatementInfo(statement)
             {
                 Type = typeFrame.Type,
                 Parameters = parameters.AsReadOnly(),
@@ -591,7 +601,7 @@ namespace Quixotic.Analysis.Semantics
         {
             Symbols.Import(statement.Namespace);
 
-            return new ImportStatementInfo
+            return new ImportStatementInfo(statement)
             {
                 Namespace = statement.Namespace
             };
@@ -599,17 +609,17 @@ namespace Quixotic.Analysis.Semantics
 
         protected ExpressionInfo AnalyzeExpression(QxNumberLiteralExpression expression)
         {
-            return new LiteralExpressionInfo(QxType.Number);
+            return new LiteralExpressionInfo(QxType.Number, expression);
         }
 
         protected ExpressionInfo AnalyzeExpression(QxStringLiteralExpression expression)
         {
-            return new LiteralExpressionInfo(QxType.String);
+            return new LiteralExpressionInfo(QxType.String, expression);
         }
 
         protected ExpressionInfo AnalyzeExpression(QxBooleanLiteralExpression expression)
         {
-            return new LiteralExpressionInfo(QxType.Boolean);
+            return new LiteralExpressionInfo(QxType.Boolean, expression);
         }
 
         protected ExpressionInfo AnalyzeExpression(QxArrayExpression expression)
@@ -617,7 +627,7 @@ namespace Quixotic.Analysis.Semantics
             var elements = AnalyzeExpressions(expression.Elements);
             var commonElementType = QxType.GetCommonBase(elements.GetTypes());
 
-            return new ArrayExpressionInfo(commonElementType)
+            return new ArrayExpressionInfo(commonElementType, expression)
             {
                 Elements = [.. elements],
             };
@@ -628,7 +638,7 @@ namespace Quixotic.Analysis.Semantics
             var elements = AnalyzeExpressions(expression.Elements);
             var commonElementType = QxType.GetCommonBase(elements.GetTypes());
 
-            return new SetExpressionInfo(commonElementType)
+            return new SetExpressionInfo(commonElementType, expression)
             {
                 Elements = [.. elements],
             };
@@ -645,7 +655,7 @@ namespace Quixotic.Analysis.Semantics
                 ?? Symbols.GetSignatureFromType(left.ExpressionType, operatorValue, left.ExpressionType, right.ExpressionType)
                 ?? throw new UnrecognizedFunctionSignatureException(new Signature(operatorValue, left.ExpressionType, right.ExpressionType), expression.Span);
 
-            return new BinaryExpressionInfo(signature.ReturnType)
+            return new BinaryExpressionInfo(signature.ReturnType, expression)
             {
                 Operator = expression.Operator,
                 Left = left,
@@ -665,7 +675,7 @@ namespace Quixotic.Analysis.Semantics
 
             var signature = Symbols.GetSignature(operatorValue, operand.ExpressionType) ?? throw new UnrecognizedFunctionSignatureException(new Signature(operatorValue, operand.ExpressionType), expression.Span);
 
-            return new UnaryExpressionInfo(signature.ReturnType)
+            return new UnaryExpressionInfo(signature.ReturnType, expression)
             {
                 Operator = expression.Operator,
                 Operand = operand,
@@ -688,7 +698,7 @@ namespace Quixotic.Analysis.Semantics
             else
                 throw new UnrecognizedIdentifierException(name, expression.Span);
 
-            return new IdentifierExpressionInfo(variableType)
+            return new IdentifierExpressionInfo(variableType, expression)
             {
                 Name = name,
             };
@@ -706,7 +716,7 @@ namespace Quixotic.Analysis.Semantics
             if (index.ExpressionType != QxType.Number)
                 throw new IndexTypeException(index, expression.Span);
 
-            return new IndexerExpressionInfo(arrayType.ElementType)
+            return new IndexerExpressionInfo(arrayType.ElementType, expression)
             {
                 Target = target,
                 Index = index,
@@ -731,7 +741,7 @@ namespace Quixotic.Analysis.Semantics
                     throw new AlreadyDefinedIdentifierException(expression.PatternIdentifier, expression.Span);
             }
 
-            return new IsComparisonExpressionInfo
+            return new IsComparisonExpressionInfo(expression)
             {
                 Target = target,
                 Type = type,
@@ -757,7 +767,7 @@ namespace Quixotic.Analysis.Semantics
             else
                 throw new UnrecognizedFunctionSignatureException(signature, expression.Span);
 
-            return new FunctionCallExpressionInfo(returnType)
+            return new FunctionCallExpressionInfo(returnType, expression)
             {
                 Name = name,
                 Arguments = [.. arguments],
@@ -828,7 +838,7 @@ namespace Quixotic.Analysis.Semantics
                 expression.ReturnType = returnType.Name;
             }
 
-            return new FunctionExpressionInfo(returnType, [.. parameters])
+            return new FunctionExpressionInfo(returnType, [.. parameters], expression)
             {
                 SignatureSymbol = functionSymbol,
                 BodyStatements = [.. statements],
@@ -877,7 +887,7 @@ namespace Quixotic.Analysis.Semantics
 
             var expressionType = method?.ReturnType ?? target.ExpressionType;
 
-            return new MethodCallExpressionInfo(expressionType)
+            return new MethodCallExpressionInfo(expressionType, expression)
             {
                 Target = target,
                 MethodName = methodName,
@@ -905,7 +915,7 @@ namespace Quixotic.Analysis.Semantics
                     throw new UnrecognizedConstructorSignatureException(type, expression.Span);
             }
 
-            return new ConstructorCallExpressionInfo(type)
+            return new ConstructorCallExpressionInfo(type, expression)
             {
                 Arguments = [.. arguments],
             };
@@ -919,7 +929,7 @@ namespace Quixotic.Analysis.Semantics
             var thisType = typeFrame.Type;
             var baseType = thisType.BaseType ?? throw new BaseConstructorOnTypeWithoutBaseTypeException(thisType, expression.Span);
 
-            return new BaseConstructorCallExpressionInfo(thisType)
+            return new BaseConstructorCallExpressionInfo(thisType, expression)
             {
                 BaseType = baseType,
                 BaseConstructor = new BaseConstructor(thisType, Span.Empty) { Arguments = expression.Arguments },

@@ -13,26 +13,6 @@ namespace Quixotic.ParsingTests
     public sealed class ParserTests
     {
         [TestMethod]
-        public void Parse_print_statement()
-        {
-            // Setup
-            List<Token> tokens = [
-                new Token { Type = TokenType.Print, Value = "print", Span = Span.Empty },
-                new Token { Type = TokenType.StringLiteral, Value = "Hello, windmill!", Span = Span.Empty },
-                new Token { Type = TokenType.Eof, Value = string.Empty, Span = Span.Empty,},
-            ];
-            var parser = new Parser(tokens);
-
-            // Execute 
-            var statements = parser.Parse().ToList();
-
-            // Assert
-            Assert.HasCount(1, statements);
-
-            AssertPrint(statements[0], "Hello, windmill!");
-        }
-
-        [TestMethod]
         public void Parse_print_statement_with_lexer()
         {
             // Setup

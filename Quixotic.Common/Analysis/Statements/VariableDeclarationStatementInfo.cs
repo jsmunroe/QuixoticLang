@@ -1,11 +1,12 @@
 ﻿using Quixotic.Common.Analysis.Expressions;
+using Quixotic.Common.Statements;
 using Quixotic.Common.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Common.Analysis.Statements
 {
-    public class VariableDeclarationStatementInfo : StatementInfo
+    public class VariableDeclarationStatementInfo(QxStatement statement) : StatementInfo(statement)
     {
         public required string Name { get; init; }
         public required ExpressionInfo? Value { get; init; }

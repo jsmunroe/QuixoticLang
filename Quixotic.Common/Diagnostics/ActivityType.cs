@@ -44,5 +44,6 @@
         IdentifierType,
         IsComparison,
         ConstructorCall,
+        LambdaFunction,
     }
 }

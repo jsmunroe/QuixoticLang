@@ -1,10 +1,11 @@
-﻿using Quixotic.Common.Symbols;
+﻿using Quixotic.Common.Statements;
+using Quixotic.Common.Symbols;
 using Quixotic.Common.TypeSystem.Symbols;
 using Quixotic.Common.TypeSystem.Types;
 
 namespace Quixotic.Common.Analysis.Statements
 {
-    public class FunctionDeclarationStatementInfo : StatementInfo
+    public class FunctionDeclarationStatementInfo(QxStatement statement) : StatementInfo(statement)
     {
         public required string Name { get; init; }
         public IReadOnlyList<Parameter> Parameters { get; init; } = [];

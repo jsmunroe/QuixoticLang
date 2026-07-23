@@ -1,4 +1,5 @@
-﻿using Quixotic.Common.Diagnostics;
+﻿using Quixotic.Common.Contracts;
+using Quixotic.Common.Diagnostics;
 using Quixotic.Common.Diagnostics.Issues;
 using Quixotic.Common.Environment;
 using Quixotic.Common.Exceptions.Parsing;
@@ -14,7 +15,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Quixotic.Parsing
 {
-    public class Parser(IEnumerable<Token> tokens)
+    public class Parser(ISource source, IEnumerable<Token> tokens)
     {
         private readonly Stepper<Token> _tokens = new(tokens);
 
@@ -25,8 +26,10 @@ namespace Quixotic.Parsing
         { }
 
         public Parser(Lexer lexer)
-            : this(lexer.Tokenize())
+            : this(lexer.Source, lexer.Tokenize())
         { }
+
+        public ISource Source { get; } = source;
 
 #if DEBUG
         private Token? Current { get; set; }
@@ -267,7 +270,7 @@ namespace Quixotic.Parsing
 
         private QxLambdaFunctionExpression ParseLambdaFunctionExpression()
         {
-            return new(ParseFunctionExpression(CallType.Call, false));
+            return CaptureExpression<QxLambdaFunctionExpression>(() => new(ParseFunctionExpression(CallType.Call, false)), ActivityType.LambdaFunction);
         }
 
         private QxReturnStatement ParseReturn()
@@ -641,7 +644,7 @@ namespace Quixotic.Parsing
                 if (Match(TokenType.Step))
                     return ParseExpression();
                 else
-                    return new QxNumberLiteralExpression(1);
+                    return new QxNumberLiteralExpression(1) { Span = Current!.Span };
 
             }, ActivityType.StepValue);
 
@@ -692,7 +695,7 @@ namespace Quixotic.Parsing
             {
                 isEntryControlled = true;
                 condition = CaptureExpression(() => ParseExpression(), ActivityType.DoPrecondition);
-                condition = new QxUnaryExpression(Operator.Not, condition);
+                condition = new QxUnaryExpression(Operator.Not, condition) { Span = condition.Span };
             }
 
             var block = CaptureActivity(() => ParseBlock(BlockType.Do), ActivityType.DoBlock);
@@ -714,7 +717,7 @@ namespace Quixotic.Parsing
 
                 isEntryControlled = false;
                 condition = CaptureExpression(() => ParseExpression(), ActivityType.DoPostcondition);
-                condition = new QxUnaryExpression(Operator.Not, condition);
+                condition = new QxUnaryExpression(Operator.Not, condition) { Span = condition.Span };
             }
 
             if (condition is null)
@@ -777,11 +780,11 @@ namespace Quixotic.Parsing
                 {
                     case Operator.Indexer:
                         Expect(TokenType.CloseBracket);
-                        left = new QxIndexerExpression(left, right);
+                        left = new QxIndexerExpression(left, right) { Span = left.Span + right.Span };
                         break;
 
                     default:
-                        left = new QxBinaryExpression(operationMetadata.Operator, left, right);
+                        left = new QxBinaryExpression(operationMetadata.Operator, left, right) { Span = left.Span + right.Span };
                         break;
                 }
             }

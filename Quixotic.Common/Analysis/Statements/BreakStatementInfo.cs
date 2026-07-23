@@ -1,6 +1,8 @@
-﻿namespace Quixotic.Common.Analysis.Statements
+﻿using Quixotic.Common.Statements;
+
+namespace Quixotic.Common.Analysis.Statements
 {
-    public class BreakStatementInfo : StatementInfo
+    public class BreakStatementInfo(QxStatement statement) : StatementInfo(statement)
     {
 
     }

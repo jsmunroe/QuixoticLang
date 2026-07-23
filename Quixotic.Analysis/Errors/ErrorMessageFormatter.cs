@@ -16,44 +16,44 @@ namespace Quixotic.Analysis.Errors
     {
         public bool PrintTokensAsValues { get; set; } = false;
 
-        public ConsoleText Describe(Exception exception, ISource source)
+        public ConsoleText Describe(Exception exception, ISource? source = null)
         {
-            var description = Describe(exception);
+            ConsoleText? description;
 
             var span = Span.Empty;
 
-            if (exception is IHasSpan hasSpan)
-                span = hasSpan.Span;
-
-            if (exception is IHasDiagnostic hasDiagnostic)
-                span = hasDiagnostic.Diagnostic.Span;
-
-            if (exception is SemanticException semanticException)
+            if (exception is IHasDiagnostic diagnosticSource)
+            {
+                description = Describe(exception, diagnosticSource.Diagnostic);
+                span = diagnosticSource.Diagnostic.Span;
+            }
+            else if (exception is SemanticException semanticException)
+            {
+                description = Describe(semanticException);
                 span = semanticException.Span;
+            }
+            else if (exception is IHasSpan hasSpan)
+            {
+                description = new ConsoleText(exception.Message);
+                span = hasSpan.Span;
+            }
+            else
+            {
+                description = new ConsoleText(exception.Message);
+            }
 
-            if (span.IsEmpty)
-                return description;
+            if (!span.IsEmpty && source is not null)
+            {
+                SourceDocument sourceDocument = new(source);
 
-            SourceDocument sourceDocument = new(source);
+                var sourceLines = sourceDocument.GetLines(span);
 
-            var sourceLines = sourceDocument.GetLines(span);
-
-            description.WriteLine();
-            description.WriteLine(sourceLines);
-            description.WriteLine();
+                description.WriteLine();
+                description.WriteLine(sourceLines);
+                description.WriteLine();
+            }
 
             return description;
-        }
-
-        public ConsoleText Describe(Exception exception)
-        {
-            if (exception is IHasDiagnostic diagnosticSource)
-                return Describe(exception, diagnosticSource.Diagnostic);
-
-            if (exception is SemanticException semanticException)
-                return Describe(semanticException);
-
-            return new ConsoleText(exception.Message);
         }
 
         public ConsoleText Describe(SemanticException semanticException)

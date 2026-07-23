@@ -5,6 +5,8 @@
         public Position Start { get; init; }
         public Position End { get; init; }
 
+        public int Length => End.Index - Start.Index;
+
         public bool IsEmpty => Start.IsEmpty || End.IsEmpty;
 
         public static Span Empty { get; } = new Span { Start = Position.Empty, End = Position.Empty };
@@ -28,6 +30,14 @@
                 Start = start,
                 End = end,
             };
+        }
+
+        public override string ToString()
+        {
+            if (IsEmpty)
+                return "empty";
+
+            return $"{Start.Line}:{Start.Column}({Start.Index}) -> {End.Line}:{End.Column}({End.Index})";
         }
     }
 }

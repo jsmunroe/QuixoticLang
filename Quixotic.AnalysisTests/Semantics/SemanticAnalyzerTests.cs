@@ -1,6 +1,8 @@
 ﻿using Quixotic.Analysis.Errors;
 using Quixotic.Analysis.Exceptions;
 using Quixotic.Analysis.Semantics;
+using Quixotic.Common.Analysis.Expressions;
+using Quixotic.Common.Analysis.Statements;
 using Quixotic.Common.Contracts;
 using Quixotic.Parsing;
 using QuixoticLang.Lexer;
@@ -21,13 +23,22 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
 
             // Assert
             AssertNoIssues(analyzer);
+
+            Assert.IsNotNull(analyzer.SourceDatabase);
+
+            var analysisInfos = analyzer.SourceDatabase.Query(1, 11);
+
+            Assert.HasCount(2, analysisInfos);
+
+            Assert.IsInstanceOfType<StatementInfo>(analysisInfos[0]);
+            Assert.IsInstanceOfType<ExpressionInfo>(analysisInfos[1]);
         }
 
         [TestMethod]
@@ -39,7 +50,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -58,7 +69,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -76,7 +87,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -94,7 +105,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -112,7 +123,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -130,7 +141,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -150,7 +161,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -168,7 +179,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -187,7 +198,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -206,7 +217,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -227,7 +238,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -247,7 +258,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -267,7 +278,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -285,7 +296,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -304,7 +315,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -325,7 +336,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -348,7 +359,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -377,7 +388,7 @@ namespace Quixotic.AnalysisTests.Semantics
             """;
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -398,7 +409,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -421,7 +432,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -444,7 +455,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -467,7 +478,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -494,7 +505,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -519,7 +530,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -545,7 +556,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -571,7 +582,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -596,7 +607,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -620,7 +631,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -644,7 +655,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -668,7 +679,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -697,7 +708,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -725,7 +736,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -748,7 +759,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -771,7 +782,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -795,7 +806,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -817,7 +828,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -838,7 +849,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -859,7 +870,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -883,7 +894,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -902,7 +913,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -923,7 +934,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -944,7 +955,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -965,7 +976,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -986,7 +997,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1007,7 +1018,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1032,7 +1043,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1053,7 +1064,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1074,7 +1085,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1095,7 +1106,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1116,7 +1127,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1137,7 +1148,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1158,7 +1169,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1179,7 +1190,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1200,7 +1211,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1223,7 +1234,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1244,7 +1255,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1265,7 +1276,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1294,7 +1305,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1325,7 +1336,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1364,7 +1375,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1403,7 +1414,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1441,7 +1452,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1485,7 +1496,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1534,7 +1545,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1589,7 +1600,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1608,7 +1619,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1631,7 +1642,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1660,7 +1671,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1684,7 +1695,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1707,7 +1718,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1737,7 +1748,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1768,7 +1779,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1800,7 +1811,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1831,7 +1842,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1865,7 +1876,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1890,7 +1901,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1918,7 +1929,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1941,7 +1952,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1965,7 +1976,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1988,7 +1999,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
             var lexer = new Lexer(source);
             var parser = new Parser(lexer);
-            var analyzer = new SemanticAnalyzer(source);
+            var analyzer = new SemanticAnalyzer();
 
             // Execute
             analyzer.Analyze(parser).ToList();
@@ -1998,7 +2009,7 @@ namespace Quixotic.AnalysisTests.Semantics
 
         }
 
-        private string Format(Exception exception, ISource source)
+        private string Format(Exception exception, ISource? source)
         {
             var formatter = new ErrorMessageFormatter();
 

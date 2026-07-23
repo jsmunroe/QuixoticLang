@@ -86,14 +86,14 @@ namespace Quixotic.Common.Source
             return index - line.Start + 1;
         }
 
-        public int GetIndex(int lineNumber, int columnNumber)
+        public int GetIndex(int lineNumber, int column)
         {
             var line = GetLine(lineNumber);
 
             if (line is null)
                 return -1;
 
-            var index = line.Start + columnNumber - 1;
+            var index = line.Start + column - 1;
 
             if (index > line.End)
                 return -1;

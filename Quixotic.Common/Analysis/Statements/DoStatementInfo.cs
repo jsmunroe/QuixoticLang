@@ -1,8 +1,9 @@
 ﻿using Quixotic.Common.Analysis.Expressions;
+using Quixotic.Common.Statements;
 
 namespace Quixotic.Common.Analysis.Statements
 {
-    public class DoStatementInfo : StatementInfo
+    public class DoStatementInfo(QxStatement statement) : StatementInfo(statement)
     {
         public required bool IsEntryControlled { get; init; }
         public required bool IsExitControlled { get; init; }
